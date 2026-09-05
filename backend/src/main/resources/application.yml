@@ -1,0 +1,28 @@
+server:
+  servlet:
+    # Prefixo de tudo que a aplicação expõe — API, Swagger UI e Actuator.
+    context-path: /api
+
+spring:
+  application:
+    name: pitaco
+  threads:
+    virtual:
+      enabled: true
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          # Grava e lê todo timestamp em UTC, independente do fuso da JVM: o
+          # mesmo instante precisa dar a mesma linha em qualquer máquina.
+          time_zone: UTC
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+    doc-expansion: none
+  show-actuator: false

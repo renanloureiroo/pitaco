@@ -8,25 +8,24 @@ import org.springframework.http.HttpStatus;
 /**
  * Tradução de {@link ErrorType} para status HTTP.
  *
- * <p>
- * Vive na borda HTTP porque status é detalhe de protocolo: o core descreve a
- * natureza do erro e cada adapter decide como representá-la.
+ * <p>Vive na borda HTTP porque status é detalhe de protocolo: o core descreve a natureza do erro e
+ * cada adapter decide como representá-la.
  */
 final class ErrorTypeHttpStatus {
 
-    private static final Map<ErrorType, HttpStatus> STATUSES = new EnumMap<>(
-            Map.of(
-                    ErrorType.NOT_FOUND, HttpStatus.NOT_FOUND,
-                    ErrorType.CONFLICT, HttpStatus.CONFLICT,
-                    ErrorType.VALIDATION, HttpStatus.BAD_REQUEST,
-                    ErrorType.UNAUTHORIZED, HttpStatus.UNAUTHORIZED,
-                    ErrorType.FORBIDDEN, HttpStatus.FORBIDDEN,
-                    ErrorType.BUSINESS_RULE, HttpStatus.UNPROCESSABLE_CONTENT));
+  private static final Map<ErrorType, HttpStatus> STATUSES =
+      new EnumMap<>(
+          Map.of(
+              ErrorType.NOT_FOUND, HttpStatus.NOT_FOUND,
+              ErrorType.CONFLICT, HttpStatus.CONFLICT,
+              ErrorType.VALIDATION, HttpStatus.BAD_REQUEST,
+              ErrorType.UNAUTHORIZED, HttpStatus.UNAUTHORIZED,
+              ErrorType.FORBIDDEN, HttpStatus.FORBIDDEN,
+              ErrorType.BUSINESS_RULE, HttpStatus.UNPROCESSABLE_CONTENT));
 
-    private ErrorTypeHttpStatus() {
-    }
+  private ErrorTypeHttpStatus() {}
 
-    static HttpStatus of(ErrorType type) {
-        return STATUSES.getOrDefault(type, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+  static HttpStatus of(ErrorType type) {
+    return STATUSES.getOrDefault(type, HttpStatus.INTERNAL_SERVER_ERROR);
+  }
 }

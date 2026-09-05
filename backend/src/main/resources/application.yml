@@ -2,6 +2,22 @@ server:
   servlet:
     # Prefixo de tudo que a aplicação expõe — API, Swagger UI e Actuator.
     context-path: /api
+  tomcat:
+    accesslog:
+      # Uma linha por requisição, incluindo as que morrem antes do controller
+      # (404, 405, payload malformado). O log da aplicação começa no use case;
+      # esta é a única camada que enxerga o que nunca chegou lá.
+      enabled: true
+      # Vai para o stdout do processo, junto do resto do log — nada de arquivo
+      # em disco para rotacionar ou esquecer no container.
+      directory: /dev
+      prefix: stdout
+      suffix: ''
+      rotate: false
+      buffered: false
+      # %r = método, URI e protocolo; %s = status; %b = bytes no corpo;
+      # %{ms}T = duração com a unidade explícita (%D varia entre Tomcat e httpd).
+      pattern: '%t "%r" %s %b %{ms}Tms'
 
 spring:
   application:
@@ -10,6 +26,10 @@ spring:
     virtual:
       enabled: true
   jpa:
+    hibernate:
+      # O schema nasce da migration: aqui o Hibernate apenas confere se as
+      # entidades e as tabelas concordam, e falha no start quando divergem.
+      ddl-auto: validate
     properties:
       hibernate:
         jdbc:
@@ -26,3 +46,11 @@ springdoc:
     tags-sorter: alpha
     doc-expansion: none
   show-actuator: false
+
+logging:
+  level:
+    # O Spring loga a exceção resolvida em WARN com o valor rejeitado do corpo
+    # ("rejected value [...]"). Quem reporta erro aqui é o ApiExceptionHandler,
+    # que registra só campo e motivo — este logger fica no ERROR para não
+    # duplicar a linha nem vazar entrada do usuário.
+    org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver: error

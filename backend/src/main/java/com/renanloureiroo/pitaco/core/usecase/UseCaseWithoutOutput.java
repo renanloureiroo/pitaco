@@ -8,5 +8,5 @@ package com.renanloureiroo.pitaco.core.usecase;
 @FunctionalInterface
 public interface UseCaseWithoutOutput<I> {
 
-    void execute(I input);
+  void execute(I input);
 }

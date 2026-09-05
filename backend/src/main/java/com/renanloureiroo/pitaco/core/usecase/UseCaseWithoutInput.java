@@ -8,5 +8,5 @@ package com.renanloureiroo.pitaco.core.usecase;
 @FunctionalInterface
 public interface UseCaseWithoutInput<O> {
 
-    O execute();
+  O execute();
 }

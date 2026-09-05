@@ -1,0 +1,44 @@
+package com.renanloureiroo.pitaco.testsupport.repositories;
+
+import com.renanloureiroo.pitaco.modules.app.application.repositories.ApplicationRepository;
+import com.renanloureiroo.pitaco.modules.app.domain.entities.Application;
+import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
+import com.renanloureiroo.pitaco.modules.app.domain.valueobjects.Slug;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+public class InMemoryApplicationRepository implements ApplicationRepository {
+
+  private final Map<ApplicationId, Application> applications = new LinkedHashMap<>();
+
+  @Override
+  public Application create(Application application) {
+    applications.put(application.id(), application);
+    return application;
+  }
+
+  @Override
+  public Application update(Application application) {
+    applications.put(application.id(), application);
+    return application;
+  }
+
+  @Override
+  public Optional<Application> findBySlug(Slug slug) {
+    return applications.values().stream()
+        .filter(application -> application.getSlug().equals(slug))
+        .findFirst();
+  }
+
+  @Override
+  public Optional<Application> findById(ApplicationId applicationId) {
+    return Optional.ofNullable(applications.get(applicationId));
+  }
+
+  @Override
+  public List<Application> findAll() {
+    return List.copyOf(applications.values());
+  }
+}

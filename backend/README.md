@@ -125,7 +125,7 @@ java -jar target/pitaco-0.0.1-SNAPSHOT.jar
 
 ## Convenções
 
-- **Migrations** ficam em `src/main/resources/db/migration`, no padrão Flyway `V<n>__descricao.sql`. `ddl-auto` é `validate`: o schema nasce da migration, nunca do Hibernate.
+- **Migrations** ficam em `src/main/resources/db/migration`, no padrão Flyway `V<yyyyMMddHHmmss>__descricao.sql` — o timestamp (em UTC) evita que duas branches disputem o mesmo número de versão. `ddl-auto` é `validate`: o schema nasce da migration, nunca do Hibernate.
 - **Javadoc** documenta a decisão, não a assinatura. Se o comentário só repete o nome do método, ele não precisa existir.
 - **Rotas** não repetem o prefixo: ele vem do `context-path`. Escreva `@RequestMapping("/pitacos")`, não `@RequestMapping("/api/pitacos")`.
 - **Nada de Spring no `core`.** Anotação de framework, `jakarta.persistence`, `HttpStatus` — tudo isso vive em `infra`.

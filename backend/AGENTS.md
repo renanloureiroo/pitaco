@@ -1,6 +1,6 @@
 # AGENTS.md — backend do Pitaco
 
-API do Pitaco: Java 21 + Spring Boot 4.1, PostgreSQL + Flyway, Redis, OpenTelemetry
+API do Pitaco: Java 21 + Spring Boot 4.1, PostgreSQL + Flyway, OpenTelemetry
 (stack Grafana LGTM), JUnit 5 + Testcontainers, Maven com wrapper.
 
 Este arquivo é o mínimo que vale em toda tarefa. O detalhe está nos documentos
@@ -167,7 +167,7 @@ Correção de bug entra com o teste que o reproduz, escrito **antes** da correç
 ./mvnw test                     # suíte completa (746 testes; Docker precisa estar de pé)
 ./mvnw verify                   # testes + empacotamento — o portão antes de qualquer PR
 ./mvnw test -Dtest=SlugTest     # uma classe
-./mvnw spring-boot:run          # sobe a app; Postgres/Redis/LGTM sobem junto
+./mvnw spring-boot:run          # sobe a app; Postgres e LGTM sobem junto
 ```
 
 Sem Docker, é preciso excluir as quatro classes que sobem contexto:
@@ -180,7 +180,8 @@ API em `http://localhost:8080/api` · Swagger em `/api/swagger-ui.html`.
 ## O que ainda não existe
 
 Não procure — não sumiu, ainda não nasceu: `AggregateRoot` (só com evento de domínio),
-autenticação, cache Redis, SLO numérico.
+autenticação, cache, SLO numérico. O Redis saiu do projeto em 2026-09-08: ficou dois anos
+de feature sem uso, e cache só entra quando houver problema medido para resolver.
 
 ---
 

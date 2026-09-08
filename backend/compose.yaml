@@ -17,9 +17,3 @@ services:
       - 'PGTZ=UTC'
     ports:
       - '5432'
-  redis:
-    image: 'redis:latest'
-    environment:
-      - 'TZ=UTC'
-    ports:
-      - '6379'

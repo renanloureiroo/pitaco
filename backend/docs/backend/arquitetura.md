@@ -703,7 +703,7 @@ Registrado para que ninguém procure e conclua que sumiu:
 | `AggregateRoot` | não existe | quando houver evento de domínio a acumular |
 | Uso do `Transactor` | porta e adaptador prontos, sem consumidor | primeiro caso de uso com duas escritas |
 | Autenticação | não existe | `UNAUTHORIZED`/`FORBIDDEN` já estão previstos no core |
-| Cache Redis | dependência presente, sem uso | quando houver problema medido a resolver |
+| Cache | não existe | quando houver problema medido a resolver |
 | SLO numérico | não definido | quando houver baseline de tráfego real |
 
 Abstração entra quando existe o segundo caso concreto que a exige, nunca por

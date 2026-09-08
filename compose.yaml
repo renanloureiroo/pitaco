@@ -58,16 +58,18 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
-      # São DOIS exportadores diferentes, cada um com sua propriedade:
+      # Um endereço para os três sinais. O Spring Boot 4 mapeia esta variável
+      # do SDK do OpenTelemetry para as três propriedades de exportação —
+      # traces, logs e o OtlpMeterRegistry do Micrometer — acrescentando
+      # /v1/traces, /v1/logs e /v1/metrics.
       #
-      # 1) SDK do OpenTelemetry (traces e logs) — endpoint comum, URL base,
-      #    sem /v1/...: o SDK acrescenta o caminho de cada sinal.
-      MANAGEMENT_OPENTELEMETRY_OTLP_ENDPOINT: http://lgtm:4318
-      # 2) OtlpMeterRegistry do Micrometer (métricas) — NÃO lê a propriedade
-      #    acima. Sem esta linha ele usa o default localhost:4318, que dentro
-      #    do container é o próprio container, e falha em silêncio a cada minuto.
-      MANAGEMENT_OTLP_METRICS_EXPORT_URL: http://lgtm:4318/v1/metrics
+      # Não use MANAGEMENT_OPENTELEMETRY_OTLP_ENDPOINT: essa propriedade não
+      # existe no Boot 4 e é ignorada em silêncio. Sem endpoint, o exportador
+      # de trace e o de log nem chegam a ser criados (@ConditionalOnProperty),
+      # e só a métrica continua saindo.
+      #
       # 4318 é OTLP sobre HTTP; 4317 seria gRPC.
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
     depends_on:
       postgres:
         condition: service_healthy

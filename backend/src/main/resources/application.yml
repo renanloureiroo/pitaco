@@ -2,6 +2,14 @@ server:
   servlet:
     # Prefixo de tudo que a aplicação expõe — API, Swagger UI e Actuator.
     context-path: /api
+  # O túnel termina o TLS e fala HTTP com o container: sem isto a aplicação se
+  # enxerga em http e monta URL errada em tudo que deriva da requisição — o
+  # `servers` do OpenAPI e o header `Location` do 201. `framework` (o
+  # ForwardedHeaderFilter) em vez de `native` porque nenhuma porta é publicada
+  # no host: o único caminho de entrada é o cloudflared, então não há de onde
+  # chegar um X-Forwarded-Proto forjado, e não se depende do IP do proxy cair
+  # na faixa que o RemoteIpValve considera interna.
+  forward-headers-strategy: framework
   tomcat:
     accesslog:
       # Uma linha por requisição, incluindo as que morrem antes do controller

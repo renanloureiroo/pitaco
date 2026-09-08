@@ -495,8 +495,8 @@ sobreviver ao caminho.
 
 ## 11. Receita — E2E
 
-O único tipo que sobe a aplicação inteira: Tomcat em porta aleatória, Postgres,
-Redis e stack LGTM via Testcontainers. **Docker precisa estar rodando.** Nenhum
+O único tipo que sobe a aplicação inteira: Tomcat em porta aleatória, Postgres
+e stack LGTM via Testcontainers. **Docker precisa estar rodando.** Nenhum
 serviço externo é necessário.
 
 ```java

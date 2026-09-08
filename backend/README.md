@@ -13,7 +13,6 @@ O projeto está na fase de fundação: a base arquitetural (núcleo de domínio,
 | Linguagem | Java 21 (virtual threads habilitadas) |
 | Framework | Spring Boot 4.1 (Web MVC, Data JPA, Validation, Actuator) |
 | Banco | PostgreSQL + Flyway |
-| Cache | Redis |
 | Observabilidade | OpenTelemetry + stack Grafana LGTM |
 | Documentação | springdoc-openapi (Swagger UI) |
 | Testes | JUnit 5 + Testcontainers |
@@ -149,7 +148,7 @@ Os `code` de erro que chegam ao cliente:
 # 1. crie sua config local a partir do exemplo
 cp src/main/resources/application-local.yml.example src/main/resources/application-local.yml
 
-# 2. suba a aplicação (Postgres, Redis e Grafana LGTM sobem junto)
+# 2. suba a aplicação (Postgres e Grafana LGTM sobem junto)
 ./mvnw spring-boot:run
 ```
 
@@ -180,7 +179,7 @@ Alternativa, sem Docker Compose: `./mvnw spring-boot:test-run` sobe a aplicaçã
 ./mvnw verify         # testes + empacotamento
 ```
 
-Os testes de integração usam Testcontainers (`TestcontainersConfiguration`) para Postgres, Redis e a stack LGTM — Docker precisa estar rodando, e nenhum serviço externo é necessário.
+Os testes de integração usam Testcontainers (`TestcontainersConfiguration`) para Postgres e a stack LGTM — Docker precisa estar rodando, e nenhum serviço externo é necessário.
 
 Mock sobre porta do projeto é proibido: cada porta tem um fake em `testsupport/` (`InMemoryApplicationRepository`, `InMemoryApiKeyRepository`, `DirectTransactor`).
 

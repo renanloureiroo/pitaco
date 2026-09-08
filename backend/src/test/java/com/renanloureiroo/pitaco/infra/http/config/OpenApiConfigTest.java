@@ -29,6 +29,20 @@ class OpenApiConfigTest {
   }
 
   @Test
+  void anuncia_o_servidor_em_https_quando_o_proxy_terminou_o_tls() {
+    client
+        .get()
+        .uri("/v3/api-docs")
+        .header("X-Forwarded-Proto", "https")
+        .header("X-Forwarded-Host", "pitaco.renanloureiro.me")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody(String.class)
+        .value(body -> assertThat(body).contains("\"url\":\"https://pitaco.renanloureiro.me/api\""));
+  }
+
+  @Test
   void serve_a_interface_do_swagger_ui() {
     client.get().uri("/swagger-ui/index.html").exchange().expectStatus().isOk();
   }

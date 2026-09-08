@@ -11,6 +11,20 @@ spring:
     redis:
       host: localhost
       port: 6379
+  docker:
+    compose:
+      enabled: true
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
 
 logging:
   level:

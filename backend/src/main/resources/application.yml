@@ -25,6 +25,15 @@ spring:
   threads:
     virtual:
       enabled: true
+  docker:
+    compose:
+      # Este arquivo é o padrão de produção, onde não existe compose ao lado do
+      # jar. O profile local religa.
+      enabled: false
+  datasource:
+    hikari:
+      # Notebook antigo: pool pequeno é mais saudável que pool grande e ocioso.
+      maximum-pool-size: 10
   jpa:
     hibernate:
       # O schema nasce da migration: aqui o Hibernate apenas confere se as
@@ -37,10 +46,29 @@ spring:
           # mesmo instante precisa dar a mesma linha em qualquer máquina.
           time_zone: UTC
 
+management:
+  endpoints:
+    web:
+      exposure:
+        # Só o necessário para saber se o processo está de pé. Cada endpoint a
+        # mais aqui é superfície exposta atrás de um túnel público.
+        include: health,info
+  tracing:
+    sampling:
+      # 10% das requisições. Amostragem total num homelab enche disco sem
+      # revelar mais nada; o profile local sobe para 1.0.
+      probability: 0.1
+
 springdoc:
+  # TEMPORÁRIO: ligado também em produção enquanto a API está em construção.
+  # Como /api tem policy de Bypass no Cloudflare Access, isto deixa o mapa
+  # inteiro da API público em pitaco.renanloureiro.me/api/swagger-ui.html.
+  # Desligar aqui (ou proteger o path no Access) antes de haver dado real.
   api-docs:
+    enabled: true
     path: /v3/api-docs
   swagger-ui:
+    enabled: true
     path: /swagger-ui.html
     operations-sorter: alpha
     tags-sorter: alpha
@@ -49,6 +77,7 @@ springdoc:
 
 logging:
   level:
+    com.renanloureiroo.pitaco: INFO
     # O Spring loga a exceção resolvida em WARN com o valor rejeitado do corpo
     # ("rejected value [...]"). Quem reporta erro aqui é o ApiExceptionHandler,
     # que registra só campo e motivo — este logger fica no ERROR para não

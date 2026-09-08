@@ -1,0 +1,93 @@
+# Stack de produção do pitaco (homelab).
+#
+# Serviços privados (postgres, redis) vivem só na rede "internal".
+# Só a api entra na rede "edge", compartilhada com o stack ~/apps/infra
+# (cloudflared + lgtm), e é lá que o túnel a encontra pelo alias pitaco-api.
+#
+# Nenhum serviço publica porta no host: o único caminho de entrada é o túnel.
+# Para desenvolvimento local, use backend/compose.yaml.
+name: pitaco
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: UTC
+      PGTZ: UTC
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [internal]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # allkeys-lru assume Redis como cache. Se ele passar a guardar algo que não
+    # pode sumir (sessão, idempotência, fila), troque para noeviction.
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [internal]
+
+  api:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      # Sem SPRING_PROFILES_ACTIVE: carrega só o application.yml, que já é o
+      # padrão de produção. O application-local.yml nem chega a ser lido.
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      # 4318 é OTLP sobre HTTP (4317 seria gRPC).
+      MANAGEMENT_OTLP_METRICS_EXPORT_URL: http://lgtm:4318/v1/metrics
+      MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT: http://lgtm:4318/v1/traces
+      MANAGEMENT_OPENTELEMETRY_LOGGING_EXPORT_OTLP_ENDPOINT: http://lgtm:4318/v1/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      internal:
+      edge:
+        # Nome que o túnel usa. Um "api" genérico colidiria com o próximo
+        # projeto que também tiver um na mesma rede compartilhada.
+        aliases: [pitaco-api]
+
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #   restart: unless-stopped
+  #   networks:
+  #     edge:
+  #       aliases: [pitaco-frontend]
+
+volumes:
+  pg_data:
+  redis_data:
+
+networks:
+  internal:
+  edge:
+    # Criada uma vez na máquina: docker network create edge
+    external: true

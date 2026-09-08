@@ -2,7 +2,7 @@ package com.renanloureiroo.pitaco.modules.app.infra.database.jpa.mappers;
 
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKey;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKeyId;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.modules.app.domain.valueobjects.ApiKeyLabel;
 import com.renanloureiroo.pitaco.modules.app.domain.valueobjects.ApiKeySecret;
 import com.renanloureiroo.pitaco.modules.app.infra.database.jpa.entities.ApiKeyJpaEntity;

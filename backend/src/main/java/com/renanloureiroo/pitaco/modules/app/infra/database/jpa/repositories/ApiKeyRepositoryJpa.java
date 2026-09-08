@@ -5,7 +5,7 @@ import com.renanloureiroo.pitaco.modules.app.application.repositories.ApiKeyRepo
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKey;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKeyId;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKeyStatus;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.modules.app.infra.database.jpa.entities.ApiKeyJpaEntity;
 import com.renanloureiroo.pitaco.modules.app.infra.database.jpa.mappers.ApiKeyJpaMapper;
 import java.util.Optional;

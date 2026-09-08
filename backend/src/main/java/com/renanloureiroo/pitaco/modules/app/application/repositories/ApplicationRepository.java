@@ -1,7 +1,7 @@
 package com.renanloureiroo.pitaco.modules.app.application.repositories;
 
 import com.renanloureiroo.pitaco.modules.app.domain.entities.Application;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.modules.app.domain.valueobjects.Slug;
 import java.util.List;
 import java.util.Optional;

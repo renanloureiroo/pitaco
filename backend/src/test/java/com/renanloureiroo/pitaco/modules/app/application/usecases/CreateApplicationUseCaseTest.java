@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.renanloureiroo.pitaco.modules.app.application.errors.ApplicationAlreadyExistsWithSameSlug;
 import com.renanloureiroo.pitaco.modules.app.application.repositories.ApplicationRepository;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.Status;
 import com.renanloureiroo.pitaco.modules.app.domain.valueobjects.Slug;
 import com.renanloureiroo.pitaco.testsupport.factories.ApplicationFactory;

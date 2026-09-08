@@ -1,7 +1,7 @@
 package com.renanloureiroo.pitaco.modules.app.infra.database.jpa.mappers;
 
 import com.renanloureiroo.pitaco.modules.app.domain.entities.Application;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.modules.app.domain.valueobjects.Name;
 import com.renanloureiroo.pitaco.modules.app.domain.valueobjects.Slug;
 import com.renanloureiroo.pitaco.modules.app.infra.database.jpa.entities.ApplicationJpaEntity;

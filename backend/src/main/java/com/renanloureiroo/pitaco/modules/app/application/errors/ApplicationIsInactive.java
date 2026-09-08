@@ -2,7 +2,7 @@ package com.renanloureiroo.pitaco.modules.app.application.errors;
 
 import com.renanloureiroo.pitaco.core.error.ApplicationException;
 import com.renanloureiroo.pitaco.core.error.ErrorType;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 
 public final class ApplicationIsInactive extends ApplicationException {
 

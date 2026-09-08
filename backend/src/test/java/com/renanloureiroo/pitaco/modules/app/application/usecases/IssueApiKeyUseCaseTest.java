@@ -6,7 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.renanloureiroo.pitaco.core.error.DomainException;
 import com.renanloureiroo.pitaco.modules.app.application.errors.ApplicationIsInactive;
 import com.renanloureiroo.pitaco.modules.app.application.errors.ApplicationNotFound;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.modules.app.domain.valueobjects.ApiKeySecret;
 import com.renanloureiroo.pitaco.testsupport.factories.ApplicationFactory;
 import com.renanloureiroo.pitaco.testsupport.repositories.InMemoryApiKeyRepository;

@@ -1,8 +1,7 @@
-package com.renanloureiroo.pitaco.modules.app.domain.entities;
+package com.renanloureiroo.pitaco.core.identity;
 
 import com.renanloureiroo.pitaco.core.error.DomainException;
 import com.renanloureiroo.pitaco.core.error.ErrorType;
-import com.renanloureiroo.pitaco.core.identity.Id;
 
 public final class ApplicationId extends Id {
 

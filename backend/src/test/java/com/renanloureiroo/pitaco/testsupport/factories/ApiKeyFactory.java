@@ -1,9 +1,9 @@
 package com.renanloureiroo.pitaco.testsupport.factories;
 
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.modules.app.application.repositories.ApiKeyRepository;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKey;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKeyId;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
 import com.renanloureiroo.pitaco.modules.app.domain.valueobjects.ApiKeyLabel;
 import com.renanloureiroo.pitaco.modules.app.domain.valueobjects.ApiKeySecret;
 import java.time.Instant;

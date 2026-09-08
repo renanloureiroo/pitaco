@@ -319,7 +319,9 @@ paths:
         - { $ref: '#/components/parameters/SurveyId' }
       responses:
         '200':
-          description: Impedimentos encontrados; lista vazia quando não há nenhum.
+          description: >
+            Impedimentos encontrados; lista vazia quando não há nenhum — e também quando não há
+            rascunho aberto, já que aí não há nada pendente de publicação.
           content:
             application/json:
               schema:
@@ -329,9 +331,7 @@ paths:
                   impediments:
                     type: array
                     items: { $ref: '#/components/schemas/PublicationImpediment' }
-        '404':
-          description: Pesquisa não encontrada, ou sem rascunho aberto (`survey_version.draft_not_found`).
-          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
 
   /applications/{applicationId}/surveys/{surveyId}/publication:
     post:
@@ -518,8 +518,8 @@ paths:
         '204': { description: Rascunho de versão descartado. }
         '404':
           description: >
-            Pesquisa não encontrada, ou sem rascunho de versão aberto
-            (`survey_version.draft_not_found`).
+            Pesquisa não encontrada (`survey.not_found`), ou sem rascunho de versão aberto
+            (`survey_version.not_found`).
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
 
   /applications/{applicationId}/surveys/{surveyId}/versions/{number}:

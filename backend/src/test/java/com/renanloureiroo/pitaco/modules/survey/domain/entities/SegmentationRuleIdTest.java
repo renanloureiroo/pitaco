@@ -1,4 +1,4 @@
-package com.renanloureiroo.pitaco.modules.app.domain.entities;
+package com.renanloureiroo.pitaco.modules.survey.domain.entities;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -12,21 +12,28 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-@DisplayName("ApplicationId")
-class ApplicationIdTest {
+@DisplayName("SegmentationRuleId")
+class SegmentationRuleIdTest {
+
+  @Test
+  void gera_um_uuid_valido() {
+    var generated = SegmentationRuleId.generate();
+
+    assertThat(UUID.fromString(generated.value())).hasToString(generated.value());
+  }
+
+  @Test
+  void o_identificador_gerado_volta_pelo_of() {
+    var generated = SegmentationRuleId.generate();
+
+    assertThat(SegmentationRuleId.of(generated.value())).isEqualTo(generated);
+  }
 
   @Test
   void aceita_um_uuid() {
     var value = UUID.randomUUID().toString();
 
-    assertThat(ApplicationId.of(value).value()).isEqualTo(value);
-  }
-
-  @Test
-  void o_identificador_gerado_volta_pelo_of() {
-    var generated = ApplicationId.generate();
-
-    assertThat(ApplicationId.of(generated.value())).isEqualTo(generated);
+    assertThat(SegmentationRuleId.of(value).value()).isEqualTo(value);
   }
 
   @ParameterizedTest
@@ -38,13 +45,13 @@ class ApplicationIdTest {
         "3f9a1c72-5d84-4a1e-9b0f-2c6e8d5a7b3g"
       })
   void rejeita_identificador_fora_do_formato_uuid(String invalid) {
-    assertThatThrownBy(() -> ApplicationId.of(invalid))
+    assertThatThrownBy(() -> SegmentationRuleId.of(invalid))
         .isInstanceOf(DomainException.class)
         .satisfies(
             error -> {
               var domainError = (DomainException) error;
               assertThat(domainError.type()).isEqualTo(ErrorType.VALIDATION);
-              assertThat(domainError.code()).isEqualTo("application.id_invalid");
+              assertThat(domainError.code()).isEqualTo("segmentation_rule.id_invalid");
             });
   }
 
@@ -52,7 +59,7 @@ class ApplicationIdTest {
   @NullAndEmptySource
   @ValueSource(strings = {"   "})
   void identificador_ausente_continua_sendo_recusado_pelo_core(String invalid) {
-    assertThatThrownBy(() -> ApplicationId.of(invalid))
+    assertThatThrownBy(() -> SegmentationRuleId.of(invalid))
         .isInstanceOf(DomainException.class)
         .satisfies(
             error -> {

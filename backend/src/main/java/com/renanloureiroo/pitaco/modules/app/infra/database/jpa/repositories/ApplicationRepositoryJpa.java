@@ -2,7 +2,7 @@ package com.renanloureiroo.pitaco.modules.app.infra.database.jpa.repositories;
 
 import com.renanloureiroo.pitaco.modules.app.application.repositories.ApplicationRepository;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.Application;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.modules.app.domain.valueobjects.Slug;
 import com.renanloureiroo.pitaco.modules.app.infra.database.jpa.mappers.ApplicationJpaMapper;
 import java.util.List;

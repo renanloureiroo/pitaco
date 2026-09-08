@@ -1,8 +1,8 @@
 package com.renanloureiroo.pitaco.testsupport.repositories;
 
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.modules.app.application.repositories.ApplicationRepository;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.Application;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
 import com.renanloureiroo.pitaco.modules.app.domain.valueobjects.Slug;
 import java.util.LinkedHashMap;
 import java.util.List;

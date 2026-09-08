@@ -8,7 +8,7 @@ import com.renanloureiroo.pitaco.modules.app.application.repositories.ApiKeyRepo
 import com.renanloureiroo.pitaco.modules.app.application.repositories.ApplicationRepository;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKeyId;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKeyStatus;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import java.time.Instant;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;

@@ -7,7 +7,7 @@ import com.renanloureiroo.pitaco.core.error.DomainException;
 import com.renanloureiroo.pitaco.core.error.ErrorType;
 import com.renanloureiroo.pitaco.modules.app.application.errors.ApiKeyNotFound;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKey;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.testsupport.factories.ApiKeyFactory;
 import com.renanloureiroo.pitaco.testsupport.repositories.InMemoryApiKeyRepository;
 import java.util.UUID;

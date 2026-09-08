@@ -1,5 +1,6 @@
 package com.renanloureiroo.pitaco.core.error;
 
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -30,5 +31,15 @@ public abstract class ApplicationException extends RuntimeException {
 
   public String code() {
     return code;
+  }
+
+  /**
+   * Propriedades extras que a borda acrescenta ao corpo do erro, além de {@code code} e {@code
+   * traceId}. Vazio por padrão; o erro que precisa detalhar a recusa — a lista de impedimentos de
+   * uma publicação, as diferenças que derrubaram uma classificação — a devolve já em forma
+   * serializável, e o handler não precisa conhecer nenhum módulo para repassá-la.
+   */
+  public Map<String, Object> extensions() {
+    return Map.of();
   }
 }

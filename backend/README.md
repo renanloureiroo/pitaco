@@ -50,6 +50,8 @@ Quatro decisões que valem ser conhecidas antes de escrever código aqui:
 
 **Entidade é identidade; value object é conteúdo.** `Entity<ID extends Id>` iguala pelo identificador e pelo tipo concreto: dois `Pitaco` com o mesmo `PitacoId` são o mesmo pitaco, ainda que um esteja editado e o outro seja uma leitura mais antiga. Para o que se define pelo conteúdo, use `record` — a igualdade estrutural já vem pronta e não há base a herdar. Não existe `AggregateRoot`: sem eventos de domínio ele não teria nada além do que `Entity` já dá, e ele entra no dia em que houver evento para acumular.
 
+**Resposta HTTP é montada por presenter.** Cada presenter é uma `final class` em `modules/<módulo>/infra/http/presenters`, com construtor privado e um `public static R present(O output)` que traduz a saída do caso de uso no DTO de resposta. Sem interface e sem bean: é tradução pura, no mesmo molde do mapper JPA. O DTO não conhece o caso de uso e não tem factory estática; o controller chama `XPresenter.present(output)` e devolve. É o que mantém o formato da resposta como decisão da borda, e não do núcleo.
+
 **Caso de uso é uma interface funcional.** Quatro variações conforme a assinatura: `UseCase<I, O>`, `UseCaseWithoutInput<O>`, `UseCaseWithoutOutput<I>` e `UseCaseWithoutInputAndOutput`. Um caso de uso, um `execute`.
 
 ### Prefixo das rotas
@@ -76,6 +78,30 @@ Toda resposta de erro sai em RFC 9457 (`application/problem+json`), com duas pro
 - `traceId` — liga a resposta que o usuário viu ao trace correspondente no Grafana. Sai apenas quando o tracing está ligado.
 
 Erros de Bean Validation acrescentam ainda `errors`, um mapa de campo → mensagem. Erros inesperados nunca vazam mensagem interna: viram um `internal.unexpected` genérico, com o stack trace apenas no log.
+
+### Endpoints
+
+| Método | Rota | O que faz |
+| --- | --- | --- |
+| `POST` | `/applications` | Cria uma aplicação |
+| `POST` | `/applications/{applicationId}/api-keys` | Emite uma chave de API — o segredo em claro sai **uma única vez**, nesta resposta |
+| `DELETE` | `/applications/{applicationId}/api-keys/{apiKeyId}` | Revoga a chave: imediata, irreversível, e o registro permanece para a trilha |
+
+Os `code` de erro que chegam ao cliente:
+
+| `code` | Status | Quando |
+| --- | --- | --- |
+| `request.invalid` | 400 | Bean Validation no corpo da requisição |
+| `application.already_exists_with_same_slug` | 409 | Slug já usado por outra aplicação |
+| `application.not_found` | 404 | Aplicação inexistente — **ou** identificador em formato inválido, indistinguíveis de propósito |
+| `application.inactive` | 422 | Aplicação inativa não emite chave |
+| `application.name_invalid` · `application.slug_invalid` · `application.quiet_period_invalid` · `application.retention_invalid` | 400 | Invariante da aplicação |
+| `application.open_text_retention_invalid` | 422 | Retenção de texto livre maior que a geral |
+| `api_key.label_invalid` | 400 | Rótulo vazio ou acima de 80 caracteres |
+| `api_key.not_found` | 404 | Chave inexistente, de outra aplicação, ou identificador malformado — os três com o mesmo `code` |
+| `api_key.already_revoked` | 409 | Chave já revogada; o instante da primeira revogação não muda |
+
+`application.id_invalid` e `api_key.id_invalid` não entram na tabela: são internos ao domínio, capturados pelo caso de uso e traduzidos em 404, para que "malformado" e "inexistente" não sejam distinguíveis por quem chama.
 
 ---
 
@@ -120,7 +146,9 @@ Alternativa, sem Docker Compose: `./mvnw spring-boot:test-run` sobe a aplicaçã
 
 Os testes de integração usam Testcontainers (`TestcontainersConfiguration`) para Postgres, Redis e a stack LGTM — Docker precisa estar rodando, e nenhum serviço externo é necessário.
 
-Mock sobre porta do projeto é proibido: cada porta tem um fake em `testsupport/` (`InMemoryApplicationRepository`, `DirectTransactor`).
+Mock sobre porta do projeto é proibido: cada porta tem um fake em `testsupport/` (`InMemoryApplicationRepository`, `InMemoryApiKeyRepository`, `DirectTransactor`).
+
+Transação é decisão do caso de uso, declarada com `@Transactional` de `core.transaction` no próprio `execute` — a anotação é do projeto, não do Spring, e o caso de uso segue sem importar framework. Quem a implementa é o `TransactionalAdvisor`, na borda, sobre a porta `Transactor`; em teste de unidade o caso de uso roda sem proxy e sem transação, como qualquer bean anotado. `RevokeApiKeyUseCase` a usa porque a releitura de quem perde a corrida precisa enxergar o que o vencedor gravou.
 
 ---
 
@@ -136,7 +164,7 @@ java -jar target/pitaco-0.0.1-SNAPSHOT.jar
 ## Convenções
 
 - **Migrations** ficam em `src/main/resources/db/migration`, no padrão Flyway `V<yyyyMMddHHmmss>__descricao.sql` — o timestamp (em UTC) evita que duas branches disputem o mesmo número de versão. `ddl-auto` é `validate`: o schema nasce da migration, nunca do Hibernate.
-- **Javadoc** documenta a decisão, não a assinatura. Se o comentário só repete o nome do método, ele não precisa existir.
+- **Sem Javadoc e sem comentário explicativo.** O código se explica sozinho. A exceção é a decisão com alternativa descartada — uma linha, não um parágrafo. Regra não óbvia vira teste.
 - **Rotas** não repetem o prefixo: ele vem do `context-path`. Escreva `@RequestMapping("/pitacos")`, não `@RequestMapping("/api/pitacos")`.
 - **Nada de Spring no `core`.** Anotação de framework, `jakarta.persistence`, `HttpStatus` — tudo isso vive em `infra`.
 

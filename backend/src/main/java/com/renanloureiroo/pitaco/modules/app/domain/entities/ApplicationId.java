@@ -1,20 +1,25 @@
 package com.renanloureiroo.pitaco.modules.app.domain.entities;
 
+import com.renanloureiroo.pitaco.core.error.DomainException;
+import com.renanloureiroo.pitaco.core.error.ErrorType;
 import com.renanloureiroo.pitaco.core.identity.Id;
 
-/** Identificador de {@link Application}. */
 public final class ApplicationId extends Id {
+
+  private static final String INVALID_CODE = "application.id_invalid";
 
   private ApplicationId(String value) {
     super(value);
+    if (!isUuid(value)) {
+      throw new DomainException(
+          ErrorType.VALIDATION, INVALID_CODE, "Identificador de aplicação inválido");
+    }
   }
 
-  /** Identificador de uma aplicação que ainda não existia. */
   public static ApplicationId generate() {
     return new ApplicationId(newValue());
   }
 
-  /** Identificador já existente, vindo da borda ou da persistência. */
   public static ApplicationId of(String value) {
     return new ApplicationId(value);
   }

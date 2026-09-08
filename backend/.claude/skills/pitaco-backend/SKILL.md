@@ -55,8 +55,9 @@ Nesta ordem. Cada passo com teste antes do código (veja a skill `pitaco-tests`)
    (`@Repository`, implementa a porta).
 9. **`infra/http/dtos/<Ação><X>RequestDTO.java`** — `record` com Bean Validation.
    Cada mensagem de constraint **espelha** a do value object. Método `toInput()`.
-10. **`infra/http/presenters/`** — implementa `Presenter<Output, ResponseDTO>`. Se
-    `core/presenter/Presenter.java` ainda não existir, crie-o (veja "Pendências").
+10. **`infra/http/presenters/<Ação><X>Presenter.java`** — `final class`, construtor
+    privado, um `public static ResponseDTO present(Output output)`. Mesmo molde do
+    mapper JPA: tradução pura, sem estado, sem bean. Não existe interface `Presenter`.
 11. **`infra/http/controllers/<X>ControllerSwagger.java`** — `@Tag`, `@Operation` e um
     `@ApiResponse` para **cada** status possível, com `ApiErrorResponse` /
     `ApiValidationErrorResponse` e media type `application/problem+json`.
@@ -100,23 +101,30 @@ decisão de arquitetura: vale um ADR em `docs/adrs/`.
 - logar o valor rejeitado da entrada do usuário
 - Javadoc que repete o nome do método
 
-## Pendências do padrão
-
-**`Presenter` ainda não existe no código.** Hoje a montagem da resposta é uma
-factory estática no DTO (`CreateApplicationResponseDTO.from(output)`). O primeiro
-endpoint novo deve criar `core/presenter/Presenter.java`:
+## Forma do presenter
 
 ```java
-public interface Presenter<O, R> {
-  R present(O output);
+public final class IssueApiKeyPresenter {
+
+  private IssueApiKeyPresenter() {}
+
+  public static IssueApiKeyResponseDTO present(IssueApiKeyUseCase.Output output) {
+    return new IssueApiKeyResponseDTO(output.id(), /* ... */ output.createdAt());
+  }
 }
 ```
 
-...implementar o presenter HTTP do módulo, e migrar o DTO existente para `record`
-puro. Avise o usuário ao fazer isso — é a quitação de uma dívida registrada na
-constituição, não uma mudança de escopo silenciosa.
+O controller chama `IssueApiKeyPresenter.present(output)`. Não injete presenter, não
+crie interface para ele: é função pura de tradução, como `ApiKeyJpaMapper`. Se um dia
+um presenter precisar de dependência real, aí sim vira `@Component` injetado — quando o
+caso concreto existir, não por antecipação.
 
-`Transactor` só é injetado quando o caso de uso escreve em **dois** agregados.
+## Transação
+
+Declare a `@Transactional` **do projeto** (`core.transaction`) na classe do caso de uso,
+nunca a do Spring e nunca escondida num repositório Spring Data. Quem a implementa é o
+`TransactionalAdvisor`. Entra quando há duas escritas **ou** quando uma leitura e uma
+escrita precisam do mesmo instante do banco. Um `save` sozinho não precisa.
 
 ## Antes de dar por pronto
 

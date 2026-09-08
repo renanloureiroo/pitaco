@@ -1,8 +1,9 @@
 package com.renanloureiroo.pitaco.modules.app.infra.http.controllers;
 
 import com.renanloureiroo.pitaco.modules.app.application.usecases.CreateApplicationUseCase;
-import com.renanloureiroo.pitaco.modules.app.infra.http.dtos.CreateApplicationResponseDTO;
 import com.renanloureiroo.pitaco.modules.app.infra.http.dtos.CreateApplicationRequestDTO;
+import com.renanloureiroo.pitaco.modules.app.infra.http.dtos.CreateApplicationResponseDTO;
+import com.renanloureiroo.pitaco.modules.app.infra.http.presenters.CreateApplicationPresenter;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,9 +12,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-@RestController()
+@RestController
 @RequestMapping("/applications")
 public class ApplicationController implements ApplicationControllerSwagger {
+
   private final CreateApplicationUseCase createAppUseCase;
 
   ApplicationController(CreateApplicationUseCase createAppUseCase) {
@@ -21,7 +23,7 @@ public class ApplicationController implements ApplicationControllerSwagger {
   }
 
   @Override
-  @PostMapping()
+  @PostMapping
   public ResponseEntity<CreateApplicationResponseDTO> create(
       @Valid @RequestBody CreateApplicationRequestDTO request) {
     var output = createAppUseCase.execute(request.toInput());
@@ -30,6 +32,7 @@ public class ApplicationController implements ApplicationControllerSwagger {
             .path("/{id}")
             .buildAndExpand(output.id())
             .toUri();
-    return ResponseEntity.created(location).body(CreateApplicationResponseDTO.from(output));
+
+    return ResponseEntity.created(location).body(CreateApplicationPresenter.present(output));
   }
 }

@@ -1,0 +1,167 @@
+# Contrato HTTP da feature 001-api-key-management.
+#
+# Fonte de verdade em runtime é o OpenAPI gerado pelo springdoc a partir das interfaces
+# *Swagger. Este arquivo é o alvo: o que as anotações devem produzir.
+#
+# Caminhos SEM o prefixo /api, que vem do context-path do contêiner (Princípio IV).
+openapi: 3.1.0
+info:
+  title: Pitaco — Chaves de API
+  version: 0.1.0
+
+paths:
+  /applications/{applicationId}/api-keys:
+    post:
+      tags: [Chaves de API]
+      operationId: issueApiKey
+      summary: Emite uma chave de API
+      description: >
+        Emite uma chave para a aplicação informada. O segredo em texto claro é devolvido
+        uma única vez, nesta resposta, e não é recuperável por nenhuma outra operação.
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IssueApiKeyRequest' }
+      responses:
+        '201':
+          description: Chave emitida
+          headers:
+            Location:
+              description: URI da chave criada
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IssueApiKeyResponse' }
+        '400':
+          description: Rótulo ausente, em branco ou acima de 80 caracteres
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ApiValidationErrorResponse' }
+        '404':
+          description: Aplicação não encontrada  # code: application.not_found
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+        '422':
+          description: Aplicação inativa  # code: application.inactive
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+
+  /applications/{applicationId}/api-keys/{apiKeyId}:
+    delete:
+      tags: [Chaves de API]
+      operationId: revokeApiKey
+      summary: Exclui uma chave de API
+      description: >
+        Revoga a chave: ela deixa de ser válida imediatamente e de forma irreversível.
+        O registro permanece armazenado — rótulo, prefixo público, instante de criação e
+        instante da revogação —, sem nenhum vestígio do segredo.
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+        - $ref: '#/components/parameters/ApiKeyId'
+      responses:
+        '204':
+          description: Chave revogada
+        '404':
+          description: >
+            Chave não encontrada, pertencente a outra aplicação, ou identificador em formato
+            inválido — indistinguíveis por decisão de projeto  # code: api_key.not_found
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+        '409':
+          description: Chave já revogada  # code: api_key.already_revoked
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+
+components:
+  parameters:
+    ApplicationId:
+      name: applicationId
+      in: path
+      required: true
+      description: Identificador da aplicação dona da chave
+      schema: { type: string }
+    ApiKeyId:
+      name: apiKeyId
+      in: path
+      required: true
+      description: Identificador da chave, devolvido na emissão
+      schema: { type: string }
+
+  schemas:
+    IssueApiKeyRequest:
+      type: object
+      description: Dados para emitir uma chave de API
+      required: [label]
+      properties:
+        label:
+          type: string
+          description: Rótulo que descreve onde a chave será usada
+          example: app iOS
+          minLength: 1
+          maxLength: 80
+
+    IssueApiKeyResponse:
+      type: object
+      description: >
+        Chave recém-emitida. O campo secret aparece exclusivamente aqui e não é recuperável
+        depois — guarde-o no ato.
+      required: [id, applicationId, label, prefix, secret, createdAt]
+      properties:
+        id:
+          type: string
+          description: Identificador da chave, necessário para excluí-la
+          example: 8c1f0f4e-2a77-4a6d-9b31-6f0c2d9a4e15
+        applicationId:
+          type: string
+          description: Aplicação dona da chave
+          example: 3f9a1c72-5d84-4a1e-9b0f-2c6e8d5a7b31
+        label:
+          type: string
+          description: Rótulo informado na emissão
+          example: app iOS
+        prefix:
+          type: string
+          description: Prefixo público, não sensível — identifica a chave em log e conversa
+          example: pit_9f2a7c4b
+        secret:
+          type: string
+          description: Segredo em texto claro, exibido uma única vez
+          example: pit_9f2a7c4b_Zm9vYmFyYmF6cXV4MTIzNDU2Nzg5MGFiY2RlZmdoaWo
+        createdAt:
+          type: string
+          format: date-time
+          description: Instante da emissão, em UTC
+          example: '2026-09-08T14:32:10Z'
+
+    # Já existentes no projeto (infra/http/error). Reproduzidos aqui só para o contrato fechar.
+    ApiErrorResponse:
+      type: object
+      description: Erro no formato RFC 9457
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string, format: uri }
+        code:
+          type: string
+          description: Identificador estável do erro — é por ele que o cliente decide
+          example: api_key.already_revoked
+        traceId: { type: string }
+
+    ApiValidationErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiErrorResponse'
+        - type: object
+          properties:
+            errors:
+              type: object
+              additionalProperties: { type: string }
+              example: { label: Rótulo é obrigatório }

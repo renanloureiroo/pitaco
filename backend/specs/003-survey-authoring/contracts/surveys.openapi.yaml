@@ -1,0 +1,973 @@
+# Contrato HTTP da feature 003-survey-authoring.
+#
+# Fonte de verdade em runtime é o OpenAPI gerado pelo springdoc a partir das interfaces
+# *Swagger. Este arquivo é o alvo: o que as anotações devem produzir.
+#
+# Caminhos SEM o prefixo /api, que vem do context-path do contêiner (Princípio IV).
+# Todo caminho é aninhado na aplicação dona: o escopo de FR-006 é parte da rota (D-15).
+# Fora do escopo — id malformado, inexistente, ou de outra aplicação — responde 404
+# survey.not_found, nunca 403 (D-16).
+openapi: 3.1.0
+info:
+  title: Pitaco — Autoria de pesquisa
+  version: 0.1.0
+  description: >
+    Superfície administrativa de autoria: criar a pesquisa, montar as perguntas, configurar
+    o disparo e as regras, publicar congelando em versão imutável, controlar o que está no ar
+    e versionar. Não entrega, não coleta e não agrega — isso é de outras features.
+
+tags:
+  - name: Pesquisas
+  - name: Perguntas
+  - name: Disparo
+  - name: Publicação
+  - name: Ciclo de vida
+  - name: Versões
+
+paths:
+
+  /applications/{applicationId}/surveys:
+    post:
+      tags: [Pesquisas]
+      operationId: createSurvey
+      summary: Cria uma pesquisa em rascunho
+      description: >
+        A pesquisa nasce em rascunho, sem perguntas, sem disparo e sem versão publicada,
+        junto de sua versão 1 em rascunho. Exige aplicação existente e ativa.
+      parameters: [{ $ref: '#/components/parameters/ApplicationId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateSurveyRequest' }
+      responses:
+        '201':
+          description: Pesquisa criada.
+          headers:
+            Location:
+              description: URI da pesquisa criada.
+              schema: { type: string, example: '/api/applications/{applicationId}/surveys/{surveyId}' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SurveyResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404':
+          description: Aplicação não encontrada (`application.not_found`).
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+        '422':
+          description: Aplicação inativa (`application.inactive`).
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+    get:
+      tags: [Pesquisas]
+      operationId: listSurveys
+      summary: Lista as pesquisas de uma aplicação
+      description: >
+        Paginado, da mais recente para a mais antiga. Aplicação sem pesquisa devolve página
+        vazia, não erro. Nenhuma pesquisa de outra aplicação aparece.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+      responses:
+        '200':
+          description: Página de pesquisas.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SurveyPageResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/ApplicationNotFound' }
+
+  /applications/{applicationId}/surveys/{surveyId}:
+    get:
+      tags: [Pesquisas]
+      operationId: getSurvey
+      summary: Consulta uma pesquisa
+      description: >
+        Devolve nome, estado derivado, aplicação dona, instante de criação e o conteúdo
+        montado — o do rascunho quando existe, o da versão publicada caso contrário,
+        indicado por `content.source`.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+      responses:
+        '200':
+          description: Pesquisa.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SurveyDetailResponse' }
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
+    patch:
+      tags: [Pesquisas]
+      operationId: renameSurvey
+      summary: Renomeia a pesquisa
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RenameSurveyRequest' }
+      responses:
+        '200':
+          description: Nome alterado; o estado não muda.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SurveyResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
+    delete:
+      tags: [Pesquisas]
+      operationId: discardSurvey
+      summary: Descarta uma pesquisa nunca publicada
+      description: Publicada não se apaga, se encerra.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+      responses:
+        '204': { description: Descartada, junto do conteúdo montado nela. }
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
+        '422':
+          description: Pesquisa já publicada (`survey.published_cannot_be_discarded`).
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+
+  /applications/{applicationId}/surveys/{surveyId}/questions:
+    post:
+      tags: [Perguntas]
+      operationId: addQuestion
+      summary: Acrescenta uma pergunta ao rascunho
+      description: >
+        Vai para a última posição e recebe uma chave estável própria. Tipo que exige opção é
+        aceito sem opção — a pendência vira impedimento de publicação, não recusa.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QuestionRequest' }
+      responses:
+        '201':
+          description: Pergunta criada.
+          headers:
+            Location: { description: URI da pergunta., schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QuestionResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
+        '422': { $ref: '#/components/responses/ContentFrozen' }
+
+  /applications/{applicationId}/surveys/{surveyId}/questions/{questionId}:
+    put:
+      tags: [Perguntas]
+      operationId: updateQuestion
+      summary: Reescreve uma pergunta
+      description: A chave estável permanece a mesma.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+        - { $ref: '#/components/parameters/QuestionId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QuestionRequest' }
+      responses:
+        '200':
+          description: Pergunta alterada.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QuestionResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404':
+          description: Pesquisa ou pergunta não encontrada (`survey.not_found`, `question.not_found`).
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+        '422': { $ref: '#/components/responses/ContentFrozen' }
+    delete:
+      tags: [Perguntas]
+      operationId: removeQuestion
+      summary: Remove uma pergunta
+      description: As posições das restantes ficam consecutivas, sem buraco.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+        - { $ref: '#/components/parameters/QuestionId' }
+      responses:
+        '204': { description: Pergunta removida. }
+        '404':
+          description: Pesquisa ou pergunta não encontrada.
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+        '422': { $ref: '#/components/responses/ContentFrozen' }
+
+  /applications/{applicationId}/surveys/{surveyId}/questions/order:
+    put:
+      tags: [Perguntas]
+      operationId: reorderQuestions
+      summary: Redefine a ordem das perguntas
+      description: >
+        O corpo traz a permutação exata dos identificadores existentes. A integridade é
+        verificada no resultado final, não a cada passo.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReorderQuestionsRequest' }
+      responses:
+        '200':
+          description: Perguntas na nova ordem.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/QuestionResponse' }
+        '400':
+          description: >
+            Corpo inválido, ou lista que não é permutação exata das perguntas existentes
+            (`question.order_invalid`).
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiValidationError' } } }
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
+        '422': { $ref: '#/components/responses/ContentFrozen' }
+
+  /applications/{applicationId}/surveys/{surveyId}/trigger:
+    put:
+      tags: [Disparo]
+      operationId: defineTrigger
+      summary: Define ou substitui o disparo
+      description: Uma pesquisa escuta um evento — não dois. Redefinir substitui.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TriggerRequest' }
+      responses:
+        '200':
+          description: Disparo guardado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TriggerResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
+        '422': { $ref: '#/components/responses/ContentFrozen' }
+
+  /applications/{applicationId}/surveys/{surveyId}/trigger/rules:
+    post:
+      tags: [Disparo]
+      operationId: addSegmentationRule
+      summary: Acrescenta uma regra de segmentação ao disparo
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SegmentationRuleRequest' }
+      responses:
+        '201':
+          description: Regra guardada, vinculada ao disparo.
+          headers:
+            Location: { description: URI da regra., schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SegmentationRuleResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
+        '422':
+          description: >
+            Conteúdo congelado (`survey.content_frozen`) ou disparo ainda não definido
+            (`trigger.not_defined`).
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+
+  /applications/{applicationId}/surveys/{surveyId}/trigger/rules/{ruleId}:
+    delete:
+      tags: [Disparo]
+      operationId: removeSegmentationRule
+      summary: Remove uma regra de segmentação
+      description: As demais permanecem intactas.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+        - name: ruleId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Regra removida. }
+        '404':
+          description: Pesquisa ou regra não encontrada (`survey.not_found`, `segmentation_rule.not_found`).
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+        '422': { $ref: '#/components/responses/ContentFrozen' }
+
+  /applications/{applicationId}/surveys/{surveyId}/publication-impediments:
+    get:
+      tags: [Publicação]
+      operationId: checkPublication
+      summary: Lista os impedimentos de publicação do rascunho
+      description: >
+        Exatamente a lista que a publicação usaria — descobrir pendência não exige tentar
+        publicar. Lista vazia significa pronta para publicar.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+      responses:
+        '200':
+          description: Impedimentos encontrados; lista vazia quando não há nenhum.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [impediments]
+                properties:
+                  impediments:
+                    type: array
+                    items: { $ref: '#/components/schemas/PublicationImpediment' }
+        '404':
+          description: Pesquisa não encontrada, ou sem rascunho aberto (`survey_version.draft_not_found`).
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+
+  /applications/{applicationId}/surveys/{surveyId}/publication:
+    post:
+      tags: [Publicação]
+      operationId: publishSurvey
+      summary: Publica o rascunho, congelando o conteúdo em uma versão
+      description: >
+        Valida antes de congelar e, recusando, relata todos os impedimentos de uma vez. A partir
+        da versão 2, `changeKind` e `changeSummary` são obrigatórios. Publicada, a pesquisa fica
+        agendada se a janela ainda não abriu e ativa se já abriu — o início é inclusivo.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PublishRequest' }
+      responses:
+        '201':
+          description: Versão publicada.
+          headers:
+            Location: { description: URI da versão publicada., schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SurveyVersionResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
+        '409':
+          description: Pesquisa já publicada e sem rascunho de versão aberto (`survey.already_published`).
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+        '422':
+          description: >
+            Rascunho não publicável (`survey.not_publishable`, com a extensão `impediments`);
+            versão idêntica à anterior (`survey_version.no_changes`); declaração de cosmética
+            contradita por diferença estrutural (`survey_version.cosmetic_refused`, com a
+            extensão `differences`).
+          content:
+            application/problem+json:
+              schema:
+                oneOf:
+                  - { $ref: '#/components/schemas/NotPublishableError' }
+                  - { $ref: '#/components/schemas/CosmeticRefusedError' }
+                  - { $ref: '#/components/schemas/ApiError' }
+
+  /applications/{applicationId}/surveys/{surveyId}/pause:
+    post:
+      tags: [Ciclo de vida]
+      operationId: pauseSurvey
+      summary: Pausa uma pesquisa ativa
+      description: Imediato e reversível. A transição fica registrada com instante e motivo manual.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+      responses:
+        '200':
+          description: Pesquisa pausada.
+          content: { application/json: { schema: { $ref: '#/components/schemas/SurveyResponse' } } }
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
+        '422':
+          description: >
+            Pesquisa ainda em rascunho (`survey.not_published`) ou já encerrada
+            (`survey.transition_not_allowed`).
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+
+  /applications/{applicationId}/surveys/{surveyId}/resume:
+    post:
+      tags: [Ciclo de vida]
+      operationId: resumeSurvey
+      summary: Retoma uma pesquisa pausada
+      description: Volta a ativa — ou a agendada, se a janela ainda não abriu.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+      responses:
+        '200':
+          description: Pesquisa retomada.
+          content: { application/json: { schema: { $ref: '#/components/schemas/SurveyResponse' } } }
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
+        '422':
+          description: >
+            Pesquisa em rascunho (`survey.not_published`), encerrada ou não pausada
+            (`survey.transition_not_allowed`).
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+
+  /applications/{applicationId}/surveys/{surveyId}/end:
+    post:
+      tags: [Ciclo de vida]
+      operationId: endSurvey
+      summary: Encerra uma pesquisa ativa ou pausada
+      description: Definitivo. Nenhuma transição parte de encerrada.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+      responses:
+        '200':
+          description: Pesquisa encerrada.
+          content: { application/json: { schema: { $ref: '#/components/schemas/SurveyResponse' } } }
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
+        '422':
+          description: >
+            Pesquisa em rascunho (`survey.not_published`) ou já encerrada
+            (`survey.transition_not_allowed`).
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+
+  /applications/{applicationId}/surveys/{surveyId}/transitions:
+    get:
+      tags: [Ciclo de vida]
+      operationId: listStateTransitions
+      summary: Histórico de transições de estado
+      description: >
+        As transições comandadas somadas às derivadas da janela já passada, ordenadas por
+        instante. Cada uma traz origem, destino, motivo e instante.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+      responses:
+        '200':
+          description: Histórico.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/StateTransitionResponse' }
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
+
+  /applications/{applicationId}/surveys/{surveyId}/versions:
+    get:
+      tags: [Versões]
+      operationId: listSurveyVersions
+      summary: Lista as versões publicadas
+      description: Cada uma com número, instante de publicação, classificação e resumo da mudança.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+      responses:
+        '200':
+          description: Página de versões, da mais recente para a mais antiga.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SurveyVersionPageResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
+    post:
+      tags: [Versões]
+      operationId: openSurveyVersion
+      summary: Abre um rascunho de nova versão
+      description: >
+        Cópia integral do conteúdo da versão publicada — perguntas com suas chaves estáveis,
+        disparo e regras. No máximo um rascunho de versão por pesquisa.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+      responses:
+        '201':
+          description: Rascunho de versão aberto.
+          headers:
+            Location: { description: URI do rascunho de versão., schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SurveyVersionResponse' }
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
+        '409':
+          description: Já existe um rascunho de versão aberto (`survey_version.draft_already_open`).
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+        '422':
+          description: >
+            Pesquisa nunca publicada (`survey.not_published`) ou encerrada
+            (`survey.transition_not_allowed`).
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+
+  /applications/{applicationId}/surveys/{surveyId}/versions/draft:
+    delete:
+      tags: [Versões]
+      operationId: discardSurveyVersionDraft
+      summary: Descarta o rascunho de versão
+      description: A pesquisa volta a ter apenas a versão publicada, intacta.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+      responses:
+        '204': { description: Rascunho de versão descartado. }
+        '404':
+          description: >
+            Pesquisa não encontrada, ou sem rascunho de versão aberto
+            (`survey_version.draft_not_found`).
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+
+  /applications/{applicationId}/surveys/{surveyId}/versions/{number}:
+    get:
+      tags: [Versões]
+      operationId: getSurveyVersion
+      summary: Consulta o conteúdo de uma versão publicada
+      description: >
+        Perguntas com enunciado, tipo, ordem, obrigatoriedade, opções e chave estável, mais o
+        disparo e as regras congelados nela.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+        - name: number
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1, example: 1 }
+      responses:
+        '200':
+          description: Versão.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SurveyVersionDetailResponse' }
+        '404':
+          description: Pesquisa ou versão não encontrada (`survey.not_found`, `survey_version.not_found`).
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ApiError' } } }
+
+  /applications/{applicationId}/surveys/{surveyId}/versions/comparability:
+    get:
+      tags: [Versões]
+      operationId: getVersionComparability
+      summary: Quais versões são comparáveis entre si
+      description: >
+        Versões separadas apenas por mudanças cosméticas formam um grupo; uma mudança semântica
+        abre um grupo novo. A comparabilidade é transitiva dentro do grupo.
+      parameters:
+        - { $ref: '#/components/parameters/ApplicationId' }
+        - { $ref: '#/components/parameters/SurveyId' }
+      responses:
+        '200':
+          description: Grupos de versões comparáveis.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [groups]
+                properties:
+                  groups:
+                    type: array
+                    items:
+                      type: object
+                      required: [group, versions]
+                      properties:
+                        group: { type: integer, example: 1 }
+                        versions:
+                          type: array
+                          items: { type: integer }
+                          example: [1, 2]
+        '404': { $ref: '#/components/responses/SurveyNotFound' }
+
+components:
+
+  parameters:
+    ApplicationId:
+      name: applicationId
+      in: path
+      required: true
+      description: Identificador da aplicação dona.
+      schema: { type: string, format: uuid }
+    SurveyId:
+      name: surveyId
+      in: path
+      required: true
+      description: Identificador da pesquisa.
+      schema: { type: string, format: uuid }
+    QuestionId:
+      name: questionId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Page:
+      name: page
+      in: query
+      required: false
+      description: Página, base 0.
+      schema: { type: integer, minimum: 0, default: 0 }
+    Size:
+      name: size
+      in: query
+      required: false
+      description: Tamanho da página.
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+
+  responses:
+    ValidationError:
+      description: Requisição inválida, com o motivo de cada campo recusado.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ApiValidationError' }
+    SurveyNotFound:
+      description: >
+        Pesquisa não encontrada (`survey.not_found`). Mesma resposta para identificador
+        malformado, pesquisa inexistente e pesquisa de outra aplicação.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    ApplicationNotFound:
+      description: Aplicação não encontrada (`application.not_found`).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    ContentFrozen:
+      description: >
+        Conteúdo publicado está congelado (`survey.content_frozen`) — não há rascunho aberto
+        para receber a escrita.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+
+  schemas:
+
+    CreateSurveyRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120, example: NPS pós-checkout }
+
+    RenameSurveyRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+
+    SurveyState:
+      type: string
+      enum: [draft, scheduled, active, paused, ended]
+      description: >
+        Estado derivado do ciclo de vida e da janela no instante da leitura. `scheduled` vira
+        `active` quando a janela abre, e `active` vira `ended` quando ela fecha; `paused` ignora
+        a janela.
+
+    SurveyResponse:
+      type: object
+      required: [id, applicationId, name, state, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        applicationId: { type: string, format: uuid }
+        name: { type: string }
+        state: { $ref: '#/components/schemas/SurveyState' }
+        publishedVersionNumber: { type: integer, nullable: true }
+        draftVersionNumber: { type: integer, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    SurveyDetailResponse:
+      allOf:
+        - { $ref: '#/components/schemas/SurveyResponse' }
+        - type: object
+          properties:
+            content:
+              type: object
+              nullable: true
+              required: [source, versionNumber, questions]
+              properties:
+                source:
+                  type: string
+                  enum: [draft, published]
+                  description: De onde veio o conteúdo devolvido.
+                versionNumber: { type: integer }
+                questions:
+                  type: array
+                  items: { $ref: '#/components/schemas/QuestionResponse' }
+                trigger:
+                  oneOf:
+                    - { $ref: '#/components/schemas/TriggerResponse' }
+                    - { type: 'null' }
+
+    SurveyPageResponse:
+      # Materialização de PageResponseDTO<SurveyResponse>, o envelope único da borda (D-13).
+      # Não é um schema desta feature: springdoc o gera por tipo de item.
+      type: object
+      required: [items, page, size, total, totalPages]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/SurveyResponse' }
+        page: { type: integer }
+        size: { type: integer }
+        total: { type: integer, format: int64 }
+        totalPages: { type: integer }
+
+    QuestionType:
+      type: string
+      enum: [single_choice, multiple_choice, rating, scale, nps, free_text]
+
+    QuestionOption:
+      type: object
+      required: [label, value]
+      properties:
+        label: { type: string, maxLength: 200, example: Muito satisfeito }
+        value: { type: string, maxLength: 120, example: very_satisfied }
+
+    QuestionRequest:
+      type: object
+      required: [statement, type, required]
+      description: >
+        `options` é aceito apenas nos tipos de escolha, e pode vir vazio — a pendência vira
+        impedimento de publicação. `range` é exigido em `rating` e `scale`, e em `nps` só aceita
+        0–10.
+      properties:
+        statement: { type: string, minLength: 1, maxLength: 500 }
+        type: { $ref: '#/components/schemas/QuestionType' }
+        required: { type: boolean }
+        options:
+          type: array
+          items: { $ref: '#/components/schemas/QuestionOption' }
+        range:
+          type: object
+          nullable: true
+          required: [min, max]
+          properties:
+            min: { type: integer }
+            max: { type: integer }
+
+    QuestionResponse:
+      type: object
+      required: [id, key, statement, type, position, required, options]
+      properties:
+        id: { type: string, format: uuid }
+        key:
+          type: string
+          format: uuid
+          description: Chave estável; atravessa versões e nunca muda.
+        statement: { type: string }
+        type: { $ref: '#/components/schemas/QuestionType' }
+        position: { type: integer, minimum: 1 }
+        required: { type: boolean }
+        options:
+          type: array
+          items: { $ref: '#/components/schemas/QuestionOption' }
+        range:
+          type: object
+          nullable: true
+          properties:
+            min: { type: integer }
+            max: { type: integer }
+
+    ReorderQuestionsRequest:
+      type: object
+      required: [questionIds]
+      description: Permutação exata dos identificadores das perguntas da versão, na nova ordem.
+      properties:
+        questionIds:
+          type: array
+          minItems: 1
+          items: { type: string, format: uuid }
+
+    TriggerRequest:
+      type: object
+      required: [eventName, windowStart, samplingRate]
+      properties:
+        eventName:
+          type: string
+          pattern: '^[a-z][a-z0-9_.]{1,79}$'
+          example: checkout.completed
+        windowStart: { type: string, format: date-time }
+        windowEnd:
+          type: string
+          format: date-time
+          nullable: true
+          description: Ausente significa tempo indeterminado.
+        samplingRate: { type: number, minimum: 0, maximum: 1, example: 0.25 }
+
+    TriggerResponse:
+      allOf:
+        - { $ref: '#/components/schemas/TriggerRequest' }
+        - type: object
+          properties:
+            rules:
+              type: array
+              items: { $ref: '#/components/schemas/SegmentationRuleResponse' }
+
+    RuleOperation:
+      type: string
+      enum: [equals, not_equals, present, absent]
+
+    SegmentationRuleRequest:
+      type: object
+      required: [attribute, operation]
+      description: >
+        `value` é exigido em `equals` e `not_equals`, e recusado em `present` e `absent`.
+      properties:
+        attribute: { type: string, minLength: 1, maxLength: 80, example: plan }
+        operation: { $ref: '#/components/schemas/RuleOperation' }
+        value: { type: string, maxLength: 200, nullable: true, example: pro }
+
+    SegmentationRuleResponse:
+      allOf:
+        - { $ref: '#/components/schemas/SegmentationRuleRequest' }
+        - type: object
+          required: [id]
+          properties:
+            id: { type: string, format: uuid }
+
+    ChangeKind:
+      type: string
+      enum: [cosmetic, semantic]
+      description: >
+        `cosmetic` significa que o sentido do que se pergunta não mudou, e é o que autoriza somar
+        as respostas das duas versões. É recusada quando há pergunta acrescentada, removida,
+        retipada ou com o conjunto de opções alterado.
+
+    PublishRequest:
+      type: object
+      description: Obrigatório a partir da versão 2; ignorado na versão 1.
+      properties:
+        changeKind: { $ref: '#/components/schemas/ChangeKind' }
+        changeSummary: { type: string, maxLength: 500, example: Correção de acentuação no enunciado 3 }
+
+    SurveyVersionResponse:
+      type: object
+      required: [number, status, comparabilityGroup]
+      properties:
+        number: { type: integer, minimum: 1 }
+        status: { type: string, enum: [draft, published] }
+        publishedAt: { type: string, format: date-time, nullable: true }
+        changeKind:
+          oneOf:
+            - { $ref: '#/components/schemas/ChangeKind' }
+            - { type: 'null' }
+        changeSummary: { type: string, nullable: true }
+        comparabilityGroup:
+          type: integer
+          description: Versões no mesmo grupo têm respostas somáveis entre si.
+
+    SurveyVersionDetailResponse:
+      allOf:
+        - { $ref: '#/components/schemas/SurveyVersionResponse' }
+        - type: object
+          required: [questions]
+          properties:
+            questions:
+              type: array
+              items: { $ref: '#/components/schemas/QuestionResponse' }
+            trigger:
+              oneOf:
+                - { $ref: '#/components/schemas/TriggerResponse' }
+                - { type: 'null' }
+
+    SurveyVersionPageResponse:
+      # Materialização de PageResponseDTO<SurveyVersionResponse>, o envelope único da borda (D-13).
+      # Não é um schema desta feature: springdoc o gera por tipo de item.
+      type: object
+      required: [items, page, size, total, totalPages]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/SurveyVersionResponse' }
+        page: { type: integer }
+        size: { type: integer }
+        total: { type: integer, format: int64 }
+        totalPages: { type: integer }
+
+    StateTransitionResponse:
+      type: object
+      required: [from, to, reason, occurredAt]
+      properties:
+        from: { $ref: '#/components/schemas/SurveyState' }
+        to: { $ref: '#/components/schemas/SurveyState' }
+        reason:
+          type: string
+          enum: [publication, manual_pause, manual_resume, manual_end, window_opened, window_closed]
+          description: >
+            As quatro primeiras são comandadas e ficam registradas; as duas últimas são derivadas
+            da janela já passada e calculadas na leitura.
+        actor:
+          type: string
+          nullable: true
+          description: Reservado; sempre ausente enquanto não houver autenticação.
+        occurredAt: { type: string, format: date-time }
+
+    PublicationImpediment:
+      type: object
+      required: [code, field]
+      properties:
+        code:
+          type: string
+          enum:
+            - survey.no_questions
+            - question.statement_missing
+            - question.options_missing
+            - trigger.missing
+            - trigger.window_invalid
+        field: { type: string, example: 'questions[2].options' }
+        questionKey:
+          type: string
+          format: uuid
+          nullable: true
+          description: Presente quando o impedimento é de uma pergunta específica.
+
+    NotPublishableError:
+      allOf:
+        - { $ref: '#/components/schemas/ApiError' }
+        - type: object
+          required: [impediments]
+          properties:
+            impediments:
+              type: array
+              minItems: 1
+              items: { $ref: '#/components/schemas/PublicationImpediment' }
+
+    CosmeticRefusedError:
+      allOf:
+        - { $ref: '#/components/schemas/ApiError' }
+        - type: object
+          required: [differences]
+          properties:
+            differences:
+              type: array
+              minItems: 1
+              items:
+                type: object
+                required: [questionKey, difference]
+                properties:
+                  questionKey: { type: string, format: uuid }
+                  difference:
+                    type: string
+                    enum: [question_added, question_removed, type_changed, options_changed]
+
+    ApiError:
+      type: object
+      required: [title, status, detail, instance, code]
+      description: RFC 9457, gerado exclusivamente pelo ApiExceptionHandler.
+      properties:
+        type: { type: string, example: about:blank }
+        title: { type: string, example: Unprocessable Content }
+        status: { type: integer, example: 422 }
+        detail: { type: string }
+        instance: { type: string, example: '/api/applications/{applicationId}/surveys/{surveyId}/publication' }
+        code: { type: string, example: survey.not_publishable }
+        traceId: { type: string, nullable: true }
+
+    ApiValidationError:
+      allOf:
+        - { $ref: '#/components/schemas/ApiError' }
+        - type: object
+          required: [errors]
+          properties:
+            errors:
+              type: object
+              additionalProperties: { type: string }
+              example: { statement: 'Enunciado é obrigatório' }

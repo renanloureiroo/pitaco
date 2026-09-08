@@ -1,6 +1,5 @@
 package com.renanloureiroo.pitaco.modules.app.infra.http.dtos;
 
-import com.renanloureiroo.pitaco.modules.app.application.usecases.CreateApplicationUseCase;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Aplicação recém-criada")
@@ -14,9 +13,4 @@ public record CreateApplicationResponseDTO(
             description = "Identificador legível, derivado do nome quando não informado na criação",
             example = "acme-app",
             requiredMode = Schema.RequiredMode.REQUIRED)
-        String slug) {
-
-  public static CreateApplicationResponseDTO from(CreateApplicationUseCase.Output output) {
-    return new CreateApplicationResponseDTO(output.id(), output.slug());
-  }
-}
+        String slug) {}

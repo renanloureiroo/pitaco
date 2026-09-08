@@ -1,7 +1,24 @@
 <!--
 Sync Impact Report
 ==================
-Version change: (template, não versionado) → 1.0.0
+Version change: 1.0.1 → 1.1.0
+Bump rationale: MINOR — o presenter deixou de ser porta em `core` e passou a ser
+`final class` com método estático em `modules/<módulo>/infra/http/presenters`, no mesmo
+molde dos mappers JPA. `core/presenter/Presenter.java` foi removido. Não é MAJOR porque
+nenhum princípio foi removido ou invertido: o Princípio IV segue exigindo que a saída
+seja montada por um presenter e nunca pelo controller — mudou o mecanismo, não a regra —,
+e os quatro presenters e dois controllers migraram na mesma alteração, sem deixar código
+inválido pendente. Motivo da mudança: `Presenter` era chamado de porta sem ser uma; quem
+o declarava, implementava e consumia era `infra`, então nenhuma dependência era invertida
+por ele. Sendo função pura de tradução, alinhou-se a `ApiKeyJpaMapper`/`ApplicationJpaMapper`.
+
+Version change anterior: 1.0.0 → 1.0.1
+Bump rationale: PATCH — o presenter deixou de ser pendência. A feature
+001-api-key-management introduziu `core/presenter/Presenter.java`, os presenters de
+`modules/app/infra/http/presenters` e migrou `CreateApplicationResponseDTO.from(...)`.
+Sem mudança de regra: o texto passa a descrever o que já existe no repositório.
+
+Version change anterior: (template, não versionado) → 1.0.0
 Bump rationale: MAJOR inicial — primeira ratificação da constituição com conteúdo
 concreto substituindo o scaffold de placeholders.
 
@@ -19,10 +36,6 @@ Added sections:
 Removed sections: nenhuma.
 
 Follow-up TODOs:
-- Presenter (Princípio IV) é padrão adotado, ainda sem implementação no repositório.
-  A primeira resposta HTTP escrita após esta ratificação deve introduzir
-  `core/presenter/Presenter.java` e o primeiro presenter de infra, e migrar
-  `CreateApplicationResponseDTO.from(...)` para esse formato.
 - Metas numéricas de latência (SLO) deliberadamente ausentes: entram por emenda
   quando houver baseline de tráfego real.
 -->
@@ -30,8 +43,7 @@ Follow-up TODOs:
 # Pitaco Constitution
 
 Esta constituição descreve o padrão já escrito no código do backend do Pitaco e o
-torna obrigatório. Ela não é aspiracional: com uma exceção explicitamente marcada
-(o presenter, no Princípio IV), cada regra abaixo tem exemplo vivo no repositório.
+torna obrigatório. Ela não é aspiracional: cada regra abaixo tem exemplo vivo no repositório.
 
 ## Core Principles
 
@@ -45,8 +57,11 @@ o núcleo não conhece ninguém.
   protocolo (`HttpStatus`, `ResponseEntity`). Lombok é permitido apenas para o que não
   vaza semântica de framework (`@Getter`, `@Slf4j`).
 - Cada módulo segue as camadas `domain` → `application` → `infra`. `application` define
-  as portas (`ApplicationRepository`, `Transactor`, `Presenter`); `infra` fornece os
-  adaptadores. Um caso de uso **NUNCA** referencia um tipo de `infra`.
+  as portas de saída do caso de uso (`ApplicationRepository`, `ApiKeyRepository`); `infra`
+  fornece os adaptadores. Um caso de uso **NUNCA** referencia um tipo de `infra`.
+- `core` guarda só o que **dois ou mais** módulos compartilham e o que inverte dependência
+  de fato. Tradução pura entre camadas — presenter e mapper JPA — não inverte nada: é
+  declarada, implementada e consumida dentro de `infra`, e por isso não mora em `core`.
 - Casos de uso são POJOs sem anotação de framework, instanciados por `@Configuration`
   explícita (`UseCasesConfiguration`). `@Service` em caso de uso é proibido — o
   cabeamento é decisão da infraestrutura, não do caso de uso.
@@ -135,12 +150,14 @@ quem consome a API.
   constraint espelha a mensagem do value object correspondente — o cliente recebe o mesmo
   texto tendo o erro parado em `@Pattern` ou em `Slug`. O DTO converte para o input do caso
   de uso via `toInput()`; o caso de uso **NÃO PODE** receber o DTO.
-- **Saída** é montada por um presenter, não pelo controller. `Presenter<O, R>` é porta
-  declarada em `core/presenter`; a implementação HTTP vive em
-  `modules/<módulo>/infra/http/presenters` e é a única a conhecer o DTO de resposta.
-  O controller chama o caso de uso, entrega o `Output` ao presenter e devolve.
-  *Este é o único ponto ainda não implementado: o primeiro endpoint escrito sob esta
-  constituição introduz `Presenter` e migra `CreateApplicationResponseDTO.from(...)` para ele.*
+- **Saída** é montada por um presenter, não pelo controller. O presenter é `final class`
+  com construtor privado e um `public static R present(O output)`, em
+  `modules/<módulo>/infra/http/presenters`, e é o único a conhecer o DTO de resposta —
+  mesmo molde de `ApiKeyJpaMapper`, porque é a mesma natureza: função pura de tradução,
+  sem estado nem dependência. O controller chama o caso de uso, passa o `Output` ao
+  presenter e devolve. Montar o DTO dentro do controller é proibido. Presenter que um dia
+  precise de dependência real vira `@Component` injetado — quando o caso concreto existir,
+  não por antecipação.
 - **Documentação** é obrigatória e mora fora do controller: uma interface `*Swagger`
   carrega `@Operation`, `@ApiResponses` e `@Schema`; o controller a implementa e fica
   com a lógica de rota apenas. Todo status que o endpoint pode devolver — inclusive 400,
@@ -254,4 +271,4 @@ migração — data-limite ou tarefa registrada.
 arquivo em tempo de execução e devem recusar planos que o violem. Para orientação de
 desenvolvimento no dia a dia, o `README.md` é o complemento operacional desta constituição.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-05 | **Last Amended**: 2026-09-05
+**Version**: 1.1.0 | **Ratified**: 2026-09-05 | **Last Amended**: 2026-09-08

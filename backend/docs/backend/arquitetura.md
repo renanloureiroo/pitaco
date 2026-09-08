@@ -173,16 +173,22 @@ public interface Transactor {
 }
 ```
 
-Existe implementada (`SpringTransactor`), e **nenhum caso de uso a usa ainda**. É
-proposital: escrita em um único agregado não precisa de transação explícita. O
-primeiro caso de uso que escrever em dois agregados a injeta.
+Existe implementada (`SpringTransactor`) e já em uso: o caso de uso declara a
+`@Transactional` **do projeto** (`core.transaction`), e quem a aplica é o
+`TransactionalAdvisor`. O primeiro caso concreto foi o `RevokeApiKeyUseCase` — não por
+duas escritas, mas por uma leitura e uma escrita que precisam do mesmo instante do banco.
 
-### `Presenter` — ainda não existe
+### Presenter — não é porta, e não mora em `core`
 
-Padrão adotado, não implementado. Está descrito na seção 6.4 e no princípio IV da
-constituição. Hoje a montagem da resposta é feita por uma factory estática no DTO
-(`CreateApplicationResponseDTO.from(output)`); o primeiro endpoint novo introduz a
-porta `Presenter<O, R>` em `core/presenter` e migra o que existe.
+A montagem da resposta é feita por uma `final class` com construtor privado e um
+`public static R present(O output)`, em `modules/<módulo>/infra/http/presenters`. Não
+existe interface `Presenter` e não existe bean: é o mesmo molde de `ApiKeyJpaMapper`,
+porque é a mesma natureza — tradução pura, sem estado nem dependência.
+
+Houve uma versão anterior em que `Presenter<O, R>` era interface em `core/presenter`,
+descrita como porta. Foi removida na constituição 1.1.0: porta existe para inverter
+dependência, e essa não invertia nenhuma — quem declarava, implementava e consumia o
+presenter era `infra`. Ver a seção 6.4.
 
 ---
 
@@ -523,31 +529,26 @@ public record CreateSurveyRequestDTO(
 
 O caso de uso **nunca** recebe o DTO — recebe o `Input`.
 
-**Presenter** — *o padrão adotado, ainda a implementar*. Porta em
-`core/presenter/Presenter.java`:
+**Presenter** — `final class` em `modules/survey/infra/http/presenters/`, com
+construtor privado e um método estático:
 
 ```java
-public interface Presenter<O, R> {
-  R present(O output);
-}
-```
+public final class CreateSurveyPresenter {
 
-Implementação em `modules/survey/infra/http/presenters/`:
+  private CreateSurveyPresenter() {}
 
-```java
-@Component
-public class CreateSurveyHttpPresenter
-    implements Presenter<CreateSurveyUseCase.Output, CreateSurveyResponseDTO> {
-
-  @Override
-  public CreateSurveyResponseDTO present(CreateSurveyUseCase.Output output) {
+  public static CreateSurveyResponseDTO present(CreateSurveyUseCase.Output output) {
     return new CreateSurveyResponseDTO(output.id());
   }
 }
 ```
 
-O DTO de resposta volta a ser um `record` puro, sem factory. O presenter é o único
-que conhece os dois lados.
+O controller chama `CreateSurveyPresenter.present(output)` — sem injetar nada. O DTO de
+resposta é `record` puro, sem factory estática: o presenter é o único que conhece os
+dois lados.
+
+Listagem devolve `PageResponseDTO<T>` (`infra/http/dtos`), o envelope compartilhado, e o
+presenter traduz cada item.
 
 **Interface de documentação** — `SurveyControllerSwagger`, com `@Tag`,
 `@Operation` e um `@ApiResponse` para **cada** status que o endpoint pode devolver,

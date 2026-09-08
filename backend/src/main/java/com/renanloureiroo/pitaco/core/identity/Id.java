@@ -33,6 +33,16 @@ public abstract class Id {
     return UUID.randomUUID().toString();
   }
 
+  // Predicado para a subclasse que escolhe UUID; o Id segue sem formato próprio. A comparação
+  // com o texto reserializado é o que recusa a forma truncada que UUID.fromString aceita.
+  protected static boolean isUuid(String value) {
+    try {
+      return UUID.fromString(value).toString().equalsIgnoreCase(value);
+    } catch (IllegalArgumentException notUuid) {
+      return false;
+    }
+  }
+
   public String value() {
     return value;
   }

@@ -21,7 +21,8 @@ framework (`@Getter`, `@Slf4j`).
 
 ```
 com.renanloureiroo.pitaco
-├── core        entity/ error/ identity/ transaction/ usecase/     Java puro
+├── core        entity/ error/ identity/ pagination/                 Java puro
+│            transaction/ usecase/
 ├── infra       PitacoApplication, http/config, http/error, transaction/
 └── modules/<contexto>
     ├── domain        entidades, value objects, enums de estado    Java puro
@@ -36,6 +37,7 @@ com.renanloureiroo.pitaco
 ## Invioláveis
 
 **Domínio**
+
 - Invariante é validada no construtor (compact constructor do `record`, construtor
   privado da entidade) e lança `DomainException` de dentro do domínio — nunca do
   caso de uso.
@@ -46,6 +48,7 @@ com.renanloureiroo.pitaco
 - Ausência é `Optional` no acessor de leitura, nunca `null` devolvido.
 
 **Erro**
+
 - Todo erro estende `ApplicationException` e carrega `ErrorType` + `code` textual
   estável no formato `<contexto>.<motivo>`, em constante `private static final`.
 - `code` é contrato público; a **mensagem é livre**. Nunca escreva teste que afirma
@@ -56,6 +59,7 @@ com.renanloureiroo.pitaco
   `ErrorType`, não um atalho na borda.
 
 **Caso de uso**
+
 - Implementa uma das quatro interfaces de `core.usecase`. Um `execute`.
 - `Input`/`Output` são `record` aninhados na própria classe.
 - **Sem anotação de framework.** Nada de `@Service`. É cabeado por `@Bean` no
@@ -63,6 +67,12 @@ com.renanloureiroo.pitaco
 - Recebe `Input`, nunca o DTO.
 
 **Borda HTTP**
+
+- Resposta é montada por presenter em `modules/<contexto>/infra/http/presenters`:
+  `final class` com construtor privado e um `public static R present(O output)` — mesmo
+  molde do mapper JPA, porque é a mesma coisa, tradução pura sem estado. Não existe
+  interface `Presenter` nem bean; o controller chama `XPresenter.present(output)`. DTO de
+  resposta não tem factory estática e não conhece o caso de uso.
 - Rota **não** repete `/api` — vem do `context-path`. Use `@RequestMapping("/x")`.
 - `try/catch` traduzindo erro para HTTP é proibido. `ApiExceptionHandler` é o ponto
   único; toda resposta de erro é RFC 9457 com `code` e `traceId`.
@@ -72,18 +82,31 @@ com.renanloureiroo.pitaco
 - Criação responde 201 com header `Location`.
 
 **Persistência**
+
 - Repositório é porta em `application/repositories/`, implementada em `infra` sobre
   Spring Data, com mapper explícito domínio↔JPA. `EntityManager` direto é proibido.
+- Transação é decisão do **caso de uso**, declarada com `@Transactional` de
+  `core.transaction` **no `execute`** — a anotação do projeto, não a do Spring. Quem a implementa é o
+  `TransactionalAdvisor`, na infra, sobre a porta `Transactor`. Nunca `@Transactional`
+  escondido num repositório Spring Data. Entra quando há duas escritas **ou** quando uma
+  leitura e uma escrita precisam do mesmo instante do banco (é o caso do `update`
+  condicional do `RevokeApiKeyUseCase`). Um `save` sozinho não precisa.
 - Entidade JPA é separada da entidade de domínio. Sempre.
 - Migration em `src/main/resources/db/migration`, padrão
   `V<yyyyMMddHHmmss>__descricao.sql` com timestamp **UTC**. `ddl-auto` é `validate`.
   **Migration aplicada nunca se edita** — correção é migration nova.
 - Todo campo usado em filtro, ordenação ou junção ganha índice na mesma migration.
   Listagem é paginada. Sem N+1. Sem chamada a repositório dentro de laço.
+- Consulta paginada usa `core.pagination`: a porta devolve `Page<T>` (itens + total) e a
+  `Query` aninhada implementa `PageQuery` (`page`/`size`/`offset`), acrescentando os
+  próprios filtros. Na borda, o envelope é `PageResponseDTO<T>` de `infra/http/dtos`.
+  `Pageable`/`Page` do Spring Data não passam de `infra`.
 
 **Teste**
+
 - Mock sobre porta do projeto é **proibido** — use o fake de `testsupport/`
-  (`InMemoryApplicationRepository`, `DirectTransactor`). Mockar biblioteca de
+  (`InMemoryApplicationRepository`, `InMemoryApiKeyRepository`, `DirectTransactor`).
+  Mockar biblioteca de
   terceiro (ex.: `Tracer`) é aceitável.
 - Dado vem de factory fluente (`ApplicationFactory.anApplication()`).
 - Asserção é AssertJ. Nada de `assertTrue(a.equals(b))`.
@@ -94,12 +117,14 @@ com.renanloureiroo.pitaco
   JSON malformado, e que o estado não mudou nos caminhos de falha.
 
 **Geral**
+
 - Log sempre via `@Slf4j`. `LoggerFactory` explícito é proibido. Erro é logado uma
   vez só, na borda. **Entrada do usuário nunca vai para o log** — campo e motivo, não
   o valor rejeitado.
 - Tempo é `Instant` em UTC.
-- Javadoc documenta a **decisão**, não a assinatura. Se o comentário repete o nome do
-  método, apague-o. Regra não óbvia vira teste, não parágrafo.
+- **Sem Javadoc e sem comentário explicativo de forma desnecessária.** O código se explica sozinho; comentário
+  de "o quê" é ruído. A exceção é a **decisão** com alternativa descartada — uma linha,
+  não um parágrafo. Nunca documente a assinatura. Regra não óbvia vira teste.
 - Idioma: mensagens, `@Schema` e `@DisplayName` em **português**; identificadores,
   campos JSON e `code` de erro em **inglês**.
 - Formatação é google-java-format, aplicada pelo editor. Não adicione plugin de
@@ -126,7 +151,7 @@ Correção de bug entra com o teste que o reproduz, escrito **antes** da correç
 ## Comandos
 
 ```bash
-./mvnw test                     # suíte completa (110 testes; Docker precisa estar de pé)
+./mvnw test                     # suíte completa (256 testes; Docker precisa estar de pé)
 ./mvnw verify                   # testes + empacotamento — o portão antes de qualquer PR
 ./mvnw test -Dtest=SlugTest     # uma classe
 ./mvnw spring-boot:run          # sobe a app; Postgres/Redis/LGTM sobem junto
@@ -141,21 +166,20 @@ API em `http://localhost:8080/api` · Swagger em `/api/swagger-ui.html`.
 
 ## O que ainda não existe
 
-Não procure — não sumiu, ainda não nasceu: `Presenter` (padrão adotado, entra no
-próximo endpoint), `AggregateRoot` (só com evento de domínio), uso do `Transactor`
-(só com duas escritas), autenticação, cache Redis, SLO numérico.
+Não procure — não sumiu, ainda não nasceu: `AggregateRoot` (só com evento de domínio),
+autenticação, cache Redis, SLO numérico.
 
 ---
 
 ## Onde está o resto
 
-| Arquivo | O que traz |
-| --- | --- |
-| [`.specify/memory/constitution.md`](.specify/memory/constitution.md) | os princípios obrigatórios e os portões de qualidade |
-| [`docs/backend/arquitetura.md`](docs/backend/arquitetura.md) | as camadas em detalhe e o manual de criação, com exemplos completos |
-| [`docs/backend/testes.md`](docs/backend/testes.md) | os seis tipos de teste e a receita de cada um |
-| [`docs/adrs`](docs/adrs) | as decisões tomadas e o que se aceitou pagar por elas |
-| [`README.md`](README.md) | como rodar, endereços, formato de erro |
+| Arquivo                                                              | O que traz                                                          |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| [`.specify/memory/constitution.md`](.specify/memory/constitution.md) | os princípios obrigatórios e os portões de qualidade                |
+| [`docs/backend/arquitetura.md`](docs/backend/arquitetura.md)         | as camadas em detalhe e o manual de criação, com exemplos completos |
+| [`docs/backend/testes.md`](docs/backend/testes.md)                   | os seis tipos de teste e a receita de cada um                       |
+| [`docs/adrs`](docs/adrs)                                             | as decisões tomadas e o que se aceitou pagar por elas               |
+| [`README.md`](README.md)                                             | como rodar, endereços, formato de erro                              |
 
 Skills: **`pitaco-backend`** para escrever código novo, **`pitaco-tests`** para
 escrever teste.

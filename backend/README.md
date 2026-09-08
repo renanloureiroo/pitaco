@@ -23,6 +23,10 @@ O projeto está na fase de fundação: a base arquitetural (núcleo de domínio,
 
 ## Arquitetura
 
+> Este é o resumo. O detalhamento completo, com o manual de criação de módulos,
+> casos de uso e endpoints, está em
+> [`docs/backend/arquitetura.md`](docs/backend/arquitetura.md).
+
 O código é dividido em dois mundos, e a dependência só aponta em uma direção: `infra` conhece `core`, `core` não conhece ninguém.
 
 ```
@@ -105,12 +109,18 @@ Alternativa, sem Docker Compose: `./mvnw spring-boot:test-run` sobe a aplicaçã
 
 ## Testes
 
+> A receita de cada tipo de teste — value object, entidade, caso de uso, DTO,
+> componente de borda e E2E — está em
+> [`docs/backend/testes.md`](docs/backend/testes.md).
+
 ```bash
 ./mvnw test           # suíte completa
 ./mvnw verify         # testes + empacotamento
 ```
 
 Os testes de integração usam Testcontainers (`TestcontainersConfiguration`) para Postgres, Redis e a stack LGTM — Docker precisa estar rodando, e nenhum serviço externo é necessário.
+
+Mock sobre porta do projeto é proibido: cada porta tem um fake em `testsupport/` (`InMemoryApplicationRepository`, `DirectTransactor`).
 
 ---
 
@@ -129,3 +139,14 @@ java -jar target/pitaco-0.0.1-SNAPSHOT.jar
 - **Javadoc** documenta a decisão, não a assinatura. Se o comentário só repete o nome do método, ele não precisa existir.
 - **Rotas** não repetem o prefixo: ele vem do `context-path`. Escreva `@RequestMapping("/pitacos")`, não `@RequestMapping("/api/pitacos")`.
 - **Nada de Spring no `core`.** Anotação de framework, `jakarta.persistence`, `HttpStatus` — tudo isso vive em `infra`.
+
+---
+
+## Documentação
+
+| Documento | O que traz |
+| --- | --- |
+| [Arquitetura](docs/backend/arquitetura.md) | as camadas, as peças do núcleo, o fluxo de uma requisição e o manual de criação |
+| [Testes](docs/backend/testes.md) | os seis tipos de teste, o ferramental de `testsupport` e a receita de cada um |
+| [Constituição](.specify/memory/constitution.md) | os princípios obrigatórios e os portões de qualidade |
+| [ADRs](docs/adrs) | as decisões de arquitetura e o que se aceitou pagar por elas |

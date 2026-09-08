@@ -27,25 +27,6 @@ services:
       retries: 5
     networks: [internal]
 
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    # allkeys-lru assume Redis como cache. Se ele passar a guardar algo que não
-    # pode sumir (sessão, idempotência, fila), troque para noeviction.
-    command: >
-      redis-server
-      --appendonly yes
-      --maxmemory 256mb
-      --maxmemory-policy allkeys-lru
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-    networks: [internal]
-
   api:
     build:
       context: ./backend
@@ -56,8 +37,6 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: "6379"
       # Um endereço para os três sinais. O Spring Boot 4 mapeia esta variável
       # do SDK do OpenTelemetry para as três propriedades de exportação —
       # traces, logs e o OtlpMeterRegistry do Micrometer — acrescentando
@@ -72,8 +51,6 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     networks:
       internal:
@@ -92,7 +69,6 @@ services:
 
 volumes:
   pg_data:
-  redis_data:
 
 networks:
   internal:

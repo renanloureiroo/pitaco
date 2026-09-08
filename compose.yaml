@@ -58,10 +58,10 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
-      # 4318 é OTLP sobre HTTP (4317 seria gRPC).
-      MANAGEMENT_OTLP_METRICS_EXPORT_URL: http://lgtm:4318/v1/metrics
-      MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT: http://lgtm:4318/v1/traces
-      MANAGEMENT_OPENTELEMETRY_LOGGING_EXPORT_OTLP_ENDPOINT: http://lgtm:4318/v1/logs
+      # Endpoint OTLP comum aos três sinais (traces, métricas e logs).
+      # URL base, sem /v1/...: o SDK acrescenta o caminho de cada sinal.
+      # 4318 é OTLP sobre HTTP; 4317 seria gRPC.
+      MANAGEMENT_OPENTELEMETRY_OTLP_ENDPOINT: http://lgtm:4318
     depends_on:
       postgres:
         condition: service_healthy

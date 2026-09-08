@@ -58,10 +58,16 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
-      # Endpoint OTLP comum aos três sinais (traces, métricas e logs).
-      # URL base, sem /v1/...: o SDK acrescenta o caminho de cada sinal.
-      # 4318 é OTLP sobre HTTP; 4317 seria gRPC.
+      # São DOIS exportadores diferentes, cada um com sua propriedade:
+      #
+      # 1) SDK do OpenTelemetry (traces e logs) — endpoint comum, URL base,
+      #    sem /v1/...: o SDK acrescenta o caminho de cada sinal.
       MANAGEMENT_OPENTELEMETRY_OTLP_ENDPOINT: http://lgtm:4318
+      # 2) OtlpMeterRegistry do Micrometer (métricas) — NÃO lê a propriedade
+      #    acima. Sem esta linha ele usa o default localhost:4318, que dentro
+      #    do container é o próprio container, e falha em silêncio a cada minuto.
+      MANAGEMENT_OTLP_METRICS_EXPORT_URL: http://lgtm:4318/v1/metrics
+      # 4318 é OTLP sobre HTTP; 4317 seria gRPC.
     depends_on:
       postgres:
         condition: service_healthy

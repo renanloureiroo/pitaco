@@ -45,7 +45,7 @@ public interface SurveyControllerSwagger {
             @Header(
                 name = "Location",
                 description = "URI da pesquisa criada",
-                schema = @Schema(type = "string"))),
+                schema = @Schema(implementation = String.class))),
     @ApiResponse(
         responseCode = "400",
         description = "Nome ausente, em branco ou acima de 120 caracteres",
@@ -225,7 +225,7 @@ public interface SurveyControllerSwagger {
             @Header(
                 name = "Location",
                 description = "URI da versão publicada",
-                schema = @Schema(type = "string"))),
+                schema = @Schema(implementation = String.class))),
     @ApiResponse(
         responseCode = "400",
         description = "Classificação fora de cosmetic/semantic ou resumo acima de 500 caracteres",

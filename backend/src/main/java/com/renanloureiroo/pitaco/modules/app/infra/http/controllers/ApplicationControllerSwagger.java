@@ -36,7 +36,7 @@ public interface ApplicationControllerSwagger {
             @Header(
                 name = "Location",
                 description = "URI da aplicação criada",
-                schema = @Schema(type = "string"))),
+                schema = @Schema(implementation = String.class))),
     @ApiResponse(
         responseCode = "400",
         description = "Nome ou slug fora do formato aceito, ou prazo menor que um dia",

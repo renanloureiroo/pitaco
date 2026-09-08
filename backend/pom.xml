@@ -68,6 +68,18 @@
 			<version>3.1.0</version>
 		</dependency>
 
+		<!-- Ponte Logback -> OpenTelemetry. O starter do OTel fornece o
+		     SdkLoggerProvider, mas não conecta o log da aplicação nele: a
+		     própria doc do Spring diz que isso exige um bridge de terceiro.
+		     Sem esta dependência, nenhum log chega no Loki.
+		     O sufixo -alpha é o versionamento normal dos artefatos de
+		     instrumentação do OpenTelemetry, não um aviso de instabilidade. -->
+		<dependency>
+			<groupId>io.opentelemetry.instrumentation</groupId>
+			<artifactId>opentelemetry-logback-appender-1.0</artifactId>
+			<version>2.16.0-alpha</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>

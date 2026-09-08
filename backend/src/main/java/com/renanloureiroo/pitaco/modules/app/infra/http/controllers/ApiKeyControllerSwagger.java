@@ -106,7 +106,7 @@ public interface ApiKeyControllerSwagger {
             @Header(
                 name = "Location",
                 description = "URI da chave criada",
-                schema = @Schema(type = "string"))),
+                schema = @Schema(implementation = String.class))),
     @ApiResponse(
         responseCode = "400",
         description = "Rótulo ausente, em branco ou acima de 80 caracteres",

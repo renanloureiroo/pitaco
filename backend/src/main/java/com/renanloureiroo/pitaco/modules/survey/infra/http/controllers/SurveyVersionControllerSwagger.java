@@ -69,7 +69,7 @@ public interface SurveyVersionControllerSwagger {
             @Header(
                 name = "Location",
                 description = "URI do rascunho de versão",
-                schema = @Schema(type = "string"))),
+                schema = @Schema(implementation = String.class))),
     @ApiResponse(
         responseCode = "404",
         description = NOT_FOUND,

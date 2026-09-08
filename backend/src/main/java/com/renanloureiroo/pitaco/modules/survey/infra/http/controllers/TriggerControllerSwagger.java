@@ -83,7 +83,7 @@ public interface TriggerControllerSwagger {
             @Header(
                 name = "Location",
                 description = "URI da regra criada",
-                schema = @Schema(type = "string"))),
+                schema = @Schema(implementation = String.class))),
     @ApiResponse(
         responseCode = "400",
         description =

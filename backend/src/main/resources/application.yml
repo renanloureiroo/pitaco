@@ -55,9 +55,10 @@ management:
         include: health,info
   tracing:
     sampling:
-      # 10% das requisições. Amostragem total num homelab enche disco sem
-      # revelar mais nada; o profile local sobe para 1.0.
-      probability: 0.1
+      # 100%. Amostrar num homelab é contraproducente: com dezenas de
+      # requisições por dia, 10% significa quase nenhum trace registrado.
+      # Reduzir só quando houver volume que justifique.
+      probability: 1.0
 
 springdoc:
   # TEMPORÁRIO: ligado também em produção enquanto a API está em construção.

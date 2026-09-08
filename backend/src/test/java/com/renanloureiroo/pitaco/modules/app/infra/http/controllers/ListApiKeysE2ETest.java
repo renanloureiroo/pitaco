@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.renanloureiroo.pitaco.infra.http.dtos.PageResponseDTO;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.Application;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.modules.app.infra.database.jpa.entities.ApiKeyJpaEntity;
 import com.renanloureiroo.pitaco.modules.app.infra.database.jpa.entities.ApplicationJpaEntity;
 import com.renanloureiroo.pitaco.modules.app.infra.database.jpa.mappers.ApiKeyJpaMapper;

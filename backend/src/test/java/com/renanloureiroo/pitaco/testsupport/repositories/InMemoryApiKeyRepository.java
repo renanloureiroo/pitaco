@@ -1,11 +1,10 @@
 package com.renanloureiroo.pitaco.testsupport.repositories;
 
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.core.pagination.Page;
 import com.renanloureiroo.pitaco.modules.app.application.repositories.ApiKeyRepository;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKey;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKeyId;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKeyStatus;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;

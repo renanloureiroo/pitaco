@@ -3,6 +3,7 @@ package com.renanloureiroo.pitaco.modules.app.domain.entities;
 import com.renanloureiroo.pitaco.core.entity.Entity;
 import com.renanloureiroo.pitaco.core.error.DomainException;
 import com.renanloureiroo.pitaco.core.error.ErrorType;
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.modules.app.domain.valueobjects.Name;
 import com.renanloureiroo.pitaco.modules.app.domain.valueobjects.Slug;
 import java.time.Instant;

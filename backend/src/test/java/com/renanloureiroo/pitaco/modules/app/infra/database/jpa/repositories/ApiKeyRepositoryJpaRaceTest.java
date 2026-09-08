@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.renanloureiroo.pitaco.core.transaction.Transactor;
 import com.renanloureiroo.pitaco.modules.app.application.repositories.ApiKeyRepository;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKey;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.modules.app.infra.database.jpa.mappers.ApplicationJpaMapper;
 import com.renanloureiroo.pitaco.testsupport.annotations.E2E;
 import com.renanloureiroo.pitaco.testsupport.database.DatabaseCleaner;

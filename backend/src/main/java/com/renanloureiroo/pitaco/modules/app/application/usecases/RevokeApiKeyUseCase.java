@@ -7,7 +7,7 @@ import com.renanloureiroo.pitaco.modules.app.application.errors.ApiKeyNotFound;
 import com.renanloureiroo.pitaco.modules.app.application.repositories.ApiKeyRepository;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKey;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKeyId;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

@@ -60,6 +60,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     var status = ErrorTypeHttpStatus.of(error.type());
     var problem = problemOf(status, error.getMessage(), error.code(), request);
+    error.extensions().forEach(problem::setProperty);
 
     log.atLevel(levelOf(error.type()))
         .log("Erro de aplicação [{}] {}", error.code(), error.getMessage());

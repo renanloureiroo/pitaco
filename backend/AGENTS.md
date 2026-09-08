@@ -24,13 +24,26 @@ com.renanloureiroo.pitaco
 ├── core        entity/ error/ identity/ pagination/                 Java puro
 │            transaction/ usecase/
 ├── infra       PitacoApplication, http/config, http/error, transaction/
-└── modules/<contexto>
+└── modules/<contexto>                          hoje: app, survey
     ├── domain        entidades, value objects, enums de estado    Java puro
-    ├── application   casos de uso, portas (repositories/), errors/  Java puro
-    └── infra         controllers, dtos, database/jpa, config/     Spring aqui
+    │                 publication/ quando há regra de saída
+    ├── application   casos de uso, portas (repositories/, gateways/),  Java puro
+    │                 errors/, outputs/, services/
+    └── infra         controllers, dtos, presenters, database/jpa,  Spring aqui
+                      gateways/, config/
 ```
 
-`core` é para o que **dois ou mais** módulos usam. Na dúvida, nasce no módulo.
+`core` é para o que **dois ou mais** módulos usam. Na dúvida, nasce no módulo — foi assim que
+`ApplicationId` nasceu em `modules/app` e subiu para `core/identity` quando `survey` passou a
+precisar dele.
+
+Dois módulos nunca se conhecem pelo domínio: quando um precisa de algo do outro, declara uma
+**porta em `application/gateways/`** e o adaptador correspondente em `infra/gateways/` faz a
+travessia. É o que `ApplicationScopeGateway` faz por `survey`.
+
+O que o caso de uso **devolve** é um `record` de `application/outputs/` — nunca a entidade de
+domínio. Quando dois ou mais casos de uso devolvem a mesma coisa, o output é compartilhado
+(`SurveyOutput` serve a cinco), e a borda o traduz com um presenter só.
 
 ---
 
@@ -151,7 +164,7 @@ Correção de bug entra com o teste que o reproduz, escrito **antes** da correç
 ## Comandos
 
 ```bash
-./mvnw test                     # suíte completa (256 testes; Docker precisa estar de pé)
+./mvnw test                     # suíte completa (746 testes; Docker precisa estar de pé)
 ./mvnw verify                   # testes + empacotamento — o portão antes de qualquer PR
 ./mvnw test -Dtest=SlugTest     # uma classe
 ./mvnw spring-boot:run          # sobe a app; Postgres/Redis/LGTM sobem junto

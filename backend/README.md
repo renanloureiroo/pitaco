@@ -87,6 +87,32 @@ Erros de Bean Validation acrescentam ainda `errors`, um mapa de campo → mensag
 | `POST` | `/applications/{applicationId}/api-keys` | Emite uma chave de API — o segredo em claro sai **uma única vez**, nesta resposta |
 | `DELETE` | `/applications/{applicationId}/api-keys/{apiKeyId}` | Revoga a chave: imediata, irreversível, e o registro permanece para a trilha |
 
+E a autoria de pesquisa, toda aninhada na aplicação dona — o escopo é parte da rota, não um
+parâmetro que se pode esquecer de aplicar:
+
+| Método | Rota (sob `/applications/{applicationId}/surveys`) | O que faz |
+| --- | --- | --- |
+| `POST` `GET` | `` | Cria a pesquisa em rascunho, junto da versão 1; lista as da aplicação, paginado |
+| `GET` `PATCH` `DELETE` | `/{surveyId}` | Consulta com o conteúdo montado; renomeia; descarta a nunca publicada |
+| `POST` | `/{surveyId}/questions` | Acrescenta pergunta, na última posição e com chave estável nova |
+| `PUT` `DELETE` | `/{surveyId}/questions/{questionId}` | Reescreve preservando a chave; remove recompactando as posições |
+| `PUT` | `/{surveyId}/questions/order` | Redefine a ordem, exigindo permutação exata |
+| `PUT` | `/{surveyId}/trigger` | Define ou substitui o disparo: evento, janela e proporção |
+| `POST` `DELETE` | `/{surveyId}/trigger/rules[/{ruleId}]` | Pendura e remove regras de segmentação |
+| `GET` | `/{surveyId}/publication-impediments` | O que falta para publicar — a mesma lista que a publicação usaria |
+| `POST` | `/{surveyId}/publication` | Publica, congelando o conteúdo na versão |
+| `POST` | `/{surveyId}/pause` · `/resume` · `/end` | Controla o que está no ar |
+| `GET` | `/{surveyId}/transitions` | Histórico: as transições comandadas mais as derivadas da janela |
+| `GET` `POST` | `/{surveyId}/versions` | Lista as publicadas; abre um rascunho de versão nova |
+| `DELETE` | `/{surveyId}/versions/draft` | Descarta o rascunho de versão |
+| `GET` | `/{surveyId}/versions/{number}` | O conteúdo congelado naquela versão |
+| `GET` | `/{surveyId}/versions/comparability` | Quais versões têm respostas somáveis entre si |
+
+Duas coisas que essas rotas assumem e que valem registrar: o **estado** de uma pesquisa
+(`draft`, `scheduled`, `active`, `paused`, `ended`) é derivado na leitura, do ciclo de vida
+somado à janela — não há coluna nem job para ele; e nada fora do escopo da aplicação dona
+responde `403`, sempre `404`, para que a API não vire um oráculo de existência.
+
 Os `code` de erro que chegam ao cliente:
 
 | `code` | Status | Quando |
@@ -98,6 +124,16 @@ Os `code` de erro que chegam ao cliente:
 | `application.name_invalid` · `application.slug_invalid` · `application.quiet_period_invalid` · `application.retention_invalid` | 400 | Invariante da aplicação |
 | `application.open_text_retention_invalid` | 422 | Retenção de texto livre maior que a geral |
 | `api_key.label_invalid` | 400 | Rótulo vazio ou acima de 80 caracteres |
+| `survey.not_found` · `survey_version.not_found` · `question.not_found` · `segmentation_rule.not_found` | 404 | Inexistente, de outra aplicação, ou identificador malformado — indistinguíveis de propósito |
+| `survey.name_invalid` · `question.statement_invalid` · `question.options_not_allowed` · `question.options_duplicated` · `question.scale_range_invalid` · `question.order_invalid` | 400 | Invariante do conteúdo da pesquisa |
+| `trigger.event_name_invalid` · `trigger.window_invalid` · `trigger.sampling_rate_invalid` · `segmentation_rule.invalid` | 400 | Invariante do disparo e das regras |
+| `survey.content_frozen` | 422 | Não há rascunho aberto para receber a escrita |
+| `survey.not_publishable` | 422 | Rascunho com pendências — a lista completa vem na extensão `impediments` |
+| `survey.already_published` · `survey_version.draft_already_open` | 409 | Já publicada sem rascunho; já há rascunho de versão aberto |
+| `survey.published_cannot_be_discarded` · `survey.not_published` · `survey.transition_not_allowed` | 422 | Publicada não se apaga, se encerra; e cada transição tem seu estado de partida |
+| `survey_version.cosmetic_refused` | 422 | Declaração de cosmética contradita — as diferenças vêm na extensão `differences` |
+| `survey_version.no_changes` | 422 | Rascunho de versão idêntico à publicada |
+| `trigger.not_defined` | 422 | Regra de segmentação sem disparo onde se pendurar |
 | `api_key.not_found` | 404 | Chave inexistente, de outra aplicação, ou identificador malformado — os três com o mesmo `code` |
 | `api_key.already_revoked` | 409 | Chave já revogada; o instante da primeira revogação não muda |
 

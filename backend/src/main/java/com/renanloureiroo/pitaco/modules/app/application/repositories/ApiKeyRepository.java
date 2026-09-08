@@ -5,7 +5,7 @@ import com.renanloureiroo.pitaco.core.pagination.PageQuery;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKey;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKeyId;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKeyStatus;
-import com.renanloureiroo.pitaco.modules.app.domain.entities.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import java.util.Optional;
 
 public interface ApiKeyRepository {

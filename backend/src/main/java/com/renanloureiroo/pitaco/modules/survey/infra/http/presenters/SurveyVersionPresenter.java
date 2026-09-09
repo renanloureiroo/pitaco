@@ -10,6 +10,7 @@ public final class SurveyVersionPresenter {
 
   public static SurveyVersionResponseDTO present(SurveyVersionOutput output) {
     return new SurveyVersionResponseDTO(
+        output.id().value(),
         output.number(),
         output.status().name().toLowerCase(Locale.ROOT),
         output.publishedAt().orElse(null),

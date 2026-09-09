@@ -39,7 +39,7 @@ afterEach(() => {
 
 describe("publishSurveyAction", () => {
   it("publica a versão 1 sem exigir natureza de mudança", async () => {
-    stubFetch(201, { number: 1, status: "published", comparabilityGroup: 1 });
+    stubFetch(201, { id: "ver-1", number: 1, status: "published", comparabilityGroup: 1 });
     const { publishSurveyAction } = await import("../actions");
 
     const state = await publishSurveyAction("app-1", "srv-1", false, { status: "idle" }, formDataOf({}));
@@ -95,7 +95,7 @@ describe("publishSurveyAction", () => {
 
 describe("versões de rascunho", () => {
   it("abre um rascunho e revalida o segmento da pesquisa", async () => {
-    stubFetch(201, { number: 2, status: "draft", comparabilityGroup: 1 });
+    stubFetch(201, { id: "ver-2", number: 2, status: "draft", comparabilityGroup: 1 });
     const { openDraftVersionAction } = await import("../actions");
 
     expect(await openDraftVersionAction("app-1", "srv-1")).toMatchObject({ status: "success" });

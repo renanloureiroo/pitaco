@@ -67,6 +67,7 @@ describe("publicationImpedimentSchema", () => {
 describe("surveyVersionSchema", () => {
   it("aceita a versão 1 sem natureza nem resumo de mudança", () => {
     const parsed = surveyVersionSchema.parse({
+      id: "ver-1",
       number: 1,
       status: "published",
       publishedAt: "2026-09-09T12:00:00Z",
@@ -78,7 +79,7 @@ describe("surveyVersionSchema", () => {
   });
 
   it("aceita rascunho sem data de publicação", () => {
-    const parsed = surveyVersionSchema.parse({ number: 2, status: "draft", comparabilityGroup: 1 });
+    const parsed = surveyVersionSchema.parse({ id: "ver-2", number: 2, status: "draft", comparabilityGroup: 1 });
 
     expect(parsed.publishedAt).toBeUndefined();
   });

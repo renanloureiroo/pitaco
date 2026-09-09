@@ -25,14 +25,16 @@ public interface SurveyDisplaySwagger {
       description =
           "Paginado, da exibição mais recente para a mais antiga, com desempate determinístico. "
               + "Pesquisa que existe e nunca foi exibida devolve página vazia, não erro. "
+              + "Número de versão que não existe na pesquisa também devolve página vazia: é "
+              + "filtro sem resultado, não recurso inexistente. "
               + "Nenhuma exibição de outra aplicação aparece.")
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "Página de exibições"),
     @ApiResponse(
         responseCode = "400",
         description =
-            "Paginação fora dos limites, desfecho desconhecido, instante malformado ou início "
-                + "do período posterior ao fim",
+            "Paginação fora dos limites, número de versão malformado ou menor que 1, desfecho "
+                + "desconhecido, instante malformado ou início do período posterior ao fim",
         content =
             @Content(
                 mediaType = PROBLEM_JSON,

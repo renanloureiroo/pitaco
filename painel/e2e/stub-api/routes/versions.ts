@@ -47,7 +47,7 @@ export const versionRoutes: Route[] = [
         return notFound("survey.not_found", "Pesquisa não encontrada.");
       }
 
-      const items = [...survey.versions].sort((a, b) => b.number - a.number).map(toVersion);
+      const items = [...survey.versions].sort((a, b) => b.number - a.number).map((version) => toVersion(survey.id, version));
       return json(200, paginate(items, readPageQuery(query)));
     },
   },
@@ -68,7 +68,7 @@ export const versionRoutes: Route[] = [
       }
 
       return json(200, {
-        ...toVersion(version),
+        ...toVersion(survey.id, version),
         questions: [...version.questions].sort((a, b) => a.position - b.position),
         ...(version.trigger !== undefined ? { trigger: version.trigger } : {}),
       });
@@ -104,7 +104,7 @@ export const versionRoutes: Route[] = [
       };
 
       survey.versions.push(draft);
-      return json(201, toVersion(draft));
+      return json(201, toVersion(survey.id, draft));
     },
   },
   {

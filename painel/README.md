@@ -27,7 +27,7 @@ mensagem explícita em vez de tentar uma URL relativa.
 
 ```bash
 npm install
-npm run dev     # http://localhost:3000 → redireciona para /aplicacoes
+npm run dev     # http://localhost:3001 → redireciona para /aplicacoes
 ```
 
 Para desenvolver contra dados reais, suba o backend em `../backend` respondendo em

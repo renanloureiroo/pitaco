@@ -2,7 +2,6 @@ package com.renanloureiroo.pitaco.modules.collect.infra.http.dtos;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.renanloureiroo.pitaco.core.identity.SurveyVersionId;
 import com.renanloureiroo.pitaco.modules.collect.domain.entities.DisplayOutcome;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -10,7 +9,6 @@ import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import java.time.Instant;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -78,19 +76,21 @@ class ListDisplaysQueryDTOTest {
   }
 
   @Test
-  void aceita_identificador_de_versao_em_uuid() {
-    var query =
-        new ListDisplaysQueryDTO(
-            UUID.randomUUID().toString(), null, null, null, null, null);
-
-    assertThat(violationsOf(query)).isEmpty();
+  void aceita_numero_de_versao_a_partir_de_um() {
+    assertThat(violationsOf(new ListDisplaysQueryDTO(1, null, null, null, null, null))).isEmpty();
+    assertThat(violationsOf(new ListDisplaysQueryDTO(37, null, null, null, null, null))).isEmpty();
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"", "nao-e-um-id", "8c2b5e14-3a97-4d60-b1f8"})
-  void rejeita_identificador_de_versao_malformado(String versionId) {
-    assertThat(violationsOf(new ListDisplaysQueryDTO(versionId, null, null, null, null, null)))
-        .containsEntry("versionId", "Identificador de versão de pesquisa inválido");
+  @ValueSource(ints = {0, -1})
+  void rejeita_numero_de_versao_menor_que_um_apontando_o_campo(int versionNumber) {
+    assertThat(violationsOf(new ListDisplaysQueryDTO(versionNumber, null, null, null, null, null)))
+        .containsEntry("versionNumber", "Número de versão deve ser maior ou igual a 1");
+  }
+
+  @Test
+  void numero_de_versao_ausente_nao_restringe() {
+    assertThat(paging(null, null).toInput("app", "survey").versionNumber()).isEmpty();
   }
 
   @Test
@@ -115,7 +115,7 @@ class ListDisplaysQueryDTOTest {
     assertThat(input.surveyId()).isEqualTo("survey");
     assertThat(input.page()).isZero();
     assertThat(input.size()).isEqualTo(20);
-    assertThat(input.versionId()).isEmpty();
+    assertThat(input.versionNumber()).isEmpty();
     assertThat(input.outcome()).isEmpty();
     assertThat(input.openedFrom()).isEmpty();
     assertThat(input.openedTo()).isEmpty();
@@ -123,14 +123,11 @@ class ListDisplaysQueryDTOTest {
 
   @Test
   void converte_os_filtros_informados() {
-    var versionId = UUID.randomUUID().toString();
-    var query =
-        new ListDisplaysQueryDTO(
-            versionId, DisplayOutcomeFilter.DISMISSED, START, END, 3, 50);
+    var query = new ListDisplaysQueryDTO(3, DisplayOutcomeFilter.DISMISSED, START, END, 3, 50);
 
     var input = query.toInput("app", "survey");
 
-    assertThat(input.versionId()).contains(SurveyVersionId.of(versionId));
+    assertThat(input.versionNumber()).contains(3);
     assertThat(input.outcome()).contains(DisplayOutcome.DISMISSED);
     assertThat(input.openedFrom()).contains(START);
     assertThat(input.openedTo()).contains(END);
@@ -140,9 +137,7 @@ class ListDisplaysQueryDTOTest {
 
   @Test
   void a_listagem_por_respondente_reaproveita_o_dto_e_ignora_a_versao() {
-    var query =
-        new ListDisplaysQueryDTO(
-            UUID.randomUUID().toString(), DisplayOutcomeFilter.COMPLETED, START, END, 1, 10);
+    var query = new ListDisplaysQueryDTO(2, DisplayOutcomeFilter.COMPLETED, START, END, 1, 10);
 
     var input = query.toRespondentInput("app", "respondent");
 

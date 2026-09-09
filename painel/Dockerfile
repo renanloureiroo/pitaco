@@ -18,7 +18,7 @@ WORKDIR /app
 # 0.0.0.0 porque o padrão do server.js standalone é localhost, inalcançável de fora do contêiner.
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
-    PORT=3000 \
+    PORT=3001 \
     HOSTNAME=0.0.0.0
 RUN addgroup -S app && adduser -S app -G app
 # O standalone já traz o node_modules mínimo que o server.js precisa; static e public
@@ -27,5 +27,5 @@ COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
 USER app
-EXPOSE 3000
+EXPOSE 3001
 CMD ["node", "server.js"]

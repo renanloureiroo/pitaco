@@ -42,19 +42,23 @@ public interface SurveyDisplayJpaRepository extends JpaRepository<SurveyDisplayJ
             join SurveyVersionJpaEntity v on v.id = d.versionId
            where d.applicationId = :applicationId
              and d.surveyId = :surveyId
-             and (:versionId is null or d.versionId = :versionId)
+             and (:versionNumber is null or v.number = :versionNumber)
              and (:outcome is null or d.outcome = :outcome)
              and (cast(:openedFrom as Instant) is null or d.openedAt >= :openedFrom)
              and (cast(:openedTo as Instant) is null or d.openedAt <= :openedTo)
            order by d.openedAt desc, d.id desc
           """,
+      // A contagem repete a mesma junção interna por igualdade de identificador da consulta
+      // principal: sem ela, filtrar por número não teria por onde e o total divergiria da
+      // página. Interna e por igualdade é o que mantém as duas contando o mesmo conjunto.
       countQuery =
           """
           select count(d)
             from SurveyDisplayJpaEntity d
+            join SurveyVersionJpaEntity v on v.id = d.versionId
            where d.applicationId = :applicationId
              and d.surveyId = :surveyId
-             and (:versionId is null or d.versionId = :versionId)
+             and (:versionNumber is null or v.number = :versionNumber)
              and (:outcome is null or d.outcome = :outcome)
              and (cast(:openedFrom as Instant) is null or d.openedAt >= :openedFrom)
              and (cast(:openedTo as Instant) is null or d.openedAt <= :openedTo)
@@ -62,7 +66,7 @@ public interface SurveyDisplayJpaRepository extends JpaRepository<SurveyDisplayJ
   Page<DisplaySummaryProjection> findSummaryPage(
       @Param("applicationId") String applicationId,
       @Param("surveyId") String surveyId,
-      @Param("versionId") String versionId,
+      @Param("versionNumber") Integer versionNumber,
       @Param("outcome") String outcome,
       @Param("openedFrom") Instant openedFrom,
       @Param("openedTo") Instant openedTo,

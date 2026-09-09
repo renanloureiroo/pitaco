@@ -72,7 +72,7 @@ public class InMemorySurveyDisplayRepository implements SurveyDisplayRepository 
             displays.values().stream()
                 .filter(display -> display.getApplicationId().equals(query.applicationId()))
                 .filter(display -> display.getSurveyId().equals(query.surveyId()))
-                .filter(matches(query.versionId(), SurveyDisplay::getVersionId))
+                .filter(matchesVersionNumber(query.versionNumber()))
                 .filter(matches(query.outcome(), SurveyDisplay::getOutcome))
                 .filter(within(query.openedFrom(), query.openedTo())));
 
@@ -126,6 +126,19 @@ public class InMemorySurveyDisplayRepository implements SurveyDisplayRepository 
         .toList();
   }
 
+  // O adaptador filtra por v.number na junção; aqui, pelo número registrado para a versão da
+  // exibição — a mesma tradução que summaryOf faz ao projetar.
+  private Predicate<SurveyDisplay> matchesVersionNumber(Optional<Integer> versionNumber) {
+    return display ->
+        versionNumber
+            .map(expected -> expected.equals(numberOf(display.getVersionId())))
+            .orElse(true);
+  }
+
+  private int numberOf(SurveyVersionId versionId) {
+    return versionNumbers.getOrDefault(versionId, DEFAULT_VERSION_NUMBER);
+  }
+
   private static <T> Predicate<SurveyDisplay> matches(
       Optional<T> filter, java.util.function.Function<SurveyDisplay, T> of) {
     return display -> filter.map(expected -> expected.equals(of.apply(display))).orElse(true);
@@ -142,7 +155,7 @@ public class InMemorySurveyDisplayRepository implements SurveyDisplayRepository 
     return new DisplaySummary(
         display.id(),
         display.getVersionId(),
-        versionNumbers.getOrDefault(display.getVersionId(), DEFAULT_VERSION_NUMBER),
+        numberOf(display.getVersionId()),
         display.getComparabilityGroup(),
         display.getOutcome(),
         display.sdkVersion(),

@@ -11,6 +11,7 @@ public final class GetSurveyVersionPresenter {
     var version = SurveyVersionPresenter.present(output.version());
 
     return new SurveyVersionDetailResponseDTO(
+        version.id(),
         version.number(),
         version.status(),
         version.publishedAt(),

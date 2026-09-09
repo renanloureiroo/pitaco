@@ -6,6 +6,13 @@ import java.time.Instant;
 @Schema(description = "Uma versão da pesquisa")
 public record SurveyVersionResponseDTO(
     @Schema(
+            description =
+                "Identificador da versão. Quem identifica a versão na tela é o número; o "
+                    + "identificador existe para casar com o que a exibição carrega",
+            example = "8c2b5e14-3a97-4d60-b1f8-5e7c9a0d4b62",
+            requiredMode = Schema.RequiredMode.REQUIRED)
+        String id,
+    @Schema(
             description = "Número da versão, a partir de 1",
             example = "1",
             requiredMode = Schema.RequiredMode.REQUIRED)

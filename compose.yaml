@@ -68,6 +68,11 @@ services:
       # O painel só fala com a api por dentro da rede internal, pelo nome do
       # serviço. /api é o context-path do backend.
       PITACO_API_URL: http://api:8080/api
+      # 3001, e não 3000: a stack de desenvolvimento do backend publica o
+      # Grafana LGTM em 3000, e manter o painel na mesma porta faria o
+      # ambiente local divergir do publicado. O túnel em ~/apps/infra precisa
+      # apontar para pitaco-painel:3001.
+      PORT: 3001
     depends_on:
       - api
     networks:

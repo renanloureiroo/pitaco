@@ -184,29 +184,19 @@ class ListSurveyDisplaysE2ETest {
   }
 
   @Test
-  @DisplayName("Filtra por versão, por desfecho e por período inclusivo nos extremos")
+  @DisplayName("Filtra pelo número da versão, por desfecho e por período inclusivo nos extremos")
   void filtra() {
-    var otherVersion =
-        SurveyVersionFactory.aVersion()
-            .forSurvey(surveyId)
-            .numbered(2)
-            .buildPublishedSavedIn(versions)
-            .id();
+    var otherVersion = versionNumbered(2);
     var completed = display(THIRD, DisplayOutcome.COMPLETED);
     var dismissed = display(SECOND, DisplayOutcome.DISMISSED);
-    var onOtherVersion =
-        SurveyDisplayFactory.aDisplay()
-            .forApplication(applicationId)
-            .forSurvey(surveyId)
-            .forVersion(otherVersion)
-            .forRespondent(respondentId)
-            .openedAt(FIRST)
-            .buildSavedIn(displays)
-            .id();
+    var onOtherVersion = displayOnVersion(otherVersion, FIRST);
 
-    assertThat(list("?versionId=" + otherVersion.value()).items())
+    assertThat(list("?versionNumber=2").items())
         .extracting(DisplaySummaryResponseDTO::id)
         .containsExactly(onOtherVersion.value());
+    assertThat(list("?versionNumber=1").items())
+        .extracting(DisplaySummaryResponseDTO::id)
+        .containsExactly(completed.value(), dismissed.value());
     assertThat(list("?outcome=DISMISSED").items())
         .extracting(DisplaySummaryResponseDTO::id)
         .containsExactly(dismissed.value());
@@ -220,6 +210,71 @@ class ListSurveyDisplaysE2ETest {
     var beyond = list("?openedFrom=" + THIRD.plusSeconds(1));
     assertThat(beyond.items()).isEmpty();
     assertThat(beyond.total()).isZero();
+  }
+
+  private SurveyVersionId versionNumbered(int number) {
+    return SurveyVersionFactory.aVersion()
+        .forSurvey(surveyId)
+        .numbered(number)
+        .buildPublishedSavedIn(versions)
+        .id();
+  }
+
+  private DisplayId displayOnVersion(SurveyVersionId version, Instant openedAt) {
+    return SurveyDisplayFactory.aDisplay()
+        .forApplication(applicationId)
+        .forSurvey(surveyId)
+        .forVersion(version)
+        .forRespondent(respondentId)
+        .openedAt(openedAt)
+        .buildSavedIn(displays)
+        .id();
+  }
+
+  @Test
+  @DisplayName("Número de versão que a pesquisa não tem devolve página vazia, não 404")
+  void filtra_por_numero_de_versao_inexistente() {
+    display(FIRST, DisplayOutcome.STARTED);
+
+    var page = list("?versionNumber=99");
+
+    assertThat(page.items()).isEmpty();
+    assertThat(page.total()).isZero();
+    assertThat(page.totalPages()).isZero();
+  }
+
+  @Test
+  @DisplayName("Com filtro de versão, o total é o do conjunto inteiro, não o da página")
+  void total_com_filtro_de_versao_conta_o_conjunto_sem_paginacao() {
+    // Se a contagem não repetisse a junção da consulta principal, este total viria 4 — o
+    // conjunto sem o filtro de versão. É o que pega a countQuery esquecida (R7).
+    var second = versionNumbered(2);
+    displayOnVersion(second, FIRST);
+    displayOnVersion(second, SECOND);
+    displayOnVersion(second, THIRD);
+    display(FIRST, DisplayOutcome.STARTED);
+
+    var page = list("?versionNumber=2&size=1");
+
+    assertThat(page.items()).hasSize(1);
+    assertThat(page.total()).isEqualTo(3);
+    assertThat(page.totalPages()).isEqualTo(3);
+    assertThat(list("?versionNumber=2&size=100").items()).hasSize(3);
+  }
+
+  @Test
+  @DisplayName("Sem filtro de versão, devolve as exibições de todas as versões")
+  void sem_filtro_de_versao_devolve_todas() {
+    var second = versionNumbered(2);
+    var onFirst = display(SECOND, DisplayOutcome.COMPLETED);
+    var onSecond = displayOnVersion(second, THIRD);
+
+    var page = list("");
+
+    assertThat(page.items())
+        .extracting(DisplaySummaryResponseDTO::id)
+        .containsExactly(onSecond.value(), onFirst.value());
+    assertThat(page.total()).isEqualTo(2);
   }
 
   @Test
@@ -242,7 +297,9 @@ class ListSurveyDisplaysE2ETest {
     expectBadRequest("?size=101");
     expectBadRequest("?outcome=ABANDONED");
     expectBadRequest("?outcome=qualquer");
-    expectBadRequest("?versionId=nao-e-um-id");
+    expectBadRequest("?versionNumber=nao-e-um-numero");
+    expectBadRequest("?versionNumber=0");
+    expectBadRequest("?versionNumber=-1");
     expectBadRequest("?openedFrom=amanha");
     expectBadRequest("?openedFrom=" + THIRD + "&openedTo=" + FIRST);
   }

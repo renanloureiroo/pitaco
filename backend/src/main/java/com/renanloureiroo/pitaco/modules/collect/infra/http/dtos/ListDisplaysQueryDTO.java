@@ -1,6 +1,5 @@
 package com.renanloureiroo.pitaco.modules.collect.infra.http.dtos;
 
-import com.renanloureiroo.pitaco.core.identity.SurveyVersionId;
 import com.renanloureiroo.pitaco.modules.collect.domain.entities.DisplayOutcome;
 import com.renanloureiroo.pitaco.modules.collect.application.usecases.ListRespondentDisplaysUseCase;
 import com.renanloureiroo.pitaco.modules.collect.application.usecases.ListSurveyDisplaysUseCase;
@@ -8,20 +7,18 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Pattern;
 import java.time.Instant;
 import java.util.Optional;
 
 @Schema(description = "Filtro e recorte de página da listagem de exibições")
 public record ListDisplaysQueryDTO(
-    @Pattern(
-            regexp = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
-            message = "Identificador de versão de pesquisa inválido")
+    @Min(value = 1, message = "Número de versão deve ser maior ou igual a 1")
         @Schema(
             description =
-                "Restringe às exibições de uma versão. Ausente devolve as de todas as versões",
-            example = "8c2b5e14-3a97-4d60-b1f8-5e7c9a0d4b62")
-        String versionId,
+                "Restringe às exibições de uma versão, pelo número — que é o que identifica a "
+                    + "versão no painel. Ausente devolve as de todas as versões",
+            example = "3")
+        Integer versionNumber,
     @Schema(
             description = "Restringe a um desfecho. Ausente devolve todos",
             example = "COMPLETED")
@@ -60,7 +57,7 @@ public record ListDisplaysQueryDTO(
     return new ListSurveyDisplaysUseCase.Input(
         applicationId,
         surveyId,
-        Optional.ofNullable(versionId).map(SurveyVersionId::of),
+        Optional.ofNullable(versionNumber),
         outcomeAsDomain(),
         Optional.ofNullable(openedFrom),
         Optional.ofNullable(openedTo),
@@ -68,7 +65,7 @@ public record ListDisplaysQueryDTO(
         sizeOrDefault());
   }
 
-  // A listagem por respondente reaproveita este DTO e ignora versionId (FR-025).
+  // A listagem por respondente reaproveita este DTO e ignora versionNumber (FR-025).
   public ListRespondentDisplaysUseCase.Input toRespondentInput(
       String applicationId, String respondentId) {
     return new ListRespondentDisplaysUseCase.Input(

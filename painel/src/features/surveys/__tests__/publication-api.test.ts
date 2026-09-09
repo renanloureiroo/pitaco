@@ -61,7 +61,7 @@ describe("getPublicationImpediments", () => {
 
 describe("publishSurvey", () => {
   it("publica a versão 1 sem natureza de mudança", async () => {
-    const spy = stubFetch(201, { number: 1, status: "published", comparabilityGroup: 1 });
+    const spy = stubFetch(201, { id: "ver-1", number: 1, status: "published", comparabilityGroup: 1 });
 
     const result = await publishSurvey("app-1", "srv-1", {});
 
@@ -72,6 +72,7 @@ describe("publishSurvey", () => {
 
   it("envia natureza e resumo a partir da versão 2", async () => {
     const spy = stubFetch(201, {
+      id: "ver-2",
       number: 2,
       status: "published",
       comparabilityGroup: 2,
@@ -113,6 +114,7 @@ describe("versões", () => {
 
   it("lê o conteúdo congelado de uma versão", async () => {
     const spy = stubFetch(200, {
+      id: "ver-1",
       number: 1,
       status: "published",
       comparabilityGroup: 1,
@@ -132,7 +134,7 @@ describe("versões", () => {
   });
 
   it("abre uma nova versão de rascunho", async () => {
-    const spy = stubFetch(201, { number: 2, status: "draft", comparabilityGroup: 1 });
+    const spy = stubFetch(201, { id: "ver-2", number: 2, status: "draft", comparabilityGroup: 1 });
 
     await openDraftVersion("app-1", "srv-1");
 

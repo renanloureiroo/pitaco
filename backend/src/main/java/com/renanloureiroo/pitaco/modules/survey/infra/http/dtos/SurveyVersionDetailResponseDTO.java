@@ -6,6 +6,10 @@ import java.util.List;
 
 @Schema(description = "Uma versão com o conteúdo congelado nela")
 public record SurveyVersionDetailResponseDTO(
+    @Schema(
+            description = "Identificador da versão",
+            requiredMode = Schema.RequiredMode.REQUIRED)
+        String id,
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED) int number,
     @Schema(
             allowableValues = {"draft", "published"},

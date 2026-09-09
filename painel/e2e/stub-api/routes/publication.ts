@@ -3,6 +3,7 @@ import {
   currentVersion,
   draftVersion,
   publishedVersion,
+  versionIdOf,
   type StubSurvey,
   type StubVersion,
 } from "../store.ts";
@@ -46,10 +47,13 @@ export function impedimentsOf(survey: StubSurvey): Impediment[] {
   return impediments;
 }
 
-export function toVersion(version: StubVersion) {
+export function toVersion(surveyId: string, version: StubVersion) {
   const { number, status, publishedAt, changeKind, changeSummary, comparabilityGroup } = version;
 
   return {
+    // O backend devolve a identidade da versão junto do número; o simulador a deriva, que é o
+    // suficiente para as duas leituras concordarem.
+    id: versionIdOf(surveyId, number),
     number,
     status,
     ...(publishedAt !== undefined ? { publishedAt } : {}),
@@ -130,7 +134,7 @@ export const publicationRoutes: Route[] = [
         occurredAt: nowIso(),
       });
 
-      return json(201, toVersion(draft));
+      return json(201, toVersion(survey.id, draft));
     },
   },
 ];

@@ -2,6 +2,8 @@
 
 export {
   NOT_CONFIGURED,
+  REFERENCE_TIME_ZONE,
+  TIMEZONE_NOTE,
   formatDate,
   formatDateTime,
   formatDays,

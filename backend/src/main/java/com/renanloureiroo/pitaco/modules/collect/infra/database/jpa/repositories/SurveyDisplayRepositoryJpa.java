@@ -69,7 +69,7 @@ public class SurveyDisplayRepositoryJpa implements SurveyDisplayRepository {
         repository.findSummaryPage(
             query.applicationId().value(),
             query.surveyId().value(),
-            query.versionId().map(SurveyVersionId::value).orElse(null),
+            query.versionNumber().orElse(null),
             query.outcome().map(DisplayOutcome::name).orElse(null),
             query.openedFrom().orElse(null),
             query.openedTo().orElse(null),

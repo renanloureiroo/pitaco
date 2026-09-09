@@ -21,6 +21,7 @@ const { PublishForm } = await import("../components/publication/publish-form");
 const { DraftVersionActions } = await import("../components/versions/draft-version-actions");
 
 const published: SurveyVersion = {
+  id: "ver-1",
   number: 1,
   status: "published",
   publishedAt: "2026-09-09T12:00:00Z",
@@ -181,7 +182,7 @@ describe("VersionsTable", () => {
       <VersionsTable
         applicationId="app-1"
         surveyId="srv-1"
-        versions={[published, { number: 2, status: "draft", comparabilityGroup: 1 }]}
+        versions={[published, { id: "ver-2", number: 2, status: "draft", comparabilityGroup: 1 }]}
       />,
     );
 
@@ -195,7 +196,7 @@ describe("VersionsTable", () => {
       <VersionsTable
         applicationId="app-1"
         surveyId="srv-1"
-        versions={[{ number: 2, status: "draft", comparabilityGroup: 1 }]}
+        versions={[{ id: "ver-2", number: 2, status: "draft", comparabilityGroup: 1 }]}
       />,
     );
 
@@ -207,7 +208,7 @@ describe("VersionsTable", () => {
       <VersionsTable
         applicationId="app-1"
         surveyId="srv-1"
-        versions={[published, { number: 2, status: "draft", comparabilityGroup: 1 }]}
+        versions={[published, { id: "ver-2", number: 2, status: "draft", comparabilityGroup: 1 }]}
       />,
     );
 

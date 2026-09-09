@@ -51,7 +51,7 @@ class ListSurveyDisplaysUseCaseTest {
   }
 
   private final class InputBuilder {
-    private Optional<SurveyVersionId> versionId = Optional.empty();
+    private Optional<Integer> versionNumber = Optional.empty();
     private Optional<DisplayOutcome> outcome = Optional.empty();
     private Optional<Instant> openedFrom = Optional.empty();
     private Optional<Instant> openedTo = Optional.empty();
@@ -59,8 +59,8 @@ class ListSurveyDisplaysUseCaseTest {
     private int size = 20;
     private String survey = surveyId.value();
 
-    InputBuilder forVersion(SurveyVersionId value) {
-      this.versionId = Optional.of(value);
+    InputBuilder forVersion(int value) {
+      this.versionNumber = Optional.of(value);
       return this;
     }
 
@@ -92,7 +92,7 @@ class ListSurveyDisplaysUseCaseTest {
 
     ListSurveyDisplaysUseCase.Input build() {
       return new ListSurveyDisplaysUseCase.Input(
-          applicationId.value(), survey, versionId, outcome, openedFrom, openedTo, page, size);
+          applicationId.value(), survey, versionNumber, outcome, openedFrom, openedTo, page, size);
     }
   }
 
@@ -184,10 +184,12 @@ class ListSurveyDisplaysUseCaseTest {
   }
 
   @Test
-  @DisplayName("Filtra por versão exibida")
-  void filtra_por_versao() {
+  @DisplayName("Filtra pelo número da versão exibida, que é o que a pessoa vê na tela (R7)")
+  void filtra_por_numero_de_versao() {
     var wanted = SurveyVersionId.generate();
     var other = SurveyVersionId.generate();
+    displays.withVersionNumber(wanted, 3).withVersionNumber(other, 2);
+
     var mine =
         SurveyDisplayFactory.aDisplay()
             .forApplication(applicationId)
@@ -202,10 +204,30 @@ class ListSurveyDisplaysUseCaseTest {
         .openedAt(FIRST)
         .buildSavedIn(displays);
 
-    var output = useCase.execute(builder().forVersion(wanted).build());
+    var output = useCase.execute(builder().forVersion(3).build());
 
     assertThat(output.items()).extracting(DisplaySummaryOutput::id).containsExactly(mine.id());
+    assertThat(output.items()).extracting(DisplaySummaryOutput::versionNumber).containsExactly(3);
     assertThat(output.total()).isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("Número de versão que a pesquisa não tem devolve página vazia, não erro")
+  void filtra_por_numero_inexistente() {
+    var versionId = SurveyVersionId.generate();
+    displays.withVersionNumber(versionId, 1);
+    SurveyDisplayFactory.aDisplay()
+        .forApplication(applicationId)
+        .forSurvey(surveyId)
+        .forVersion(versionId)
+        .openedAt(FIRST)
+        .buildSavedIn(displays);
+
+    var output = useCase.execute(builder().forVersion(99).build());
+
+    assertThat(output.items()).isEmpty();
+    assertThat(output.total()).isZero();
+    assertThat(output.totalPages()).isZero();
   }
 
   @Test
@@ -249,6 +271,7 @@ class ListSurveyDisplaysUseCaseTest {
   @DisplayName("Filtros combinados restringem em conjunto")
   void filtros_combinados() {
     var versionId = SurveyVersionId.generate();
+    displays.withVersionNumber(versionId, 4);
     var wanted =
         SurveyDisplayFactory.aDisplay()
             .forApplication(applicationId)
@@ -274,7 +297,7 @@ class ListSurveyDisplaysUseCaseTest {
     var output =
         useCase.execute(
             builder()
-                .forVersion(versionId)
+                .forVersion(4)
                 .withOutcome(DisplayOutcome.COMPLETED)
                 .openedFrom(FIRST)
                 .openedTo(SECOND)

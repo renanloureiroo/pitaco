@@ -7,6 +7,9 @@ import { triggerSchema } from "./trigger";
 /** Versões: o registro do que foi publicado, com o conteúdo congelado no momento. */
 
 export const surveyVersionSchema = z.object({
+  /** Identidade da versão. Quem a identifica na tela é o número; o id casa com o que a
+   *  exibição carrega. */
+  id: z.string(),
   number: z.number(),
   status: z.enum(["draft", "published"]),
   /** Ausente no rascunho. */

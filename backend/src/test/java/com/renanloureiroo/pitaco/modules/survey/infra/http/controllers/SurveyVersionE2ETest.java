@@ -431,6 +431,26 @@ class SurveyVersionE2ETest {
   }
 
   @Test
+  @DisplayName("A versão devolve o próprio identificador, igual na listagem e no detalhe")
+  void devolve_o_identificador_da_versao() {
+    publishFirstVersion();
+    openVersion();
+    addQuestion(freeText("Outra pergunta"));
+    publish("semantic", "versão 2");
+
+    var listed = listVersions("").items();
+
+    assertThat(listed).extracting(SurveyVersionResponseDTO::id).doesNotContainNull();
+    assertThat(listed).extracting(SurveyVersionResponseDTO::id).doesNotHaveDuplicates();
+
+    for (var item : listed) {
+      // Quem identifica a versão na tela é o número; o identificador existe para casar com o
+      // que a exibição carrega, e por isso as duas leituras precisam concordar.
+      assertThat(version(item.number()).id()).isEqualTo(item.id());
+    }
+  }
+
+  @Test
   @DisplayName("A comparabilidade agrupa v1 e v2 cosméticas, e v3 semântica abre grupo novo")
   void agrupa_a_comparabilidade() {
     publishFirstVersion();

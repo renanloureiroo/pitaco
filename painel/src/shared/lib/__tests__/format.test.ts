@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   NOT_CONFIGURED,
+  REFERENCE_TIME_ZONE,
+  TIMEZONE_NOTE,
   formatDate,
   formatDateTime,
   formatDays,
@@ -61,5 +63,31 @@ describe("formatDateTime e formatDate", () => {
   it("devolve a entrada quando ela não é uma data — não inventa 'Invalid Date' na tela", () => {
     expect(formatDate("nem data")).toBe("nem data");
     expect(formatDateTime("nem data")).toBe("nem data");
+  });
+});
+
+describe("rótulo do fuso de referência (R3)", () => {
+  it("anuncia o mesmo deslocamento que formatDateTime aplica", () => {
+    // 15:30Z vira 12:30 no fuso de referência: o rótulo precisa dizer exatamente esse −3.
+    const [, time] = formatDateTime("2026-09-09T15:30:00Z").split(", ");
+
+    expect(time).toBe("12:30");
+    expect(TIMEZONE_NOTE).toContain("UTC−3");
+  });
+
+  it("nomeia o fuso que os formatadores usam, e não um fuso qualquer", () => {
+    const offset = new Intl.DateTimeFormat("en-US", {
+      timeZone: REFERENCE_TIME_ZONE,
+      timeZoneName: "longOffset",
+    })
+      .formatToParts(new Date("2026-09-09T15:30:00Z"))
+      .find((part) => part.type === "timeZoneName")?.value;
+
+    expect(offset).toBe("GMT-03:00");
+  });
+
+  it("diz o fuso por extenso — um instante sem fuso declarado é ambíguo para quem lê", () => {
+    expect(TIMEZONE_NOTE).not.toBe("");
+    expect(TIMEZONE_NOTE.toLowerCase()).toContain("horários");
   });
 });

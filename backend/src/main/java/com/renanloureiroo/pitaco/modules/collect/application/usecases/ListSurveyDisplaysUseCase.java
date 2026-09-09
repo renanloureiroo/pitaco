@@ -1,6 +1,5 @@
 package com.renanloureiroo.pitaco.modules.collect.application.usecases;
 
-import com.renanloureiroo.pitaco.core.identity.SurveyVersionId;
 import com.renanloureiroo.pitaco.core.usecase.UseCase;
 import com.renanloureiroo.pitaco.modules.collect.application.gateways.SurveyScopeGateway;
 import com.renanloureiroo.pitaco.modules.collect.application.outputs.DisplaySummaryOutput;
@@ -36,7 +35,7 @@ public class ListSurveyDisplaysUseCase
             new SurveyDisplayRepository.ListDisplaysQuery(
                 applicationId,
                 surveyId,
-                input.versionId(),
+                input.versionNumber(),
                 input.outcome(),
                 input.openedFrom(),
                 input.openedTo(),
@@ -70,7 +69,7 @@ public class ListSurveyDisplaysUseCase
   public record Input(
       String applicationId,
       String surveyId,
-      Optional<SurveyVersionId> versionId,
+      Optional<Integer> versionNumber,
       Optional<DisplayOutcome> outcome,
       Optional<Instant> openedFrom,
       Optional<Instant> openedTo,

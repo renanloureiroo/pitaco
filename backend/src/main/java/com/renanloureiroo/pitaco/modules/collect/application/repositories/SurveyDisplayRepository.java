@@ -52,7 +52,9 @@ public interface SurveyDisplayRepository {
   record ListDisplaysQuery(
       ApplicationId applicationId,
       SurveyId surveyId,
-      Optional<SurveyVersionId> versionId,
+      // Número, não identificador: é o que a API de versões expõe e o que a pessoa vê na
+      // tela do painel (R7 de 002).
+      Optional<Integer> versionNumber,
       Optional<DisplayOutcome> outcome,
       Optional<Instant> openedFrom,
       Optional<Instant> openedTo,

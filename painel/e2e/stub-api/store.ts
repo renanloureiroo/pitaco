@@ -92,11 +92,63 @@ export type StubSurvey = {
   createdAt: string;
 };
 
+/**
+ * Coleta: exibição, resposta e respondente.
+ *
+ * Estes três não nascem por nenhuma tela — o painel é somente leitura, e quem cria exibição é
+ * o SDK. Entram no simulador por semeadura direta (R9 de 002), o que mantém a regra de cada
+ * teste criar os próprios dados sem inventar uma tela de escrita que não existe.
+ */
+
+export type StubRespondent = {
+  id: string;
+  applicationId: string;
+  identityKind: "APP_REFERENCE" | "DEVICE";
+  identityValue: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
+};
+
+export type StubAnswer = {
+  questionKey: string;
+  status: "ANSWERED" | "SKIPPED" | "EXPIRED";
+  text?: string;
+  number?: number;
+  options: string[];
+};
+
+export type StubDisplay = {
+  id: string;
+  applicationId: string;
+  respondentId: string;
+  surveyId: string;
+  versionId: string;
+  versionNumber: number;
+  comparabilityGroup: number;
+  outcome: "STARTED" | "COMPLETED" | "DISMISSED";
+  sdkVersion?: string;
+  attributes: Record<string, string>;
+  answers: StubAnswer[];
+  openedAt: string;
+  /** Presente se e somente se o desfecho é final. */
+  closedAt?: string;
+};
+
 export const store = {
   applications: new Map<string, StubApplication>(),
   apiKeys: new Map<string, StubApiKey>(),
   surveys: new Map<string, StubSurvey>(),
+  respondents: new Map<string, StubRespondent>(),
+  displays: new Map<string, StubDisplay>(),
 };
+
+/**
+ * A versão exibida é identificada pelo número dentro da pesquisa; o identificador só existe
+ * porque o contrato o devolve. Derivá-lo mantém listagem e detalhe concordando.
+ */
+export function versionIdOf(surveyId: string, versionNumber: number): string {
+  return `ver-${surveyId}-${versionNumber}`;
+}
 
 export function publishedVersion(survey: StubSurvey): StubVersion | undefined {
   return [...survey.versions].reverse().find((version) => version.status === "published");

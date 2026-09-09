@@ -5,6 +5,7 @@ import com.renanloureiroo.pitaco.core.pagination.Page;
 import com.renanloureiroo.pitaco.modules.app.application.repositories.ApiKeyRepository;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKey;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKeyId;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -16,6 +17,7 @@ public class InMemoryApiKeyRepository implements ApiKeyRepository {
   private final Map<ApiKeyId, ApiKey> apiKeys = new LinkedHashMap<>();
 
   private boolean loseNextRevoke;
+  private int touches;
 
   @Override
   public ApiKey create(ApiKey apiKey) {
@@ -28,6 +30,40 @@ public class InMemoryApiKeyRepository implements ApiKeyRepository {
     return Optional.ofNullable(apiKeys.get(id))
         .filter(apiKey -> apiKey.getApplicationId().equals(applicationId))
         .map(InMemoryApiKeyRepository::copyOf);
+  }
+
+  @Override
+  public Optional<ApiKey> findActiveBySecretHash(String secretHash) {
+    return apiKeys.values().stream()
+        .filter(apiKey -> apiKey.getSecret().hash().equals(secretHash))
+        .filter(apiKey -> !apiKey.isRevoked())
+        .findFirst()
+        .map(InMemoryApiKeyRepository::copyOf);
+  }
+
+  @Override
+  public void touch(ApiKeyId id, Instant now) {
+    touches++;
+
+    var stored = apiKeys.get(id);
+    if (stored == null) {
+      return;
+    }
+
+    apiKeys.put(
+        id,
+        ApiKey.restore(
+            stored.id(),
+            stored.getApplicationId(),
+            stored.getLabel(),
+            stored.getSecret(),
+            stored.getCreatedAt(),
+            stored.getRevokedAt(),
+            now));
+  }
+
+  public int touches() {
+    return touches;
   }
 
   @Override
@@ -89,6 +125,7 @@ public class InMemoryApiKeyRepository implements ApiKeyRepository {
         apiKey.getLabel(),
         apiKey.getSecret(),
         apiKey.getCreatedAt(),
-        apiKey.getRevokedAt());
+        apiKey.getRevokedAt(),
+        apiKey.getLastUsedAt());
   }
 }

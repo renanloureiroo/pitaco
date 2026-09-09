@@ -5,8 +5,8 @@ import com.renanloureiroo.pitaco.modules.survey.application.outputs.TriggerOutpu
 import com.renanloureiroo.pitaco.modules.survey.application.repositories.SurveyRepository;
 import com.renanloureiroo.pitaco.modules.survey.application.repositories.SurveyVersionRepository;
 import com.renanloureiroo.pitaco.modules.survey.application.services.SurveyScope;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.EventName;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SamplingRate;
+import com.renanloureiroo.pitaco.core.catalog.EventName;
+import com.renanloureiroo.pitaco.core.catalog.SamplingRate;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.Trigger;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.TriggerWindow;
 import java.time.Instant;

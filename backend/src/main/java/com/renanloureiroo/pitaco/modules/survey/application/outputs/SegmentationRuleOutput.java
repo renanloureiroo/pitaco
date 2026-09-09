@@ -1,6 +1,6 @@
 package com.renanloureiroo.pitaco.modules.survey.application.outputs;
 
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.RuleOperation;
+import com.renanloureiroo.pitaco.core.catalog.RuleOperation;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SegmentationRule;
 import java.util.List;
 import java.util.Optional;

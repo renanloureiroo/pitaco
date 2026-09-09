@@ -2,9 +2,9 @@ package com.renanloureiroo.pitaco.modules.survey.application.repositories;
 
 import com.renanloureiroo.pitaco.core.pagination.Page;
 import com.renanloureiroo.pitaco.core.pagination.PageQuery;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyId;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyVersion;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyVersionId;
+import com.renanloureiroo.pitaco.core.identity.SurveyVersionId;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.TriggerWindow;
 import java.util.List;
 import java.util.Map;

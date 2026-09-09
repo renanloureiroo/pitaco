@@ -107,6 +107,24 @@ parâmetro que se pode esquecer de aplicar:
 | `GET` | `/{surveyId}/versions/{number}` | O conteúdo congelado naquela versão |
 | `GET` | `/{surveyId}/versions/comparability` | Quais versões têm respostas somáveis entre si |
 
+E a superfície pública, consumida pelo SDK. A aplicação vem **da chave**, no header
+`X-Pitaco-Key`: nenhuma operação daqui aceita `applicationId` na rota ou no corpo. As rotas
+administrativas fazem o inverso — apresentar a chave do SDK em `/applications/**` falha com
+`403 api_key.forbidden_surface`, em vez de ser ignorado em silêncio.
+
+| Método | Rota (sob `/collect`) | O que faz |
+| --- | --- | --- |
+| `POST` | `/eligibility` | Há pesquisa para este respondente agora? Devolve no máximo uma, com a versão publicada inteira, ou `{"survey": null}` — sem gravar nada |
+| `POST` | `/displays` | Abre a exibição de exibição. O identificador nasce no dispositivo e é a chave de idempotência: a mesma abertura de novo devolve 200 em vez de 201 |
+| `POST` | `/displays/{displayId}/submission` | Respostas e desfecho em um ato atômico, validado inteiro antes de qualquer gravação |
+
+Três coisas que essa superfície assume: ausência de pesquisa **não é erro** — aplicação inativa,
+pesquisa pausada, fora da janela, evento sem pesquisa, regra não satisfeita, não sorteado e já
+resolvida devolvem todos `{"survey": null}`, e nenhuma linha é criada; o **sorteio** é uma função
+determinística do par pesquisa–respondente, então a mesma consulta repetida dá sempre a mesma
+resposta; e a submissão continua sendo aceita se a pesquisa foi pausada, encerrada ou republicada
+depois da abertura, porque a validação usa a **versão exibida**, congelada na exibição.
+
 Duas coisas que essas rotas assumem e que valem registrar: o **estado** de uma pesquisa
 (`draft`, `scheduled`, `active`, `paused`, `ended`) é derivado na leitura, do ciclo de vida
 somado à janela — não há coluna nem job para ele; e nada fora do escopo da aplicação dona
@@ -135,6 +153,19 @@ Os `code` de erro que chegam ao cliente:
 | `trigger.not_defined` | 422 | Regra de segmentação sem disparo onde se pendurar |
 | `api_key.not_found` | 404 | Chave inexistente, de outra aplicação, ou identificador malformado — os três com o mesmo `code` |
 | `api_key.already_revoked` | 409 | Chave já revogada; o instante da primeira revogação não muda |
+| `api_key.missing` | 401 | Header `X-Pitaco-Key` ausente na superfície pública |
+| `api_key.invalid` | 401 | Chave desconhecida **ou** revogada — a mesma resposta para as duas, sem revelar qual |
+| `api_key.forbidden_surface` | 403 | Chave do SDK apresentada em rota administrativa |
+| `display.not_found` | 404 | Exibição inexistente ou de outra aplicação, indistinguíveis |
+| `display.identifier_conflict` | 409 | Identificador de exibição já usado para outra pesquisa ou versão |
+| `display.already_closed` | 409 | Exibição fechada, e o envio traz desfecho diferente ou resposta nova |
+| `submission.rejected` | 422 | Conteúdo que a versão exibida não aceita — **todos** os problemas vêm de uma vez na extensão `errors`, cada um com `questionKey` e um `code` próprio |
+
+Os `code` dentro de `errors[]` de `submission.rejected`: `answer.question_unknown`,
+`answer.question_duplicated`, `answer.required_missing`, `answer.value_missing`,
+`answer.value_type_mismatch`, `answer.option_unknown`, `answer.options_empty`,
+`answer.options_duplicated`, `answer.value_out_of_range` e `answer.text_too_long`. Nunca há
+recusa genérica do tipo "respostas inválidas".
 
 `application.id_invalid` e `api_key.id_invalid` não entram na tabela: são internos ao domínio, capturados pelo caso de uso e traduzidos em 404, para que "malformado" e "inexistente" não sejam distinguíveis por quem chama.
 

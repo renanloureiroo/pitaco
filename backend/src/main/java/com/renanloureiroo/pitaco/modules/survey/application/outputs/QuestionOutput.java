@@ -1,7 +1,7 @@
 package com.renanloureiroo.pitaco.modules.survey.application.outputs;
 
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.Question;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.QuestionType;
+import com.renanloureiroo.pitaco.core.catalog.QuestionType;
 import java.util.List;
 import java.util.Optional;
 

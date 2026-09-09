@@ -1,8 +1,8 @@
 package com.renanloureiroo.pitaco.testsupport.factories;
 
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.RuleOperation;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.EventName;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SamplingRate;
+import com.renanloureiroo.pitaco.core.catalog.RuleOperation;
+import com.renanloureiroo.pitaco.core.catalog.EventName;
+import com.renanloureiroo.pitaco.core.catalog.SamplingRate;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SegmentationRule;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.Trigger;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.TriggerWindow;

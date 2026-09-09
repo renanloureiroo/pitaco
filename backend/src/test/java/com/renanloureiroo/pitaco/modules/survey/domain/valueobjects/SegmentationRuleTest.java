@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.renanloureiroo.pitaco.core.error.DomainException;
 import com.renanloureiroo.pitaco.core.error.ErrorType;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.RuleOperation;
+import com.renanloureiroo.pitaco.core.catalog.RuleOperation;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SegmentationRuleId;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -80,6 +80,16 @@ class SegmentationRuleTest {
   @Test
   void descarta_o_espaco_em_volta_do_atributo() {
     assertThat(rule("  plan  ", RuleOperation.PRESENT, null).attribute()).isEqualTo("plan");
+  }
+
+  @Test
+  @DisplayName("Expõe o critério sem o identificador, que é assunto da autoria")
+  void expoe_o_criterio() {
+    var criterion = rule("  plan  ", RuleOperation.EQUALS, "  pro  ").criterion();
+
+    assertThat(criterion.attribute()).isEqualTo("plan");
+    assertThat(criterion.operation()).isEqualTo(RuleOperation.EQUALS);
+    assertThat(criterion.value()).contains("pro");
   }
 
   private static void regraInvalida(Throwable error) {

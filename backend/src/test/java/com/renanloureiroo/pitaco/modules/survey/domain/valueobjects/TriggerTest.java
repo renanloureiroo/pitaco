@@ -1,13 +1,15 @@
 package com.renanloureiroo.pitaco.modules.survey.domain.valueobjects;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
+import com.renanloureiroo.pitaco.core.catalog.EventName;
+import com.renanloureiroo.pitaco.core.catalog.SamplingRate;
 import com.renanloureiroo.pitaco.core.error.DomainException;
 import com.renanloureiroo.pitaco.core.error.ErrorType;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 
 @DisplayName("Trigger")
 class TriggerTest {

@@ -1,9 +1,9 @@
 package com.renanloureiroo.pitaco.modules.survey.domain.entities;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.EventName;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SamplingRate;
+import com.renanloureiroo.pitaco.core.catalog.EventName;
+import com.renanloureiroo.pitaco.core.catalog.SamplingRate;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
+import com.renanloureiroo.pitaco.core.identity.SurveyVersionId;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.Trigger;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.TriggerWindow;
 import java.time.Instant;
@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+
 
 @DisplayName("SurveyVersion")
 class SurveyVersionTest {

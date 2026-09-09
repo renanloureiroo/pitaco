@@ -1,10 +1,13 @@
 package com.renanloureiroo.pitaco.testsupport.factories;
 
 import com.renanloureiroo.pitaco.modules.survey.application.repositories.SurveyVersionRepository;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyId;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyVersion;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyVersionStatus;
+import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SegmentationRule;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public final class SurveyVersionFactory {
@@ -12,6 +15,9 @@ public final class SurveyVersionFactory {
   private SurveyId surveyId = SurveyId.generate();
   private int number = 1;
   private boolean withQuestion = true;
+  private final List<QuestionFactory> questions = new ArrayList<>();
+  private final List<SegmentationRule> rules = new ArrayList<>();
+  private int comparabilityGroup = SurveyVersion.FIRST_COMPARABILITY_GROUP;
   private boolean withTrigger = true;
   private TriggerFactory trigger = TriggerFactory.anOpenTrigger();
   private Instant publishedAt = Instant.parse("2026-09-01T10:00:00Z");
@@ -58,6 +64,22 @@ public final class SurveyVersionFactory {
     return this;
   }
 
+  public SurveyVersionFactory withQuestions(QuestionFactory... questions) {
+    this.questions.addAll(List.of(questions));
+    this.withQuestion = false;
+    return this;
+  }
+
+  public SurveyVersionFactory ruledBy(SegmentationRule... rules) {
+    this.rules.addAll(List.of(rules));
+    return this;
+  }
+
+  public SurveyVersionFactory inComparabilityGroup(int comparabilityGroup) {
+    this.comparabilityGroup = comparabilityGroup;
+    return this;
+  }
+
   public SurveyVersionFactory publishedAt(Instant publishedAt) {
     this.publishedAt = publishedAt;
     return this;
@@ -69,9 +91,13 @@ public final class SurveyVersionFactory {
     if (withQuestion) {
       QuestionFactory.aFreeTextQuestion().buildAddedTo(version);
     }
+    questions.forEach(question -> question.buildAddedTo(version));
+
     if (withTrigger) {
       version.defineTrigger(trigger.build());
     }
+
+    rules.forEach(version::addRule);
 
     return version;
   }
@@ -89,7 +115,7 @@ public final class SurveyVersionFactory {
         version.getRules(),
         Optional.empty(),
         Optional.empty(),
-        SurveyVersion.FIRST_COMPARABILITY_GROUP,
+        comparabilityGroup,
         Optional.of(publishedAt));
   }
 

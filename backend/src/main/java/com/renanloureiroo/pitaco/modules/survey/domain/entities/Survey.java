@@ -4,6 +4,7 @@ import com.renanloureiroo.pitaco.core.entity.Entity;
 import com.renanloureiroo.pitaco.core.error.DomainException;
 import com.renanloureiroo.pitaco.core.error.ErrorType;
 import com.renanloureiroo.pitaco.core.identity.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SurveyName;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.TriggerWindow;
 import java.time.Instant;

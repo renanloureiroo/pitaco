@@ -1,6 +1,6 @@
 package com.renanloureiroo.pitaco.modules.survey.infra.database.jpa.mappers;
 
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyId;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyState;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyStateTransition;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyStateTransitionId;

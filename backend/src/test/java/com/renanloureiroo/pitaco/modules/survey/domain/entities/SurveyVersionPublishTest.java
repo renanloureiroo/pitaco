@@ -1,13 +1,12 @@
 package com.renanloureiroo.pitaco.modules.survey.domain.entities;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
+import com.renanloureiroo.pitaco.core.catalog.EventName;
+import com.renanloureiroo.pitaco.core.catalog.QuestionType;
+import com.renanloureiroo.pitaco.core.catalog.SamplingRate;
 import com.renanloureiroo.pitaco.core.error.DomainException;
 import com.renanloureiroo.pitaco.core.error.ErrorType;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.EventName;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.QuestionStatement;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SamplingRate;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.Trigger;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.TriggerWindow;
 import java.time.Instant;
@@ -16,6 +15,9 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 
 @DisplayName("SurveyVersion — publicação")
 class SurveyVersionPublishTest {

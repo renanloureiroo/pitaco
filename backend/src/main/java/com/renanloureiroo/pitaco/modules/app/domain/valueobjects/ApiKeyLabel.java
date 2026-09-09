@@ -1,7 +1,6 @@
 package com.renanloureiroo.pitaco.modules.app.domain.valueobjects;
 
-import com.renanloureiroo.pitaco.core.error.DomainException;
-import com.renanloureiroo.pitaco.core.error.ErrorType;
+import com.renanloureiroo.pitaco.core.text.RequiredText;
 
 public record ApiKeyLabel(String value) {
 
@@ -10,16 +9,7 @@ public record ApiKeyLabel(String value) {
   private static final String INVALID_CODE = "api_key.label_invalid";
 
   public ApiKeyLabel {
-    if (value == null || value.isBlank()) {
-      throw new DomainException(ErrorType.VALIDATION, INVALID_CODE, "Rótulo é obrigatório");
-    }
-    value = value.strip();
-    if (value.length() > MAX_LENGTH) {
-      throw new DomainException(
-          ErrorType.VALIDATION,
-          INVALID_CODE,
-          "Rótulo não pode passar de " + MAX_LENGTH + " caracteres");
-    }
+    value = RequiredText.of(value, MAX_LENGTH, INVALID_CODE, "Rótulo");
   }
 
   public static ApiKeyLabel of(String value) {

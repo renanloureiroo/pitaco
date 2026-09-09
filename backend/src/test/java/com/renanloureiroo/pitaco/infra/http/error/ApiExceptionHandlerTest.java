@@ -121,6 +121,15 @@ class ApiExceptionHandlerTest {
   }
 
   @Test
+  void corpo_malformado_vira_400_com_code() throws Exception {
+    mockMvcWithoutTracing()
+        .perform(post("/answers").contentType(MediaType.APPLICATION_JSON).content("{\"text\":"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.code").value("request.invalid"))
+        .andExpect(jsonPath("$.detail").value("Corpo da requisição malformado"));
+  }
+
+  @Test
   void inclui_o_trace_id_quando_ha_span_ativo() throws Exception {
     var mockMvc = mockMvcTracing();
 

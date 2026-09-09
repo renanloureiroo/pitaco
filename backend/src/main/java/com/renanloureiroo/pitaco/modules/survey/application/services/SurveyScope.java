@@ -11,7 +11,7 @@ import com.renanloureiroo.pitaco.modules.survey.application.gateways.Application
 import com.renanloureiroo.pitaco.modules.survey.application.repositories.SurveyRepository;
 import com.renanloureiroo.pitaco.modules.survey.application.repositories.SurveyVersionRepository;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.Survey;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyId;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyVersion;
 
 // A mesma resolução de escopo aparece em quinze casos de uso desta fatia: identificador

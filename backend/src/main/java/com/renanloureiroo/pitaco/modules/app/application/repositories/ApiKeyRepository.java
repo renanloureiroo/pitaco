@@ -6,6 +6,7 @@ import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKey;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKeyId;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKeyStatus;
 import com.renanloureiroo.pitaco.core.identity.ApplicationId;
+import java.time.Instant;
 import java.util.Optional;
 
 public interface ApiKeyRepository {
@@ -16,6 +17,12 @@ public interface ApiKeyRepository {
 
   // Update condicional: false quando a chave já estava revogada, isto é, alguém revogou antes.
   boolean revoke(ApiKey apiKey);
+
+  // Só chave ativa: revogada devolve vazio, sem distinguir de inexistente.
+  Optional<ApiKey> findActiveBySecretHash(String secretHash);
+
+  // Update condicional e amortizado: só grava quando o registrado é mais antigo que o limiar.
+  void touch(ApiKeyId id, Instant now);
 
   // items vem ordenado por createdAt desc com desempate por id desc, recortado em page*size, e
   // total conta o conjunto filtrado inteiro. Página além do fim devolve items vazio, nunca erro.

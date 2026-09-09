@@ -6,7 +6,7 @@ import com.renanloureiroo.pitaco.modules.survey.application.outputs.Segmentation
 import com.renanloureiroo.pitaco.modules.survey.application.repositories.SurveyRepository;
 import com.renanloureiroo.pitaco.modules.survey.application.repositories.SurveyVersionRepository;
 import com.renanloureiroo.pitaco.modules.survey.application.services.SurveyScope;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.RuleOperation;
+import com.renanloureiroo.pitaco.core.catalog.RuleOperation;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SegmentationRule;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;

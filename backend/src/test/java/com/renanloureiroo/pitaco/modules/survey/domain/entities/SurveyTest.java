@@ -1,11 +1,9 @@
 package com.renanloureiroo.pitaco.modules.survey.domain.entities;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import com.renanloureiroo.pitaco.core.error.DomainException;
 import com.renanloureiroo.pitaco.core.error.ErrorType;
 import com.renanloureiroo.pitaco.core.identity.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SurveyName;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.TriggerWindow;
 import java.time.Instant;
@@ -13,6 +11,9 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 
 @DisplayName("Survey")
 class SurveyTest {

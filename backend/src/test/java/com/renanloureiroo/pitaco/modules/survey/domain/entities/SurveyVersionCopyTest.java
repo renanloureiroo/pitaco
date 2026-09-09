@@ -1,11 +1,12 @@
 package com.renanloureiroo.pitaco.modules.survey.domain.entities;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.EventName;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.QuestionOption;
+import com.renanloureiroo.pitaco.core.catalog.EventName;
+import com.renanloureiroo.pitaco.core.catalog.QuestionOption;
+import com.renanloureiroo.pitaco.core.catalog.QuestionType;
+import com.renanloureiroo.pitaco.core.catalog.RuleOperation;
+import com.renanloureiroo.pitaco.core.catalog.SamplingRate;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.QuestionStatement;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SamplingRate;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SegmentationRule;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.Trigger;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.TriggerWindow;
@@ -15,6 +16,8 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+
 
 @DisplayName("SurveyVersion — cópia para a versão seguinte")
 class SurveyVersionCopyTest {

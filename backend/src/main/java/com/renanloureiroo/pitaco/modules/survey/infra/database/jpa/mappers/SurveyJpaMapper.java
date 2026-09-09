@@ -2,7 +2,7 @@ package com.renanloureiroo.pitaco.modules.survey.infra.database.jpa.mappers;
 
 import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.Survey;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyId;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyLifecycle;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SurveyName;
 import com.renanloureiroo.pitaco.modules.survey.infra.database.jpa.entities.SurveyJpaEntity;

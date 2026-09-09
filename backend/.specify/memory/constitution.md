@@ -1,7 +1,19 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.0.1 → 1.1.0
+Version change: 1.1.0 → 1.2.0
+Bump rationale: MINOR — o Redis saiu da stack fixa. Não é PATCH porque muda o significado do
+texto (uma dependência deixa de fazer parte do padrão obrigatório, e o Testcontainers do E2E
+deixa de subi-la), e não é MAJOR porque nenhum princípio foi removido nem invertido: o
+Princípio V continua dizendo que cache só entra com problema medido — o que mudou é que agora
+não há nem a dependência ociosa esperando por ele. Motivo: o Redis atravessou as features 001,
+002, 003 e o planejamento da 004 sem uma linha de código que o usasse, custando um container
+em toda execução de E2E e duas dependências no classpath. Impacto no código existente: nenhum
+comportamento muda — só o bean `redisContainer` de `TestcontainersConfiguration`, as duas
+dependências do `pom.xml`, o serviço do `compose.yaml` e o bloco de
+`application-local.yml.example` foram removidos na mesma alteração.
+
+Version change anterior: 1.0.1 → 1.1.0
 Bump rationale: MINOR — o presenter deixou de ser porta em `core` e passou a ser
 `final class` com método estático em `modules/<módulo>/infra/http/presenters`, no mesmo
 molde dos mappers JPA. `core/presenter/Presenter.java` foi removido. Não é MAJOR porque
@@ -114,8 +126,8 @@ Toda regra de negócio nasce com teste que falha antes de existir código que a 
   2. **Caso de uso** — JUnit puro sobre fakes in-memory de `testsupport/repositories`.
      Mock de framework (`@MockBean`, Mockito sobre a porta) é proibido: a porta tem
      implementação de teste real, que também exercita o contrato do repositório.
-  3. **E2E** — anotação `@E2E`, servidor em porta aleatória, Testcontainers para Postgres,
-     Redis e stack LGTM. Nenhum serviço externo. A limpeza é explícita via `DatabaseCleaner`;
+  3. **E2E** — anotação `@E2E`, servidor em porta aleatória, Testcontainers para Postgres
+     e stack LGTM. Nenhum serviço externo. A limpeza é explícita via `DatabaseCleaner`;
      `@Transactional` em teste E2E é proibido, pois esconde o commit real.
 - Um endpoint só é considerado pronto com E2E cobrindo, no mínimo: o caminho feliz
   (status, corpo, header `Location` quando aplicável **e** o estado persistido), a rejeição
@@ -197,9 +209,9 @@ de dados.
 ## Padrões Técnicos Adicionais
 
 **Stack fixa**: Java 21, Spring Boot 4.1 (Web MVC, Data JPA, Validation, Actuator),
-PostgreSQL + Flyway, Redis, OpenTelemetry sobre stack Grafana LGTM, springdoc-openapi,
+PostgreSQL + Flyway, OpenTelemetry sobre stack Grafana LGTM, springdoc-openapi,
 JUnit 5 + AssertJ + Testcontainers, Maven com wrapper. Dependência nova exige justificativa
-no PR.
+no PR — e dependência que atravessa uma feature inteira sem uso sai, como o Redis saiu.
 
 **Migrations**: vivem em `src/main/resources/db/migration` no padrão
 `V<yyyyMMddHHmmss>__descricao.sql`, com timestamp em UTC — duas branches nunca disputam a
@@ -271,4 +283,4 @@ migração — data-limite ou tarefa registrada.
 arquivo em tempo de execução e devem recusar planos que o violem. Para orientação de
 desenvolvimento no dia a dia, o `README.md` é o complemento operacional desta constituição.
 
-**Version**: 1.1.0 | **Ratified**: 2026-09-05 | **Last Amended**: 2026-09-08
+**Version**: 1.2.0 | **Ratified**: 2026-09-05 | **Last Amended**: 2026-09-08

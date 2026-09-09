@@ -1,7 +1,7 @@
 package com.renanloureiroo.pitaco.modules.survey.application.outputs;
 
 import com.renanloureiroo.pitaco.modules.survey.domain.publication.PublicationImpediment;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.QuestionKey;
+import com.renanloureiroo.pitaco.core.catalog.QuestionKey;
 import java.util.List;
 import java.util.Optional;
 

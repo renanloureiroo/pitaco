@@ -8,7 +8,7 @@ import com.renanloureiroo.pitaco.modules.survey.application.errors.SurveyNotFoun
 import com.renanloureiroo.pitaco.modules.survey.application.outputs.QuestionOutput;
 import com.renanloureiroo.pitaco.modules.survey.application.outputs.SegmentationRuleOutput;
 import com.renanloureiroo.pitaco.modules.survey.application.outputs.SurveyDetailOutput;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyId;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyState;
 import com.renanloureiroo.pitaco.testsupport.factories.QuestionFactory;
 import com.renanloureiroo.pitaco.testsupport.factories.SurveyFactory;

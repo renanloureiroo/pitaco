@@ -1,6 +1,7 @@
 package com.renanloureiroo.pitaco.modules.survey.domain.entities;
 
 import com.renanloureiroo.pitaco.core.entity.Entity;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import java.time.Instant;
 import java.util.Optional;
 import lombok.Getter;

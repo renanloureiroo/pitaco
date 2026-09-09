@@ -8,6 +8,8 @@ import com.renanloureiroo.pitaco.modules.app.domain.entities.ApiKeyStatus;
 import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.modules.app.infra.database.jpa.entities.ApiKeyJpaEntity;
 import com.renanloureiroo.pitaco.modules.app.infra.database.jpa.mappers.ApiKeyJpaMapper;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -15,6 +17,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public class ApiKeyRepositoryJpa implements ApiKeyRepository {
+
+  private static final Duration TOUCH_INTERVAL = Duration.ofMinutes(1);
 
   private final ApiKeyJpaRepository repository;
 
@@ -32,6 +36,16 @@ public class ApiKeyRepositoryJpa implements ApiKeyRepository {
     return repository
         .findByIdAndApplicationId(id.value(), applicationId.value())
         .map(ApiKeyJpaMapper::toDomain);
+  }
+
+  @Override
+  public Optional<ApiKey> findActiveBySecretHash(String secretHash) {
+    return repository.findBySecretHashAndRevokedAtIsNull(secretHash).map(ApiKeyJpaMapper::toDomain);
+  }
+
+  @Override
+  public void touch(ApiKeyId id, Instant now) {
+    repository.touch(id.value(), now, now.minus(TOUCH_INTERVAL));
   }
 
   @Override

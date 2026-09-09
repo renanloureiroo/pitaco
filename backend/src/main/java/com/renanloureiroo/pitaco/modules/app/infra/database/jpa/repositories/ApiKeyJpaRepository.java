@@ -24,6 +24,21 @@ public interface ApiKeyJpaRepository extends JpaRepository<ApiKeyJpaEntity, Stri
   Page<ApiKeyJpaEntity> findByApplicationIdAndRevokedAtIsNotNull(
       String applicationId, Pageable pageable);
 
+  Optional<ApiKeyJpaEntity> findBySecretHashAndRevokedAtIsNull(String secretHash);
+
+  // Amortizado: a linha só é tocada quando o registrado é mais antigo que o limiar, de modo que
+  // o caminho quente não escreve na mesma linha a cada evento do app hospedeiro (D-17).
+  @Modifying(clearAutomatically = true)
+  @Query(
+      """
+      update ApiKeyJpaEntity k
+         set k.lastUsedAt = :now
+       where k.id = :id
+         and (k.lastUsedAt is null or k.lastUsedAt < :threshold)
+      """)
+  int touch(
+      @Param("id") String id, @Param("now") Instant now, @Param("threshold") Instant threshold);
+
   // Condicional em revoked_at is null: é o que resolve duas revogações simultâneas sem lock.
   // clearAutomatically porque quem perde a corrida relê dentro da mesma transação, e sem
   // limpar o contexto a releitura devolveria a instância já carregada, anterior ao update.

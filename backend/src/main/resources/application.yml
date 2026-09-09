@@ -20,7 +20,7 @@ server:
       # em disco para rotacionar ou esquecer no container.
       directory: /dev
       prefix: stdout
-      suffix: ''
+      suffix: ""
       rotate: false
       buffered: false
       # %r = método, URI e protocolo; %s = status; %b = bytes no corpo;
@@ -53,6 +53,14 @@ spring:
           # Grava e lê todo timestamp em UTC, independente do fuso da JVM: o
           # mesmo instante precisa dar a mesma linha em qualquer máquina.
           time_zone: UTC
+
+pitaco:
+  collect:
+    # Prazo após o qual a exibição sem desfecho é considerada abandonada. Trinta minutos cobre
+    # quem trocou de tela e voltou; abandono nunca é gravado, é derivado na leitura.
+    display-timeout: 30m
+    # Abandonos no mesmo grupo de comparabilidade antes de parar de entregar a pesquisa.
+    max-attempts: 3
 
 management:
   endpoints:
@@ -87,8 +95,5 @@ springdoc:
 logging:
   level:
     com.renanloureiroo.pitaco: INFO
-    # O Spring loga a exceção resolvida em WARN com o valor rejeitado do corpo
-    # ("rejected value [...]"). Quem reporta erro aqui é o ApiExceptionHandler,
-    # que registra só campo e motivo — este logger fica no ERROR para não
-    # duplicar a linha nem vazar entrada do usuário.
     org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver: error
+    org.springdoc.core.utils.SpringDocUtils: error

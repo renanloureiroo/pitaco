@@ -1,9 +1,8 @@
 package com.renanloureiroo.pitaco.modules.survey.infra.http.dtos;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import com.renanloureiroo.pitaco.core.catalog.EventName;
+import com.renanloureiroo.pitaco.core.catalog.RuleOperation;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.ChangeKind;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.RuleOperation;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -19,6 +18,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EmptySource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import static org.assertj.core.api.Assertions.assertThat;
+
 
 @DisplayName("DTOs de entrada de disparo e publicação")
 class TriggerAndPublishRequestDTOsTest {

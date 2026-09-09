@@ -1,21 +1,22 @@
 package com.renanloureiroo.pitaco.modules.survey.domain.entities;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
+import com.renanloureiroo.pitaco.core.catalog.QuestionKey;
+import com.renanloureiroo.pitaco.core.catalog.QuestionOption;
+import com.renanloureiroo.pitaco.core.catalog.QuestionType;
+import com.renanloureiroo.pitaco.core.catalog.ScaleRange;
 import com.renanloureiroo.pitaco.core.error.DomainException;
 import com.renanloureiroo.pitaco.core.error.ErrorType;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.QuestionKey;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.QuestionOption;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.QuestionStatement;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.ScaleRange;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 
 @DisplayName("Question")
 class QuestionTest {

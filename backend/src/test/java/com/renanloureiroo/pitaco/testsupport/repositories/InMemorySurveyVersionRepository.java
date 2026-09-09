@@ -2,9 +2,9 @@ package com.renanloureiroo.pitaco.testsupport.repositories;
 
 import com.renanloureiroo.pitaco.core.pagination.Page;
 import com.renanloureiroo.pitaco.modules.survey.application.repositories.SurveyVersionRepository;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyId;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyVersion;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyVersionId;
+import com.renanloureiroo.pitaco.core.identity.SurveyVersionId;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyVersionStatus;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.TriggerWindow;
 import java.util.Comparator;

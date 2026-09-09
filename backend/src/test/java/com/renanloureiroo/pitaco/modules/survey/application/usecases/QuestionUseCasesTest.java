@@ -11,7 +11,7 @@ import com.renanloureiroo.pitaco.modules.survey.application.outputs.QuestionOutp
 import com.renanloureiroo.pitaco.modules.survey.application.services.QuestionDrafts;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.Question;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.QuestionId;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.QuestionType;
+import com.renanloureiroo.pitaco.core.catalog.QuestionType;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.Survey;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyVersion;
 import com.renanloureiroo.pitaco.testsupport.factories.QuestionFactory;

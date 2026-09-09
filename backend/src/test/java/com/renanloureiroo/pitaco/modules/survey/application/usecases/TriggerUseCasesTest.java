@@ -10,7 +10,7 @@ import com.renanloureiroo.pitaco.modules.survey.application.errors.SurveyContent
 import com.renanloureiroo.pitaco.modules.survey.application.errors.SurveyNotFound;
 import com.renanloureiroo.pitaco.modules.survey.application.errors.TriggerNotDefined;
 import com.renanloureiroo.pitaco.modules.survey.application.outputs.SegmentationRuleOutput;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.RuleOperation;
+import com.renanloureiroo.pitaco.core.catalog.RuleOperation;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SegmentationRuleId;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.Survey;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyVersion;

@@ -1,7 +1,7 @@
 package com.renanloureiroo.pitaco.modules.survey.application.errors;
 
 import com.renanloureiroo.pitaco.core.error.ConflictException;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyId;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 
 public final class SurveyAlreadyPublished extends ConflictException {
 

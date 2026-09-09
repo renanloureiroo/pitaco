@@ -1,8 +1,9 @@
 # Stack de produção do pitaco (homelab).
 #
-# Serviços privados (postgres, redis) vivem só na rede "internal".
-# Só a api entra na rede "edge", compartilhada com o stack ~/apps/infra
-# (cloudflared + lgtm), e é lá que o túnel a encontra pelo alias pitaco-api.
+# Serviços privados (postgres) vivem só na rede "internal".
+# api e painel também entram na rede "edge", compartilhada com o stack
+# ~/apps/infra (cloudflared + lgtm), e é lá que o túnel os encontra pelos
+# aliases pitaco-api e pitaco-painel.
 #
 # Nenhum serviço publica porta no host: o único caminho de entrada é o túnel.
 # Para desenvolvimento local, use backend/compose.yaml.
@@ -59,13 +60,20 @@ services:
         # projeto que também tiver um na mesma rede compartilhada.
         aliases: [pitaco-api]
 
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #   restart: unless-stopped
-  #   networks:
-  #     edge:
-  #       aliases: [pitaco-frontend]
+  painel:
+    build:
+      context: ./painel
+    restart: unless-stopped
+    environment:
+      # O painel só fala com a api por dentro da rede internal, pelo nome do
+      # serviço. /api é o context-path do backend.
+      PITACO_API_URL: http://api:8080/api
+    depends_on:
+      - api
+    networks:
+      internal:
+      edge:
+        aliases: [pitaco-painel]
 
 volumes:
   pg_data:

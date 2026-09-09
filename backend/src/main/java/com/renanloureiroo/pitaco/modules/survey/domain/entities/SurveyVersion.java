@@ -1,8 +1,11 @@
 package com.renanloureiroo.pitaco.modules.survey.domain.entities;
 
+import com.renanloureiroo.pitaco.core.catalog.QuestionKey;
 import com.renanloureiroo.pitaco.core.entity.Entity;
 import com.renanloureiroo.pitaco.core.error.DomainException;
 import com.renanloureiroo.pitaco.core.error.ErrorType;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
+import com.renanloureiroo.pitaco.core.identity.SurveyVersionId;
 import com.renanloureiroo.pitaco.modules.survey.domain.publication.ChangeClassification;
 import com.renanloureiroo.pitaco.modules.survey.domain.publication.PublicationImpediment;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SegmentationRule;

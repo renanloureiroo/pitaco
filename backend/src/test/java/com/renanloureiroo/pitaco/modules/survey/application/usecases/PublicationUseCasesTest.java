@@ -13,7 +13,7 @@ import com.renanloureiroo.pitaco.modules.survey.application.errors.SurveyVersion
 import com.renanloureiroo.pitaco.modules.survey.application.outputs.PublicationImpedimentOutput;
 import com.renanloureiroo.pitaco.modules.survey.application.outputs.QuestionOutput;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.ChangeKind;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.QuestionType;
+import com.renanloureiroo.pitaco.core.catalog.QuestionType;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.Survey;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyLifecycle;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyState;

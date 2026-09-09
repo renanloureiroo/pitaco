@@ -4,7 +4,7 @@ import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.core.pagination.Page;
 import com.renanloureiroo.pitaco.core.pagination.PageQuery;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.Survey;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyId;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import java.util.Optional;
 
 public interface SurveyRepository {

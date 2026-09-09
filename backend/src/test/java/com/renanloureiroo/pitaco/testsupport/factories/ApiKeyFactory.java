@@ -19,6 +19,7 @@ public final class ApiKeyFactory {
   private String label = DEFAULT_LABEL;
   private boolean revoked;
   private Instant createdAt;
+  private Instant lastUsedAt;
 
   private ApiKeyFactory() {}
 
@@ -46,6 +47,11 @@ public final class ApiKeyFactory {
     return this;
   }
 
+  public ApiKeyFactory lastUsedAt(Instant lastUsedAt) {
+    this.lastUsedAt = lastUsedAt;
+    return this;
+  }
+
   public ApiKey.Issued issue() {
     var issued = ApiKey.issue(applicationId, ApiKeyLabel.of(label));
 
@@ -59,17 +65,20 @@ public final class ApiKeyFactory {
   // Com createdAt controlado o caminho é restore: issue carimba Instant.now() e a ordenação
   // deixaria de ser verificável.
   public ApiKey build() {
-    if (createdAt == null) {
+    if (createdAt == null && lastUsedAt == null) {
       return issue().apiKey();
     }
+
+    var created = createdAt == null ? BATCH_FIRST_CREATED_AT : createdAt;
 
     return ApiKey.restore(
         ApiKeyId.generate(),
         applicationId,
         ApiKeyLabel.of(label),
         ApiKeySecret.generate().secret(),
-        createdAt,
-        revoked ? createdAt.plusSeconds(1) : null);
+        created,
+        revoked ? created.plusSeconds(1) : null,
+        lastUsedAt);
   }
 
   public ApiKey buildSavedIn(ApiKeyRepository repository) {

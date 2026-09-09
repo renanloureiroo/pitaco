@@ -1,7 +1,7 @@
 package com.renanloureiroo.pitaco.modules.survey.infra.database.jpa.repositories;
 
 import com.renanloureiroo.pitaco.modules.survey.application.repositories.SurveyStateTransitionRepository;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyId;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyStateTransition;
 import com.renanloureiroo.pitaco.modules.survey.infra.database.jpa.mappers.SurveyStateTransitionJpaMapper;
 import java.util.List;

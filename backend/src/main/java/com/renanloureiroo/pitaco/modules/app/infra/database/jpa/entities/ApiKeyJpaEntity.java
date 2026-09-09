@@ -40,4 +40,7 @@ public class ApiKeyJpaEntity {
 
   @Column(name = "revoked_at")
   private Instant revokedAt;
+
+  @Column(name = "last_used_at")
+  private Instant lastUsedAt;
 }

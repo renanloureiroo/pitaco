@@ -2,7 +2,7 @@ package com.renanloureiroo.pitaco.modules.survey.infra.http.dtos;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.QuestionType;
+import com.renanloureiroo.pitaco.core.catalog.QuestionType;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;

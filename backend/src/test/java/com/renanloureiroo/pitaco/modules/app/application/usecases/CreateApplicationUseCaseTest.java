@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.renanloureiroo.pitaco.modules.app.application.errors.ApplicationAlreadyExistsWithSameSlug;
-import com.renanloureiroo.pitaco.modules.app.application.repositories.ApplicationRepository;
 import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.modules.app.domain.entities.Status;
 import com.renanloureiroo.pitaco.modules.app.domain.valueobjects.Slug;
@@ -18,7 +17,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Create Application sut")
 public class CreateApplicationUseCaseTest {
 
-  private ApplicationRepository applications;
+  private InMemoryApplicationRepository applications;
   private CreateApplicationUseCase sut;
 
   @BeforeEach

@@ -1,6 +1,6 @@
 package com.renanloureiroo.pitaco.modules.survey.application.outputs;
 
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.QuestionOption;
+import com.renanloureiroo.pitaco.core.catalog.QuestionOption;
 
 public record QuestionOptionOutput(String label, String value, int position) {
 

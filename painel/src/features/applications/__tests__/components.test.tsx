@@ -1,0 +1,134 @@
+import userEvent from "@testing-library/user-event";
+import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { FormState } from "@/shared/lib";
+
+import { ApplicationDetail } from "../components/application-detail";
+import { ApplicationsTable } from "../components/applications-table";
+import type { Application } from "../schemas/application";
+
+/**
+ * O formulário é exercitado através de um `useActionState` real, com a action substituída:
+ * o que se prova aqui é o comportamento observável — recusa exibida por campo, valores
+ * preservados e submit bloqueado enquanto pendente.
+ */
+const actionMock = vi.hoisted(() => vi.fn());
+vi.mock("../actions", () => ({ createApplicationAction: actionMock }));
+
+const { ApplicationForm } = await import("../components/application-form");
+
+const application: Application = {
+  id: "app-1",
+  slug: "acme",
+  name: "Acme",
+  status: "active",
+  createdAt: "2026-09-01T12:00:00Z",
+  updatedAt: "2026-09-02T12:00:00Z",
+};
+
+describe("ApplicationsTable", () => {
+  it("lista as aplicações com situação e link para o detalhe", () => {
+    render(
+      <ApplicationsTable
+        applications={[application, { ...application, id: "app-2", name: "Beta", status: "inactive" }]}
+      />,
+    );
+
+    expect(screen.getAllByTestId("application-row")).toHaveLength(2);
+    expect(screen.getByRole("link", { name: "Acme" })).toHaveAttribute("href", "/aplicacoes/app-1");
+    expect(screen.getByText("Ativa")).toBeInTheDocument();
+    expect(screen.getByText("Inativa")).toBeInTheDocument();
+  });
+
+  it("renderiza corpo vazio sem quebrar quando não há aplicação", () => {
+    render(<ApplicationsTable applications={[]} />);
+
+    expect(screen.queryAllByTestId("application-row")).toHaveLength(0);
+  });
+});
+
+describe("ApplicationDetail", () => {
+  it("exibe prazo ausente como 'não configurado', nunca como zero", () => {
+    render(<ApplicationDetail application={application} />);
+
+    for (const testId of ["quiet-period", "retention", "open-text-retention"]) {
+      expect(screen.getByTestId(testId)).toHaveTextContent("não configurado");
+      expect(screen.getByTestId(testId)).not.toHaveTextContent(/\b0\b/);
+    }
+  });
+
+  it("exibe o prazo zero vindo do backend como zero, e não como ausência", () => {
+    render(<ApplicationDetail application={{ ...application, quietPeriodDays: 0 }} />);
+
+    expect(screen.getByTestId("quiet-period")).toHaveTextContent("0 dias");
+    expect(screen.getByTestId("quiet-period")).not.toHaveTextContent("não configurado");
+  });
+
+  it("exibe os prazos configurados", () => {
+    render(
+      <ApplicationDetail
+        application={{ ...application, retentionDays: 30, openTextRetentionDays: 1 }}
+      />,
+    );
+
+    expect(screen.getByTestId("retention")).toHaveTextContent("30 dias");
+    expect(screen.getByTestId("open-text-retention")).toHaveTextContent("1 dia");
+  });
+});
+
+describe("ApplicationForm", () => {
+  beforeEach(() => {
+    actionMock.mockReset();
+  });
+
+  it("mostra a recusa por campo e mantém o que foi digitado", async () => {
+    const rejected: FormState = {
+      status: "error",
+      message: "Requisição inválida.",
+      fieldErrors: { slug: "Use apenas letras minúsculas, números e hífens (ex.: minha-app)." },
+      values: { name: "Acme App", slug: "Acme App" },
+    };
+    actionMock.mockResolvedValue(rejected);
+
+    render(<ApplicationForm />);
+
+    await userEvent.type(screen.getByLabelText("Nome"), "Acme App");
+    await userEvent.type(screen.getByLabelText("Slug"), "Acme App");
+    await userEvent.click(screen.getByTestId("submit-button"));
+
+    expect(await screen.findByTestId("field-error-slug")).toHaveTextContent(/letras minúsculas/i);
+    expect(screen.getByTestId("form-error")).toHaveTextContent("Requisição inválida.");
+    expect(screen.getByLabelText("Nome")).toHaveValue("Acme App");
+    expect(screen.getByLabelText("Slug")).toHaveValue("Acme App");
+  });
+
+  it("bloqueia o envio enquanto a action está pendente — clique duplo não cadastra duas vezes", async () => {
+    let resolve: (state: FormState) => void = () => {};
+    actionMock.mockImplementation(
+      () => new Promise<FormState>((done) => {
+        resolve = done;
+      }),
+    );
+
+    render(<ApplicationForm />);
+    await userEvent.type(screen.getByLabelText("Nome"), "Acme");
+    await userEvent.click(screen.getByTestId("submit-button"));
+
+    expect(screen.getByTestId("submit-button")).toBeDisabled();
+    expect(actionMock).toHaveBeenCalledTimes(1);
+
+    await userEvent.click(screen.getByTestId("submit-button"));
+    expect(actionMock).toHaveBeenCalledTimes(1);
+
+    resolve({ status: "idle" });
+  });
+
+  it("não mostra erro nenhum antes do primeiro envio", () => {
+    render(<ApplicationForm />);
+
+    expect(screen.queryByTestId("form-error")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("field-error-slug")).not.toBeInTheDocument();
+    expect(screen.getByTestId("submit-button")).toBeEnabled();
+  });
+});

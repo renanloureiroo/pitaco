@@ -1,7 +1,7 @@
 package com.renanloureiroo.pitaco.testsupport.repositories;
 
 import com.renanloureiroo.pitaco.modules.survey.application.repositories.SurveyStateTransitionRepository;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyId;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyStateTransition;
 import java.util.ArrayList;
 import java.util.Comparator;

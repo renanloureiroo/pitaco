@@ -1,12 +1,13 @@
 package com.renanloureiroo.pitaco.modules.survey.domain.entities;
 
+import com.renanloureiroo.pitaco.core.catalog.QuestionKey;
+import com.renanloureiroo.pitaco.core.catalog.QuestionOption;
+import com.renanloureiroo.pitaco.core.catalog.QuestionType;
+import com.renanloureiroo.pitaco.core.catalog.ScaleRange;
 import com.renanloureiroo.pitaco.core.entity.Entity;
 import com.renanloureiroo.pitaco.core.error.DomainException;
 import com.renanloureiroo.pitaco.core.error.ErrorType;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.QuestionKey;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.QuestionOption;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.QuestionStatement;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.ScaleRange;
 import java.util.List;
 import java.util.Optional;
 import lombok.Getter;

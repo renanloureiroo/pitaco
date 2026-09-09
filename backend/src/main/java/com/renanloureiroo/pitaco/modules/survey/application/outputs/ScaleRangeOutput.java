@@ -1,6 +1,6 @@
 package com.renanloureiroo.pitaco.modules.survey.application.outputs;
 
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.ScaleRange;
+import com.renanloureiroo.pitaco.core.catalog.ScaleRange;
 
 public record ScaleRangeOutput(int min, int max) {
 

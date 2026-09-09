@@ -25,6 +25,7 @@ public final class ApiKey extends Entity<ApiKeyId> {
   private final Instant createdAt;
 
   private Instant revokedAt;
+  private Instant lastUsedAt;
 
   private ApiKey(
       ApiKeyId id,
@@ -32,7 +33,8 @@ public final class ApiKey extends Entity<ApiKeyId> {
       ApiKeyLabel label,
       ApiKeySecret secret,
       Instant createdAt,
-      Instant revokedAt) {
+      Instant revokedAt,
+      Instant lastUsedAt) {
     super(id);
 
     if (applicationId == null) {
@@ -53,6 +55,7 @@ public final class ApiKey extends Entity<ApiKeyId> {
     this.secret = secret;
     this.createdAt = createdAt;
     this.revokedAt = revokedAt;
+    this.lastUsedAt = lastUsedAt;
   }
 
   public record Issued(ApiKey apiKey, String plainSecret) {}
@@ -61,7 +64,13 @@ public final class ApiKey extends Entity<ApiKeyId> {
     var generated = ApiKeySecret.generate();
     var apiKey =
         new ApiKey(
-            ApiKeyId.generate(), applicationId, label, generated.secret(), Instant.now(), null);
+            ApiKeyId.generate(),
+            applicationId,
+            label,
+            generated.secret(),
+            Instant.now(),
+            null,
+            null);
 
     return new Issued(apiKey, generated.plainText());
   }
@@ -73,7 +82,18 @@ public final class ApiKey extends Entity<ApiKeyId> {
       ApiKeySecret secret,
       Instant createdAt,
       Instant revokedAt) {
-    return new ApiKey(id, applicationId, label, secret, createdAt, revokedAt);
+    return new ApiKey(id, applicationId, label, secret, createdAt, revokedAt, null);
+  }
+
+  public static ApiKey restore(
+      ApiKeyId id,
+      ApplicationId applicationId,
+      ApiKeyLabel label,
+      ApiKeySecret secret,
+      Instant createdAt,
+      Instant revokedAt,
+      Instant lastUsedAt) {
+    return new ApiKey(id, applicationId, label, secret, createdAt, revokedAt, lastUsedAt);
   }
 
   public void revoke() {
@@ -94,5 +114,9 @@ public final class ApiKey extends Entity<ApiKeyId> {
 
   public Optional<Instant> revokedAt() {
     return Optional.ofNullable(revokedAt);
+  }
+
+  public Optional<Instant> lastUsedAt() {
+    return Optional.ofNullable(lastUsedAt);
   }
 }

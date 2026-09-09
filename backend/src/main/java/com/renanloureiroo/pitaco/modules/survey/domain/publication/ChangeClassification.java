@@ -1,8 +1,8 @@
 package com.renanloureiroo.pitaco.modules.survey.domain.publication;
 
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.Question;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.QuestionKey;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.QuestionOption;
+import com.renanloureiroo.pitaco.core.catalog.QuestionKey;
+import com.renanloureiroo.pitaco.core.catalog.QuestionOption;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

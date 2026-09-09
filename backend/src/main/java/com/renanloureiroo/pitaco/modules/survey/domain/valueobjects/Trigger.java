@@ -1,5 +1,7 @@
 package com.renanloureiroo.pitaco.modules.survey.domain.valueobjects;
 
+import com.renanloureiroo.pitaco.core.catalog.EventName;
+import com.renanloureiroo.pitaco.core.catalog.SamplingRate;
 import com.renanloureiroo.pitaco.core.error.DomainException;
 import com.renanloureiroo.pitaco.core.error.ErrorType;
 

@@ -3,7 +3,7 @@ package com.renanloureiroo.pitaco.testsupport.factories;
 import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.modules.survey.application.repositories.SurveyRepository;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.Survey;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyId;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyLifecycle;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SurveyName;
 import java.time.Instant;

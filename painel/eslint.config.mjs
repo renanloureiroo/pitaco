@@ -7,6 +7,12 @@ const eslintConfig = defineConfig([
   ...nextTypescript,
   {
     rules: {
+      // Parâmetro prefixado por `_` é intencionalmente ignorado — comum em dublês de teste que
+      // precisam da assinatura completa sem usar todos os argumentos.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+      ],
       // Princípio I: features só podem ser importadas pela sua fronteira pública.
       "no-restricted-imports": [
         "error",

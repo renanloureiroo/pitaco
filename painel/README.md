@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Painel Pitaco
 
-## Getting Started
+Superfície administrativa do Pitaco: aplicações, chaves de acesso e pesquisas ponta a ponta
+(montagem, disparo, publicação, versões e ciclo de vida).
 
-First, run the development server:
+Next.js 16 (App Router) + React 19 + TypeScript estrito, shadcn/ui sobre Tailwind CSS v4.
+Toda leitura acontece em Server Component; toda escrita, em Server Action. Nada no navegador
+fala com o backend.
+
+## Configuração
+
+Copie `.env.example` para `.env.local`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Variável | Obrigatória | Descrição |
+|---|---|---|
+| `PITACO_API_URL` | sim | URL base da API do Pitaco, **já incluindo** o `context-path` `/api` do backend (ex.: `http://localhost:8080/api`). |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+É a única variável. Ela é lida **somente no servidor** — não há equivalente `NEXT_PUBLIC_*`,
+porque nenhuma requisição ao backend parte do navegador. Sem ela, a primeira leitura falha com
+mensagem explícita em vez de tentar uma URL relativa.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Rodar
 
-## Learn More
+```bash
+npm install
+npm run dev     # http://localhost:3000 → redireciona para /aplicacoes
+```
 
-To learn more about Next.js, take a look at the following resources:
+Para desenvolver contra dados reais, suba o backend em `../backend` respondendo em
+`http://localhost:8080/api`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Script | O que faz |
+|---|---|
+| `npm run dev` | servidor de desenvolvimento |
+| `npm run build` / `npm start` | build de produção e execução |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | `tsc --noEmit`, modo estrito |
+| `npm run test` | Vitest (schemas, cliente HTTP, apresentadores, componentes cliente) |
+| `npm run test:e2e` | Playwright (os cinco fluxos críticos) |
+| `npm run verify` | tudo acima — portão de merge da constituição |
 
-## Deploy on Vercel
+## Testes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**O E2E não precisa do backend.** O `fetch` do painel roda no servidor Node, fora do alcance da
+interceptação de rota do Playwright, então o `playwright.config.ts` sobe dois servidores: o
+simulador de API em `e2e/stub-api/` e o Next apontando para ele.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run test:e2e                 # contra o simulador (padrão)
+E2E_API=real npm run test:e2e    # contra o backend real em PITACO_API_URL
+```
+
+Cada teste E2E cria sua própria aplicação e trabalha só dentro dela — é o que dá isolamento com
+`fullyParallel: true`, sem reset global.
+
+Server Components assíncronos não são testados em unidade (limitação documentada pelo próprio
+Next.js); por isso cada `page.tsx` é uma casca fina e a lógica vive em módulo puro coberto por
+Vitest. Rede real é proibida no Vitest: `fetch` é substituído por `vi.stubGlobal`.
+
+## Estrutura
+
+```text
+src/
+├── app/         # só roteamento, layout e composição
+├── features/    # domínio: applications, api-keys, surveys (fronteira em index.ts)
+├── shared/      # cliente HTTP, componentes de estado, formatação
+└── components/ui/  # primitivos shadcn (CLI)
+e2e/             # Playwright + simulador de API em stub-api/
+```
+
+As regras que governam essa estrutura estão em `.specify/memory/constitution.md`.

@@ -1,6 +1,6 @@
 package com.renanloureiroo.pitaco.modules.survey.domain.publication;
 
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.QuestionKey;
+import com.renanloureiroo.pitaco.core.catalog.QuestionKey;
 import java.util.Optional;
 
 public record PublicationImpediment(String code, String field, Optional<QuestionKey> questionKey) {

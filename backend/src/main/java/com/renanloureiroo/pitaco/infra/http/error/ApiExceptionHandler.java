@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -98,6 +99,29 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     // Só os campos e o motivo: o valor rejeitado é entrada do usuário e não vai para o log.
     log.debug("Requisição inválida: {}", fieldErrors);
+
+    return ResponseEntity.status(status).body(problem);
+  }
+
+  /**
+   * Corpo que o Jackson não conseguiu ler: JSON truncado, tipo incompatível, enum desconhecido.
+   *
+   * <p>Existe pelo mesmo motivo do handler acima: {@code code} e {@code traceId} são contrato de
+   * toda resposta de erro, e sem este override o Spring devolveria um ProblemDetail sem os dois.
+   * A mensagem do parser não vai para o corpo nem para o log — ela cita o trecho recusado, que é
+   * entrada do usuário.
+   */
+  @Override
+  protected ResponseEntity<Object> handleHttpMessageNotReadable(
+      HttpMessageNotReadableException error,
+      HttpHeaders headers,
+      HttpStatusCode status,
+      WebRequest request) {
+
+    var problem = problemOf(status, "Corpo da requisição malformado", VALIDATION_CODE, request);
+    problem.setTitle(HttpStatus.BAD_REQUEST.getReasonPhrase());
+
+    log.debug("Corpo da requisição malformado");
 
     return ResponseEntity.status(status).body(problem);
   }

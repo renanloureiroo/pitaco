@@ -19,7 +19,8 @@ public final class ApiKeyJpaMapper {
         apiKey.getSecret().prefix(),
         apiKey.getSecret().hash(),
         apiKey.getCreatedAt(),
-        apiKey.getRevokedAt());
+        apiKey.getRevokedAt(),
+        apiKey.getLastUsedAt());
   }
 
   public static ApiKey toDomain(ApiKeyJpaEntity entity) {
@@ -29,6 +30,7 @@ public final class ApiKeyJpaMapper {
         ApiKeyLabel.of(entity.getLabel()),
         new ApiKeySecret(entity.getPrefix(), entity.getSecretHash()),
         entity.getCreatedAt(),
-        entity.getRevokedAt());
+        entity.getRevokedAt(),
+        entity.getLastUsedAt());
   }
 }

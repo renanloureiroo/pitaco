@@ -2,11 +2,11 @@ package com.renanloureiroo.pitaco.testsupport.factories;
 
 import com.renanloureiroo.pitaco.modules.survey.application.services.QuestionDrafts;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.Question;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.QuestionType;
+import com.renanloureiroo.pitaco.core.catalog.QuestionType;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyVersion;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.QuestionOption;
+import com.renanloureiroo.pitaco.core.catalog.QuestionOption;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.QuestionStatement;
-import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.ScaleRange;
+import com.renanloureiroo.pitaco.core.catalog.ScaleRange;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

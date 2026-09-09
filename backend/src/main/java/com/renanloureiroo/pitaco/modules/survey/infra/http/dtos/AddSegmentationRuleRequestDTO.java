@@ -1,7 +1,7 @@
 package com.renanloureiroo.pitaco.modules.survey.infra.http.dtos;
 
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.AddSegmentationRuleUseCase;
-import com.renanloureiroo.pitaco.modules.survey.domain.entities.RuleOperation;
+import com.renanloureiroo.pitaco.core.catalog.RuleOperation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

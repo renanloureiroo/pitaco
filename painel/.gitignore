@@ -47,3 +47,6 @@ next-env.d.ts
 /playwright/.cache/
 /coverage/
 
+
+# env de exemplo é versionado
+!.env.example

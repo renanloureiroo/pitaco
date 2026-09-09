@@ -8,4 +8,9 @@ import java.util.Optional;
 public interface ApplicationScopeGateway {
 
   Optional<ApplicationScopeState> stateOf(ApplicationId applicationId);
+
+  // Prazo efetivo de retenção de texto livre: o específico, ou o geral quando ele não
+  // existe. Ausente significa sem expiração (D-07). Fora de stateOf, que é caminho quente
+  // da elegibilidade (D-08).
+  Optional<Integer> effectiveOpenTextRetentionDaysOf(ApplicationId applicationId);
 }

@@ -26,4 +26,11 @@ public class ApplicationScopeGatewayApp implements ApplicationScopeGateway {
                     ? ApplicationScopeState.ACTIVE
                     : ApplicationScopeState.INACTIVE);
   }
+
+  @Override
+  public Optional<Integer> effectiveOpenTextRetentionDaysOf(ApplicationId applicationId) {
+    return applications
+        .findById(applicationId)
+        .flatMap(application -> application.effectiveOpenTextRetentionDays());
+  }
 }

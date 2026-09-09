@@ -11,10 +11,29 @@ import java.util.Optional;
 public class InMemoryCollectApplicationScopeGateway implements ApplicationScopeGateway {
 
   private final Map<ApplicationId, ApplicationScopeState> states = new HashMap<>();
+  private final Map<ApplicationId, Integer> retentionDays = new HashMap<>();
 
   @Override
   public Optional<ApplicationScopeState> stateOf(ApplicationId applicationId) {
     return Optional.ofNullable(states.get(applicationId));
+  }
+
+  @Override
+  public Optional<Integer> effectiveOpenTextRetentionDaysOf(ApplicationId applicationId) {
+    return Optional.ofNullable(retentionDays.get(applicationId));
+  }
+
+  // Ausente é o padrão: sem prazo configurado, texto livre nunca expira.
+  public InMemoryCollectApplicationScopeGateway withOpenTextRetentionDays(
+      ApplicationId applicationId, int days) {
+    retentionDays.put(applicationId, days);
+    return this;
+  }
+
+  public InMemoryCollectApplicationScopeGateway withoutOpenTextRetention(
+      ApplicationId applicationId) {
+    retentionDays.remove(applicationId);
+    return this;
   }
 
   public InMemoryCollectApplicationScopeGateway withActive(ApplicationId applicationId) {

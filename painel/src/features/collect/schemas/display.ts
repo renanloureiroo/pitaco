@@ -1,7 +1,8 @@
 import { z } from "zod";
 
+import { absent } from "@/shared/api";
+
 import { answerSchema } from "./answer";
-import { absent } from "./optional";
 
 /**
  * Exibição: em que a pesquisa parou, para quem foi exibida e o que produziu.

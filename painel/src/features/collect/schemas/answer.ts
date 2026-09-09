@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-import { absent } from "./optional";
+import { absent } from "@/shared/api";
+
 
 /**
  * Resposta e sua situação.

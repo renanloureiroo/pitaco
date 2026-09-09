@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { absent } from "@/shared/api";
+
 /**
  * Schemas de leitura de aplicação.
  *
@@ -24,9 +26,9 @@ export const applicationSummarySchema = z.object({
 export type ApplicationSummary = z.infer<typeof applicationSummarySchema>;
 
 export const applicationSchema = applicationSummarySchema.extend({
-  quietPeriodDays: z.number().optional(),
-  retentionDays: z.number().optional(),
-  openTextRetentionDays: z.number().optional(),
+  quietPeriodDays: absent(z.number()),
+  retentionDays: absent(z.number()),
+  openTextRetentionDays: absent(z.number()),
   updatedAt: z.string(),
 });
 

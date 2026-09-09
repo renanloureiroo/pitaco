@@ -71,3 +71,19 @@ describe("issueApiKeyFormSchema", () => {
     expect(issueApiKeyFormSchema.parse({ label: "  Produção  " }).label).toBe("Produção");
   });
 });
+
+describe("ausência vinda da API (regressão)", () => {
+  it("aceita revokedAt nulo — o backend já serializou a ausência assim", () => {
+    const parsed = apiKeySchema.parse({
+      id: "key-1",
+      applicationId: "app-1",
+      label: "Produção",
+      prefix: "pit_abc",
+      status: "active",
+      createdAt: "2026-09-09T12:00:00Z",
+      revokedAt: null,
+    });
+
+    expect(parsed.revokedAt).toBeUndefined();
+  });
+});

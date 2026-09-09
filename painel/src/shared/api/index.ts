@@ -14,6 +14,8 @@ export {
   type Result,
 } from "./errors";
 
+export { absent } from "./optional";
+
 export { buildUrl, request, requestNoContent, type QueryValue, type RequestOptions } from "./client";
 
 export {

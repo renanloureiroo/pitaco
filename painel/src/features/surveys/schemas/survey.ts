@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { absent } from "@/shared/api";
+
 import { questionSchema } from "./question";
 import { triggerSchema } from "./trigger";
 
@@ -19,8 +21,8 @@ export const surveySchema = z.object({
   applicationId: z.string(),
   name: z.string(),
   state: surveyStateSchema,
-  publishedVersionNumber: z.number().optional(),
-  draftVersionNumber: z.number().optional(),
+  publishedVersionNumber: absent(z.number()),
+  draftVersionNumber: absent(z.number()),
   createdAt: z.string(),
 });
 
@@ -35,7 +37,7 @@ export const surveyContentSchema = z.object({
   source: z.enum(["draft", "published"]),
   versionNumber: z.number(),
   questions: z.array(questionSchema),
-  trigger: triggerSchema.optional(),
+  trigger: absent(triggerSchema),
 });
 
 export type SurveyContent = z.infer<typeof surveyContentSchema>;
@@ -45,10 +47,10 @@ export const surveyDetailSchema = z.object({
   applicationId: z.string(),
   name: z.string(),
   state: surveyStateSchema,
-  publishedVersionNumber: z.number().optional(),
-  draftVersionNumber: z.number().optional(),
+  publishedVersionNumber: absent(z.number()),
+  draftVersionNumber: absent(z.number()),
   createdAt: z.string(),
-  content: surveyContentSchema.optional(),
+  content: absent(surveyContentSchema),
 });
 
 export type SurveyDetail = z.infer<typeof surveyDetailSchema>;

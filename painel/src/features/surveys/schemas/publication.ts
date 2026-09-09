@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { absent } from "@/shared/api";
+
 /**
  * Impedimentos de publicação.
  *
@@ -20,9 +22,9 @@ export const IMPEDIMENT_CODES = impedimentCodeSchema.options;
 
 export const publicationImpedimentSchema = z.object({
   code: impedimentCodeSchema,
-  field: z.string().optional(),
+  field: absent(z.string()),
   /** Quando presente, liga o impedimento à pergunta correspondente na montagem. */
-  questionKey: z.string().optional(),
+  questionKey: absent(z.string()),
 });
 
 export type PublicationImpediment = z.infer<typeof publicationImpedimentSchema>;

@@ -126,3 +126,22 @@ describe("applicationListParamsSchema", () => {
     expect(applicationListParamsSchema.parse({}).status).toBeUndefined();
   });
 });
+
+describe("ausência vinda da API (regressão)", () => {
+  it("aceita prazo nulo sem confundi-lo com zero", () => {
+    const parsed = applicationSchema.parse({
+      id: "app-1",
+      name: "Loja",
+      slug: "loja",
+      status: "active",
+      quietPeriodDays: null,
+      retentionDays: 0,
+      openTextRetentionDays: null,
+      createdAt: "2026-09-09T12:00:00Z",
+      updatedAt: "2026-09-09T12:00:00Z",
+    });
+
+    expect(parsed.quietPeriodDays).toBeUndefined();
+    expect(parsed.retentionDays).toBe(0);
+  });
+});

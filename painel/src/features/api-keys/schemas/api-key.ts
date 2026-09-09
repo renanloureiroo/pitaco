@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { absent } from "@/shared/api";
+
 /**
  * Chaves de acesso.
  *
@@ -27,7 +29,7 @@ export const apiKeySchema = z.object({
   status: apiKeyStatusSchema,
   createdAt: z.string(),
   /** Ausente enquanto a chave é válida. */
-  revokedAt: z.string().optional(),
+  revokedAt: absent(z.string()),
 });
 
 export type ApiKey = z.infer<typeof apiKeySchema>;

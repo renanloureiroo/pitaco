@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { absent } from "@/shared/api";
+
 /**
  * Disparo e regras de segmentação.
  *
@@ -26,7 +28,7 @@ export const segmentationRuleSchema = z.object({
   id: z.string(),
   attribute: z.string(),
   operation: ruleOperationSchema,
-  value: z.string().optional(),
+  value: absent(z.string()),
 });
 
 export type SegmentationRule = z.infer<typeof segmentationRuleSchema>;
@@ -34,7 +36,7 @@ export type SegmentationRule = z.infer<typeof segmentationRuleSchema>;
 export const triggerSchema = z.object({
   eventName: z.string(),
   windowStart: z.string(),
-  windowEnd: z.string().optional(),
+  windowEnd: absent(z.string()),
   samplingRate: z.number(),
   rules: z.array(segmentationRuleSchema).default([]),
 });

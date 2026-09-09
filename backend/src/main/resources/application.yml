@@ -30,6 +30,13 @@ server:
 spring:
   application:
     name: pitaco
+  jackson:
+    # Campo ausente sai **omitido**, não como `null`. É o que os contratos desta API descrevem
+    # ("ausente quando não informada") e o que os consumidores assumem: o painel valida cada
+    # corpo por schema e trata ausência como ausência, então um `null` no lugar da omissão
+    # derruba a resposta inteira na fronteira. Estava declarado só em ApplicationResponseDTO,
+    # via @JsonInclude — daí a tela de aplicações funcionar e as demais não.
+    default-property-inclusion: non_null
   threads:
     virtual:
       enabled: true

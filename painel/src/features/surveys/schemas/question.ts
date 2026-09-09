@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { absent } from "@/shared/api";
+
 /**
  * Perguntas: leitura e regras de **forma**.
  *
@@ -59,8 +61,8 @@ export const questionSchema = z.object({
   type: questionTypeSchema,
   position: z.number(),
   required: z.boolean(),
-  options: z.array(questionOptionSchema).optional(),
-  range: questionRangeSchema.optional(),
+  options: absent(z.array(questionOptionSchema)),
+  range: absent(questionRangeSchema),
 });
 
 export type Question = z.infer<typeof questionSchema>;

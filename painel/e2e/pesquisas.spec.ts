@@ -104,6 +104,38 @@ test.describe("US3 — criar e montar o rascunho de uma pesquisa", () => {
     expect(survey.applicationId).toBe(application.id);
   });
 
+  test("reordena pela alça de arrastar, operada por teclado, e persiste", async ({ page }) => {
+    const application = await createApplication(page);
+    const survey = await createSurvey(page, application.id);
+
+    await adicionarPergunta(page, "Primeira?", "NPS");
+    await adicionarPergunta(page, "Segunda?", "Texto livre");
+
+    // O anúncio para leitores de tela é o sinal de cada etapa: pegar mede as posições de forma
+    // assíncrona, e a seta só encontra o destino depois disso.
+    const anuncio = page.locator('[id^="DndLiveRegion"]');
+    const alca = page.getByTestId("question-item").first().getByTestId("drag-question-handle");
+    await alca.focus();
+    await page.keyboard.press("Space");
+    await expect(anuncio).toContainText('"Primeira?"');
+    // A seta pressionada antes de a medição terminar é ignorada; repetir é inócuo, porque na
+    // última posição não há para onde descer.
+    await expect(async () => {
+      await page.keyboard.press("ArrowDown");
+      await expect(anuncio).toContainText("movida para a posição 2 de 2", { timeout: 500 });
+    }).toPass();
+    await page.keyboard.press("Space");
+    await expect(anuncio).toContainText("solta na posição 2 de 2");
+
+    await expect(page.getByTestId("question-item").first()).toContainText("Segunda?");
+
+    await page.reload();
+    const itens = page.getByTestId("question-item");
+    await expect(itens.nth(0)).toContainText("Segunda?");
+    await expect(itens.nth(1)).toContainText("Primeira?");
+    expect(survey.applicationId).toBe(application.id);
+  });
+
   test("não oferece mover quando existe uma única pergunta", async ({ page }) => {
     const application = await createApplication(page);
     await createSurvey(page, application.id);

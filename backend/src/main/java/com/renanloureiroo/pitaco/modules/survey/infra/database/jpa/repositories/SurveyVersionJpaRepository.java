@@ -17,6 +17,7 @@ public interface SurveyVersionJpaRepository extends JpaRepository<SurveyVersionJ
       select distinct v from SurveyVersionJpaEntity v
         left join fetch v.questions q
         left join fetch q.options
+        left join fetch q.conditionValues
         left join fetch v.rules
       """;
 

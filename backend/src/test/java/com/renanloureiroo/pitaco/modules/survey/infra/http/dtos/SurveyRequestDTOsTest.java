@@ -7,6 +7,7 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
@@ -65,16 +66,18 @@ class SurveyRequestDTOsTest {
   }
 
   @ParameterizedTest
-  @NullAndEmptySource
-  @ValueSource(strings = {"   "})
-  void recusa_nome_ausente_na_renomeacao(String invalid) {
-    assertThat(violationsOf(new RenameSurveyRequestDTO(invalid)))
+  @ValueSource(strings = {"", "   "})
+  @DisplayName("Na edição, nome enviado em branco espelha a mensagem de SurveyName")
+  void recusa_nome_em_branco_na_edicao(String invalid) {
+    assertThat(violationsOf(new UpdateSurveyRequestDTO(Optional.of(invalid), null, null, null)))
         .containsEntry("name", "Nome é obrigatório");
   }
 
   @Test
-  void recusa_nome_longo_demais_na_renomeacao() {
-    assertThat(violationsOf(new RenameSurveyRequestDTO("a".repeat(121))))
+  void recusa_nome_longo_demais_na_edicao() {
+    assertThat(
+            violationsOf(
+                new UpdateSurveyRequestDTO(Optional.of("a".repeat(121)), null, null, null)))
         .containsEntry("name", "Nome não pode passar de 120 caracteres");
   }
 
@@ -89,12 +92,13 @@ class SurveyRequestDTOsTest {
   }
 
   @Test
-  void converte_a_renomeacao_em_input() {
-    var input = new RenameSurveyRequestDTO("Outro").toInput("app", "survey");
+  void converte_a_edicao_em_input() {
+    var input =
+        new UpdateSurveyRequestDTO(Optional.of("Outro"), null, null, null).toInput("app", "survey");
 
     assertThat(input.applicationId()).isEqualTo("app");
     assertThat(input.surveyId()).isEqualTo("survey");
-    assertThat(input.name()).isEqualTo("Outro");
+    assertThat(input.name()).contains("Outro");
   }
 
   @Test

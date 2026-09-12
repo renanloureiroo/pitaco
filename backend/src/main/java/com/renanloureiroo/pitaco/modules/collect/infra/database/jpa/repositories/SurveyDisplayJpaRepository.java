@@ -30,6 +30,25 @@ public interface SurveyDisplayJpaRepository extends JpaRepository<SurveyDisplayJ
       @Param("respondentId") String respondentId,
       @Param("surveyIds") Collection<String> surveyIds);
 
+  // Servida pelo idx_survey_displays_respondent_listing, que já começa por (respondent_id,
+  // opened_at desc).
+  @Query("select max(s.openedAt) from SurveyDisplayJpaEntity s where s.respondentId = :respondentId")
+  Optional<Instant> findLastOpenedAt(@Param("respondentId") String respondentId);
+
+  // JPQL e não SQL nativo: a consulta dispara o flush da conclusão pendente na mesma transação,
+  // e a conta já inclui a exibição que acabou de concluir.
+  @Query(
+      "select count(s) from SurveyDisplayJpaEntity s"
+          + " where s.surveyId = :surveyId and s.outcome = 'COMPLETED'")
+  long countCompleted(@Param("surveyId") String surveyId);
+
+  // Servida por idx_survey_displays_survey, que já é (survey_id, opened_at desc).
+  @Query(
+      "select count(s) from SurveyDisplayJpaEntity s"
+          + " where s.surveyId = :surveyId and s.openedAt >= :from and s.openedAt <= :to")
+  long countOpenedBetween(
+      @Param("surveyId") String surveyId, @Param("from") Instant from, @Param("to") Instant to);
+
   // A junção com survey_versions traz o número da versão uma vez por página, nunca por linha
   // (D-03). A ordenação vem na própria consulta para casar com o índice.
   @Query(
@@ -48,9 +67,6 @@ public interface SurveyDisplayJpaRepository extends JpaRepository<SurveyDisplayJ
              and (cast(:openedTo as Instant) is null or d.openedAt <= :openedTo)
            order by d.openedAt desc, d.id desc
           """,
-      // A contagem repete a mesma junção interna por igualdade de identificador da consulta
-      // principal: sem ela, filtrar por número não teria por onde e o total divergiria da
-      // página. Interna e por igualdade é o que mantém as duas contando o mesmo conjunto.
       countQuery =
           """
           select count(d)

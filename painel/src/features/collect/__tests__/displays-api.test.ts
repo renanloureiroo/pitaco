@@ -131,7 +131,6 @@ describe("campos ausentes na fronteira", () => {
       for (const item of result.data.items) {
         expect(item.closedAt).toBeUndefined();
         expect(item.sdkVersion).toBeUndefined();
-        // Ausência é ausência: nunca `null`, nunca string vazia, nunca zero.
         expect(item.closedAt).not.toBeNull();
       }
     }

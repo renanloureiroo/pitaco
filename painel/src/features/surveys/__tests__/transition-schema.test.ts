@@ -4,7 +4,6 @@ import {
   TRANSITION_REASONS,
   TRANSITION_REASON_LABELS,
   allowedManualReasons,
-  registeredTransitions,
   surveyStateTransitionSchema,
   type SurveyStateTransition,
 } from "../schemas/transition";
@@ -22,8 +21,9 @@ describe("surveyStateTransitionSchema", () => {
     expect(surveyStateTransitionSchema.safeParse(transition(reason)).success).toBe(true);
   });
 
-  it("cobre os seis motivos previstos no contrato", () => {
-    expect(TRANSITION_REASONS).toHaveLength(6);
+  it("cobre os sete motivos previstos no contrato, inclusive o encerramento por cota", () => {
+    expect(TRANSITION_REASONS).toHaveLength(7);
+    expect(TRANSITION_REASON_LABELS.quota_reached).toBe("Encerrada por cota");
     for (const reason of TRANSITION_REASONS) {
       expect(TRANSITION_REASON_LABELS[reason]).toBeTruthy();
     }
@@ -53,56 +53,23 @@ describe("surveyStateTransitionSchema", () => {
 });
 
 describe("allowedManualReasons", () => {
-  it("lista vazia não autoriza nada — é o caso da pesquisa encerrada", () => {
-    expect(allowedManualReasons([], "ended")).toEqual([]);
+  it("não oferece nada em rascunho nem em encerrada", () => {
+    expect(allowedManualReasons("draft")).toEqual([]);
+    expect(allowedManualReasons("ended")).toEqual([]);
   });
 
-  it("autoriza exatamente o que a API oferece a partir do estado atual", () => {
-    const transitions = [
-      transition("manual_pause", "active", "paused"),
-      transition("manual_end", "active", "ended"),
-    ];
-
-    expect(allowedManualReasons(transitions, "active")).toEqual(["manual_pause", "manual_end"]);
+  it("no ar e agendada oferecem pausar e encerrar, nunca retomar", () => {
+    expect(allowedManualReasons("active")).toEqual(["manual_pause", "manual_end"]);
+    expect(allowedManualReasons("scheduled")).toEqual(["manual_pause", "manual_end"]);
   });
 
-  it("não oferece transição que parte de outro estado — isso é histórico", () => {
-    const transitions = [
-      transition("publication", "draft", "scheduled"),
-      transition("manual_pause", "active", "paused"),
-    ];
-
-    // A pesquisa está pausada: pausar de novo não é oferecido, ainda que conste da lista.
-    expect(allowedManualReasons(transitions, "paused")).toEqual([]);
+  it("pausada oferece retomar e encerrar, nunca pausar de novo", () => {
+    expect(allowedManualReasons("paused")).toEqual(["manual_resume", "manual_end"]);
   });
 
-  it("ignora transições automáticas, que não são ações de quem opera", () => {
-    const transitions = [
-      transition("window_opened", "active", "active"),
-      transition("publication", "active", "scheduled"),
-    ];
-
-    expect(allowedManualReasons(transitions, "active")).toEqual([]);
-  });
-
-  it("não oferece nada quando a API não lista transição a partir do estado atual", () => {
-    expect(allowedManualReasons([transition("manual_pause", "active", "paused")], "ended")).toEqual(
-      [],
-    );
-  });
-});
-
-describe("registeredTransitions", () => {
-  it("mostra como histórico o que partiu de outros estados", () => {
-    const historico = transition("publication", "draft", "scheduled");
-    const oferecida = transition("manual_pause", "active", "paused");
-
-    expect(registeredTransitions([historico, oferecida], "active")).toEqual([historico]);
-  });
-
-  it("devolve lista vazia quando só há transições possíveis", () => {
-    expect(registeredTransitions([transition("manual_pause", "active", "paused")], "active")).toEqual(
-      [],
-    );
+  it("encerrar é oferecido em todo estado que ainda pode encerrar", () => {
+    for (const state of ["scheduled", "active", "paused"] as const) {
+      expect(allowedManualReasons(state)).toContain("manual_end");
+    }
   });
 });

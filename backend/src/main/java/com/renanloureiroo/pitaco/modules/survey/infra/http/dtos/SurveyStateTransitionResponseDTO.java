@@ -25,6 +25,7 @@ public record SurveyStateTransitionResponseDTO(
               "manual_pause",
               "manual_resume",
               "manual_end",
+              "quota_reached",
               "window_opened",
               "window_closed"
             },

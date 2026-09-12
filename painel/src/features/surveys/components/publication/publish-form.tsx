@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import {
@@ -43,6 +43,7 @@ export function PublishForm({
 
   const values = state.status === "error" ? state.values : {};
   const errors = state.status === "error" ? state.fieldErrors : {};
+  const [changeKind, setChangeKind] = useState(values.changeKind ?? "");
 
   return (
     <form action={formAction} data-testid="publish-form" className="flex max-w-xl flex-col gap-6">
@@ -52,7 +53,7 @@ export function PublishForm({
         <>
           <Field>
             <FieldLabel htmlFor="change-kind">Natureza da mudança</FieldLabel>
-            <Select name="changeKind" defaultValue={values.changeKind}>
+            <Select name="changeKind" value={changeKind} onValueChange={setChangeKind}>
               <SelectTrigger id="change-kind" data-testid="change-kind-select">
                 <SelectValue placeholder="Escolha a natureza da mudança" />
               </SelectTrigger>

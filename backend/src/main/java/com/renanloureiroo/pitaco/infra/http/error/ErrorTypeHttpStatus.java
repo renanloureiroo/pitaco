@@ -21,7 +21,8 @@ final class ErrorTypeHttpStatus {
               ErrorType.VALIDATION, HttpStatus.BAD_REQUEST,
               ErrorType.UNAUTHORIZED, HttpStatus.UNAUTHORIZED,
               ErrorType.FORBIDDEN, HttpStatus.FORBIDDEN,
-              ErrorType.BUSINESS_RULE, HttpStatus.UNPROCESSABLE_CONTENT));
+              ErrorType.BUSINESS_RULE, HttpStatus.UNPROCESSABLE_CONTENT,
+              ErrorType.RATE_LIMITED, HttpStatus.TOO_MANY_REQUESTS));
 
   private ErrorTypeHttpStatus() {}
 

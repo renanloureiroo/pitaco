@@ -5,7 +5,9 @@ import com.renanloureiroo.pitaco.modules.survey.domain.entities.Question;
 import com.renanloureiroo.pitaco.core.catalog.QuestionType;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyVersion;
 import com.renanloureiroo.pitaco.core.catalog.QuestionOption;
+import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.DisplayCondition;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.QuestionStatement;
+import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.ScaleLabels;
 import com.renanloureiroo.pitaco.core.catalog.ScaleRange;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,8 +22,20 @@ public final class QuestionFactory {
   private boolean required = true;
   private List<QuestionOption> options = List.of();
   private ScaleRange range;
+  private ScaleLabels labels = ScaleLabels.none();
+  private DisplayCondition condition;
 
   private QuestionFactory() {}
+
+  public QuestionFactory withLabels(String min, String max) {
+    this.labels = ScaleLabels.of(min, max);
+    return this;
+  }
+
+  public QuestionFactory conditionedOn(DisplayCondition condition) {
+    this.condition = condition;
+    return this;
+  }
 
   public static QuestionFactory aQuestion() {
     return new QuestionFactory();
@@ -105,7 +119,13 @@ public final class QuestionFactory {
 
   public Question.Draft asDraft() {
     return new Question.Draft(
-        QuestionStatement.of(statement), type, required, options, Optional.ofNullable(range));
+        QuestionStatement.of(statement),
+        type,
+        required,
+        options,
+        Optional.ofNullable(range),
+        labels,
+        Optional.ofNullable(condition));
   }
 
   public Question buildAddedTo(SurveyVersion version) {

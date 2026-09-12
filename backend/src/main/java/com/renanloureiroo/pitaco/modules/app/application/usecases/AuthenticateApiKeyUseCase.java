@@ -30,7 +30,7 @@ public class AuthenticateApiKeyUseCase
 
   public record Input(String presentedKey) {}
 
-  public record Output(String applicationId, boolean applicationActive) {}
+  public record Output(String applicationId, String apiKeyId, boolean applicationActive) {}
 
   @Override
   public Output execute(Input input) {
@@ -48,6 +48,6 @@ public class AuthenticateApiKeyUseCase
     var application =
         applications.findById(apiKey.getApplicationId()).orElseThrow(ApiKeyInvalid::new);
 
-    return new Output(application.id().value(), application.isActive());
+    return new Output(application.id().value(), apiKey.id().value(), application.isActive());
   }
 }

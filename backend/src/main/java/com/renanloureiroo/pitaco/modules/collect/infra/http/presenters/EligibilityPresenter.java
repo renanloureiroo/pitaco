@@ -19,7 +19,9 @@ public final class EligibilityPresenter {
         survey.surveyId(),
         survey.versionId(),
         survey.versionNumber(),
-        survey.questions().stream().map(EligibilityPresenter::questionOf).toList());
+        survey.questions().stream().map(EligibilityPresenter::questionOf).toList(),
+        new EligibilityResponseDTO.FreeTextNoticeDTO(
+            survey.freeTextNotice().enabled(), survey.freeTextNotice().text().orElse(null)));
   }
 
   private static EligibilityResponseDTO.QuestionDTO questionOf(DeliverableQuestionOutput question) {
@@ -37,7 +39,24 @@ public final class EligibilityPresenter {
             .toList(),
         question
             .range()
-            .map(range -> new EligibilityResponseDTO.RangeDTO(range.min(), range.max()))
+            .map(
+                range ->
+                    new EligibilityResponseDTO.RangeDTO(
+                        range.min(),
+                        range.max(),
+                        range.minLabel().orElse(null),
+                        range.maxLabel().orElse(null)))
+            .orElse(null),
+        question
+            .condition()
+            .map(
+                condition ->
+                    new EligibilityResponseDTO.ConditionDTO(
+                        condition.sourceKey(),
+                        condition.operator(),
+                        condition.values(),
+                        condition.min().orElse(null),
+                        condition.max().orElse(null)))
             .orElse(null));
   }
 }

@@ -246,8 +246,6 @@ class ListSurveyDisplaysE2ETest {
   @Test
   @DisplayName("Com filtro de versão, o total é o do conjunto inteiro, não o da página")
   void total_com_filtro_de_versao_conta_o_conjunto_sem_paginacao() {
-    // Se a contagem não repetisse a junção da consulta principal, este total viria 4 — o
-    // conjunto sem o filtro de versão. É o que pega a countQuery esquecida (R7).
     var second = versionNumbered(2);
     displayOnVersion(second, FIRST);
     displayOnVersion(second, SECOND);

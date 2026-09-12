@@ -6,17 +6,20 @@ import {
   notFound,
   nowIso,
   paginate,
+  problem,
   readPageQuery,
   validation,
   type Route,
   type StubResponse,
 } from "../http.ts";
 import {
+  DEFAULT_FREE_TEXT_NOTICE,
   currentVersion,
   draftVersion,
   publishedVersion,
   settleWindow,
   store,
+  type StubCondition,
   type StubQuestion,
   type StubSurvey,
   type StubVersion,
@@ -52,6 +55,16 @@ export function toSurvey(survey: StubSurvey) {
     // Ausente enquanto nunca publicada — nunca `0`.
     ...(published !== undefined ? { publishedVersionNumber: published.number } : {}),
     ...(draft !== undefined ? { draftVersionNumber: draft.number } : {}),
+    priority: survey.priority ?? 0,
+    ...(survey.responseQuota !== undefined ? { responseQuota: survey.responseQuota } : {}),
+    ignoresQuietPeriod: survey.ignoresQuietPeriod ?? false,
+    ...(survey.templateKind !== undefined ? { templateKind: survey.templateKind } : {}),
+    freeTextNotice: {
+      enabled: survey.freeTextNoticeEnabled ?? true,
+      ...(survey.freeTextNoticeText !== undefined ? { customText: survey.freeTextNoticeText } : {}),
+      text: survey.freeTextNoticeText ?? DEFAULT_FREE_TEXT_NOTICE,
+      defaultText: DEFAULT_FREE_TEXT_NOTICE,
+    },
     createdAt: survey.createdAt,
   };
 }
@@ -127,7 +140,10 @@ function readQuestion(body: unknown): { question: Omit<StubQuestion, "id" | "key
     });
   }
 
-  const range = input.range as { min?: unknown; max?: unknown } | undefined;
+  const range = input.range as
+    | { min?: unknown; max?: unknown; minLabel?: unknown; maxLabel?: unknown }
+    | undefined;
+  const condition = readCondition(input.condition);
 
   return {
     question: {
@@ -136,10 +152,142 @@ function readQuestion(body: unknown): { question: Omit<StubQuestion, "id" | "key
       required: input.required === true,
       ...(options !== undefined ? { options } : {}),
       ...(range !== undefined && typeof range.min === "number" && typeof range.max === "number"
-        ? { range: { min: range.min, max: range.max } }
+        ? {
+            range: {
+              min: range.min,
+              max: range.max,
+              ...(typeof range.minLabel === "string" ? { minLabel: range.minLabel } : {}),
+              ...(typeof range.maxLabel === "string" ? { maxLabel: range.maxLabel } : {}),
+            },
+          }
         : {}),
+      ...(condition !== undefined ? { condition } : {}),
     },
   };
+}
+
+const CONDITION_OPERATORS = ["equals", "not_equals", "in", "between"];
+const NUMERIC_TYPES = ["rating", "scale", "nps"];
+
+function readCondition(raw: unknown): StubCondition | undefined {
+  if (raw === null || typeof raw !== "object") {
+    return undefined;
+  }
+  const input = raw as Record<string, unknown>;
+  if (typeof input.sourceKey !== "string" || typeof input.operator !== "string") {
+    return undefined;
+  }
+  if (!CONDITION_OPERATORS.includes(input.operator)) {
+    return undefined;
+  }
+
+  return {
+    sourceKey: input.sourceKey,
+    operator: input.operator as StubCondition["operator"],
+    values: Array.isArray(input.values) ? input.values.map(String) : [],
+    ...(typeof input.min === "number" ? { min: input.min } : {}),
+    ...(typeof input.max === "number" ? { max: input.max } : {}),
+  };
+}
+
+/** Recusa de regra no formato do backend: 422 com o campo que a causou. */
+function ruleViolation(code: string, detail: string, field: string, questionKey?: string): StubResponse {
+  const response = problem(422, code, detail);
+  return {
+    ...response,
+    body: {
+      ...(response.body as Record<string, unknown>),
+      field,
+      ...(questionKey !== undefined ? { questionKey } : {}),
+    },
+  };
+}
+
+/** As mesmas regras do backend: origem anterior, não texto livre, valor que cabe na origem. */
+function checkCondition(
+  condition: StubCondition | undefined,
+  questions: StubQuestion[],
+  position: number,
+): StubResponse | undefined {
+  if (condition === undefined) {
+    return undefined;
+  }
+
+  const source = questions.find((question) => question.key === condition.sourceKey);
+  if (source === undefined || source.position >= position || source.type === "free_text") {
+    return ruleViolation(
+      "question.condition_source_invalid",
+      "A condição só pode olhar para uma pergunta anterior que não seja de texto livre",
+      "condition.sourceKey",
+    );
+  }
+
+  const numeric = NUMERIC_TYPES.includes(source.type);
+  if (!numeric && condition.operator === "between") {
+    return ruleViolation(
+      "question.condition_operator_invalid",
+      "Faixa numérica só vale para perguntas de escala",
+      "condition.operator",
+    );
+  }
+
+  if (numeric) {
+    const scale = source.type === "nps" ? { min: 0, max: 10 } : source.range;
+    const fits = (value: number) =>
+      scale === undefined || (value >= scale.min && value <= scale.max);
+    const invalid =
+      condition.operator === "between"
+        ? condition.min === undefined ||
+          condition.max === undefined ||
+          condition.min > condition.max ||
+          !fits(condition.min) ||
+          !fits(condition.max)
+        : condition.values.length === 0 ||
+          condition.values.some((value) => !/^-?\d+$/.test(value) || !fits(Number(value)));
+    return invalid
+      ? ruleViolation(
+          "question.condition_value_invalid",
+          "Todo valor da condição precisa caber na escala da origem",
+          "condition.values",
+        )
+      : undefined;
+  }
+
+  const declared = new Set((source.options ?? []).map((option) => option.value));
+  return condition.values.length === 0 || condition.values.some((value) => !declared.has(value))
+    ? ruleViolation(
+        "question.condition_value_invalid",
+        "Todo valor da condição precisa ser uma opção da pergunta de origem",
+        "condition.values",
+      )
+    : undefined;
+}
+
+type TemplateKind = NonNullable<StubSurvey["templateKind"]>;
+
+const TEMPLATE_QUESTIONS: Record<TemplateKind, Omit<StubQuestion, "id" | "key" | "position">> = {
+  nps: {
+    statement: "Em uma escala de 0 a 10, o quanto você recomendaria este app a um amigo ou colega?",
+    type: "nps",
+    required: true,
+    range: { min: 0, max: 10, minLabel: "Nada provável", maxLabel: "Extremamente provável" },
+  },
+  csat: {
+    statement: "O quanto você está satisfeito com este app?",
+    type: "rating",
+    required: true,
+    range: { min: 1, max: 5, minLabel: "Muito insatisfeito", maxLabel: "Muito satisfeito" },
+  },
+  ces: {
+    statement: "Este app facilitou resolver o que eu precisava.",
+    type: "scale",
+    required: true,
+    range: { min: 1, max: 7, minLabel: "Discordo totalmente", maxLabel: "Concordo totalmente" },
+  },
+};
+
+function isTemplate(value: unknown): value is TemplateKind {
+  return typeof value === "string" && value in TEMPLATE_QUESTIONS;
 }
 
 function keyFrom(statement: string): string {
@@ -173,13 +321,38 @@ export const surveyRoutes: Route[] = [
         });
       }
 
+      const template = (body as { template?: unknown } | undefined)?.template;
+      if (template !== undefined && template !== null && !isTemplate(template)) {
+        return validation("request.invalid", "Requisição inválida.", {
+          template: "Modelo deve ser nps, csat ou ces",
+        });
+      }
+
+      // Com modelo, o rascunho já nasce com a pergunta do formato; sem, nasce vazio.
       const survey: StubSurvey = {
         id: nextId("srv"),
         applicationId: params.applicationId,
         name,
         state: "draft",
-        versions: [],
+        versions: isTemplate(template)
+          ? [
+              {
+                number: 1,
+                status: "draft",
+                comparabilityGroup: 1,
+                questions: [
+                  {
+                    id: nextId("q"),
+                    key: keyFrom(TEMPLATE_QUESTIONS[template].statement),
+                    position: 0,
+                    ...TEMPLATE_QUESTIONS[template],
+                  },
+                ],
+              },
+            ]
+          : [],
         transitions: [],
+        ...(isTemplate(template) ? { templateKind: template } : {}),
         createdAt: nowIso(),
       };
 
@@ -219,17 +392,92 @@ export const surveyRoutes: Route[] = [
         return notFound("survey.not_found", "Pesquisa não encontrada.");
       }
 
-      const name = typeof (body as { name?: unknown })?.name === "string"
-        ? String((body as { name: string }).name).trim()
-        : "";
+      // Mesmo contrato do PATCH real: ausente não mexe; só a cota admite null, que a remove.
+      const input = (body ?? {}) as Record<string, unknown>;
 
-      if (name === "") {
+      if ("name" in input) {
+        const name = typeof input.name === "string" ? input.name.trim() : "";
+        if (name === "") {
+          return validation("request.invalid", "Requisição inválida.", {
+            name: "O nome é obrigatório.",
+          });
+        }
+      }
+
+      if (
+        "priority" in input &&
+        (typeof input.priority !== "number" ||
+          !Number.isInteger(input.priority) ||
+          input.priority < -100 ||
+          input.priority > 100)
+      ) {
         return validation("request.invalid", "Requisição inválida.", {
-          name: "O nome é obrigatório.",
+          priority: "A prioridade deve estar entre -100 e 100",
         });
       }
 
-      survey.name = name;
+      if (
+        "responseQuota" in input &&
+        input.responseQuota !== null &&
+        (typeof input.responseQuota !== "number" ||
+          !Number.isInteger(input.responseQuota) ||
+          input.responseQuota < 1)
+      ) {
+        return validation("request.invalid", "Requisição inválida.", {
+          responseQuota: "A cota de respostas deve ser de ao menos uma",
+        });
+      }
+
+      if ("freeTextNoticeEnabled" in input && typeof input.freeTextNoticeEnabled !== "boolean") {
+        return validation("request.invalid", "Requisição inválida.", {
+          freeTextNoticeEnabled: "Campo precisa ser verdadeiro ou falso",
+        });
+      }
+
+      if (
+        "freeTextNoticeText" in input &&
+        input.freeTextNoticeText !== null &&
+        (typeof input.freeTextNoticeText !== "string" ||
+          input.freeTextNoticeText.trim() === "" ||
+          input.freeTextNoticeText.trim().length > 200)
+      ) {
+        return validation("request.invalid", "Requisição inválida.", {
+          freeTextNoticeText:
+            typeof input.freeTextNoticeText === "string" && input.freeTextNoticeText.trim() !== ""
+              ? "O texto do aviso não pode passar de 200 caracteres"
+              : "O texto do aviso não pode ser vazio",
+        });
+      }
+
+      if ("ignoresQuietPeriod" in input && typeof input.ignoresQuietPeriod !== "boolean") {
+        return validation("request.invalid", "Requisição inválida.", {
+          ignoresQuietPeriod: "Campo precisa ser verdadeiro ou falso",
+        });
+      }
+
+      if (typeof input.name === "string") {
+        survey.name = input.name.trim();
+      }
+      if (typeof input.priority === "number") {
+        survey.priority = input.priority;
+      }
+      if (input.responseQuota === null) {
+        delete survey.responseQuota;
+      } else if (typeof input.responseQuota === "number") {
+        survey.responseQuota = input.responseQuota;
+      }
+      if (typeof input.ignoresQuietPeriod === "boolean") {
+        survey.ignoresQuietPeriod = input.ignoresQuietPeriod;
+      }
+      if (typeof input.freeTextNoticeEnabled === "boolean") {
+        survey.freeTextNoticeEnabled = input.freeTextNoticeEnabled;
+      }
+      if (input.freeTextNoticeText === null) {
+        delete survey.freeTextNoticeText;
+      } else if (typeof input.freeTextNoticeText === "string") {
+        survey.freeTextNoticeText = input.freeTextNoticeText.trim();
+      }
+
       return json(200, toSurvey(survey));
     },
   },
@@ -268,6 +516,15 @@ export const surveyRoutes: Route[] = [
       }
 
       const draft = ensureDraft(survey);
+      const violation = checkCondition(
+        read.question.condition,
+        draft.questions,
+        draft.questions.length,
+      );
+      if (violation !== undefined) {
+        return violation;
+      }
+
       const question: StubQuestion = {
         id: nextId("q"),
         key: keyFrom(read.question.statement),
@@ -342,6 +599,11 @@ export const surveyRoutes: Route[] = [
       }
 
       const existing = draft.questions[index];
+      const violation = checkCondition(read.question.condition, draft.questions, existing.position);
+      if (violation !== undefined) {
+        return violation;
+      }
+
       // Reescrever é a operação: a chave estável e a posição não mudam.
       const updated: StubQuestion = {
         id: existing.id,
@@ -368,6 +630,19 @@ export const surveyRoutes: Route[] = [
 
       if (index === -1) {
         return notFound("question.not_found", "Pergunta não encontrada.");
+      }
+
+      const removed = draft.questions[index];
+      const dependent = draft.questions.find(
+        (question) => question.condition?.sourceKey === removed.key,
+      );
+      if (dependent !== undefined) {
+        return ruleViolation(
+          "question.condition_source_in_use",
+          "A pergunta é origem da condição de outra pergunta, e a mudança deixaria essa condição inválida",
+          "condition",
+          dependent.key,
+        );
       }
 
       draft.questions.splice(index, 1);

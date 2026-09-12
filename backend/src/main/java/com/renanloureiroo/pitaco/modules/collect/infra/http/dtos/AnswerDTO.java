@@ -17,7 +17,9 @@ public record AnswerDTO(
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String questionKey,
     @NotNull(message = "Situação da resposta é obrigatória")
         @Schema(
-            description = "ANSWERED traz valor; SKIPPED não traz nenhum",
+            description =
+                "ANSWERED traz valor; SKIPPED e NOT_APPLICABLE não trazem nenhum. NOT_APPLICABLE "
+                    + "só vale para pergunta com condição, quando a condição a pulou",
             requiredMode = Schema.RequiredMode.REQUIRED)
         AnswerStatus status,
     @Schema(

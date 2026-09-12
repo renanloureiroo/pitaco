@@ -33,6 +33,17 @@ class CollectReadOpenApiTest {
     expected.put(
         "/applications/{applicationId}/respondents/{respondentId}/displays",
         List.of("200", "400", "403", "404"));
+    expected.put("/applications/{applicationId}/events", List.of("200", "400", "403", "404"));
+    expected.put("/applications/{applicationId}/attributes", List.of("200", "400", "403", "404"));
+    expected.put(
+        "/applications/{applicationId}/surveys/{surveyId}/quota-progress",
+        List.of("200", "403", "404"));
+    expected.put("/applications/{applicationId}/sdk-versions", List.of("200", "403", "404"));
+    expected.put(
+        "/applications/{applicationId}/sdk-errors", List.of("200", "400", "403", "404"));
+    expected.put(
+        "/applications/{applicationId}/surveys/{surveyId}/health",
+        List.of("200", "400", "403", "404"));
     return expected;
   }
 
@@ -58,8 +69,8 @@ class CollectReadOpenApiTest {
   }
 
   @Test
-  @DisplayName("As quatro leituras estão publicadas")
-  void publica_as_quatro_leituras() {
+  @DisplayName("Todas as leituras estão publicadas")
+  void publica_todas_as_leituras() {
     var paths = document().get("paths");
 
     EXPECTED_STATUSES.keySet().forEach(path -> assertThat(paths.has(path)).as(path).isTrue());
@@ -115,6 +126,9 @@ class CollectReadOpenApiTest {
     assertThat(schemas.has("AnswerReadResponseDTO")).isTrue();
     assertThat(schemas.has("RespondentResponseDTO")).isTrue();
     assertThat(schemas.has("RespondentDisplayResponseDTO")).isTrue();
+    assertThat(schemas.has("ObservedEventResponseDTO")).isTrue();
+    assertThat(schemas.has("ObservedAttributeResponseDTO")).isTrue();
+    assertThat(schemas.has("QuotaProgressResponseDTO")).isTrue();
   }
 
   @Test

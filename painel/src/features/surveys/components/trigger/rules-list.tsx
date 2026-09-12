@@ -9,7 +9,9 @@ import { ConfirmDialog, FormError } from "@/shared/components";
 import { removeSegmentationRuleAction } from "../../actions";
 import { RULE_OPERATION_LABELS } from "../../lib/survey-labels";
 import { requiresValue, type SegmentationRule } from "../../schemas/trigger";
-import { RuleForm } from "./rule-form";
+import { RuleForm, type ObservedAttributeSuggestion } from "./rule-form";
+
+export type { ObservedAttributeSuggestion };
 
 function RemoveRuleButton({
   applicationId,
@@ -67,11 +69,13 @@ export function RulesList({
   applicationId,
   surveyId,
   rules,
+  observedAttributes = [],
   readOnly = false,
 }: {
   applicationId: string;
   surveyId: string;
   rules: SegmentationRule[];
+  observedAttributes?: ObservedAttributeSuggestion[];
   readOnly?: boolean;
 }) {
   return (
@@ -105,7 +109,13 @@ export function RulesList({
       )}
 
       {/* O formulário fica sempre à mão: adicionar regra é a operação corrente desta tela. */}
-      {readOnly ? null : <RuleForm applicationId={applicationId} surveyId={surveyId} />}
+      {readOnly ? null : (
+        <RuleForm
+          applicationId={applicationId}
+          surveyId={surveyId}
+          observedAttributes={observedAttributes}
+        />
+      )}
     </div>
   );
 }

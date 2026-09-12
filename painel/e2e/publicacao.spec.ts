@@ -1,6 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { createApplication, createSurvey } from "./support/helpers";
+import {
+  addQuestion,
+  createApplication,
+  createSurvey,
+  publishFirstVersion,
+  uniqueSuffix,
+} from "./support/helpers";
 
 async function montarPesquisaCompleta(page: Page, applicationId: string, surveyId: string) {
   const base = `/aplicacoes/${applicationId}/pesquisas/${surveyId}`;
@@ -120,6 +126,12 @@ test.describe("US5 — publicar e acompanhar versões", () => {
     await page.goto(`${base}/versoes`);
     await page.getByTestId("open-draft-version-button").click();
 
+    await page.goto(base);
+    await page.getByTestId("add-question-button").click();
+    await page.getByLabel("Enunciado").fill("O que faltou?");
+    await page.getByTestId("submit-button").click();
+    await expect(page.getByTestId("question-item")).toHaveCount(2);
+
     await page.goto(`${base}/publicacao`);
     await expect(page.getByTestId("change-kind-select")).toBeVisible();
 
@@ -128,13 +140,13 @@ test.describe("US5 — publicar e acompanhar versões", () => {
 
     await page.getByTestId("change-kind-select").click();
     await page.getByRole("option", { name: /semântica/i }).click();
+    await expect(page.getByTestId("change-kind-select")).toContainText("Semântica");
     await page.getByTestId("change-summary-input").fill("Trocamos a escala");
     await page.getByTestId("publish-button").click();
 
     await page.goto(`${base}/versoes`);
     await expect(page.getByTestId("version-row")).toHaveCount(2);
     await expect(page.getByTestId("version-row").first()).toContainText("Semântica");
-    // Mudança semântica abre um novo grupo de comparabilidade.
     await expect(page.getByTestId("comparability-panel")).toContainText("Grupo 2");
   });
 
@@ -145,5 +157,42 @@ test.describe("US5 — publicar e acompanhar versões", () => {
     await page.goto(`/aplicacoes/${application.id}/pesquisas/${survey.id}/versoes/99`);
 
     await expect(page.getByRole("heading", { name: "Esta versão não existe" })).toBeVisible();
+  });
+
+  test("avisa quando outra pesquisa no ar disputa o mesmo evento, sem bloquear", async ({ page }) => {
+    const application = await createApplication(page);
+    const concorrente = await createSurvey(page, application.id, `Concorrente ${uniqueSuffix()}`);
+    const baseConcorrente = `/aplicacoes/${application.id}/pesquisas/${concorrente.id}`;
+    await addQuestion(page, baseConcorrente, "Qual sua nota?", "NPS");
+    await publishFirstVersion(page, baseConcorrente);
+
+    const survey = await createSurvey(page, application.id);
+    await montarPesquisaCompleta(page, application.id, survey.id);
+
+    await page.goto(`/aplicacoes/${application.id}/pesquisas/${survey.id}/publicacao`);
+    const aviso = page.getByTestId("warning-item").filter({ hasText: "escutam o mesmo evento" });
+    await expect(aviso).toBeVisible();
+    await expect(aviso.getByTestId("competing-survey")).toContainText(concorrente.name);
+    await expect(page.getByTestId("publish-button")).toBeEnabled();
+  });
+
+  test("avisa a regra que não alcança ninguém, sem bloquear a publicação", async ({ page }) => {
+    const application = await createApplication(page);
+    const survey = await createSurvey(page, application.id);
+    const base = `/aplicacoes/${application.id}/pesquisas/${survey.id}`;
+    await montarPesquisaCompleta(page, application.id, survey.id);
+
+    await page.goto(`${base}/disparo`);
+    await page.getByLabel("Atributo").fill("plano");
+    await page.getByTestId("rule-value-input").fill("pro");
+    await page.getByTestId("add-rule-button").click();
+    await expect(page.getByTestId("rule-item")).toHaveCount(1);
+
+    await page.goto(`${base}/publicacao`);
+    await expect(
+      page.getByTestId("warning-item").filter({ hasText: "nunca enviou" }),
+    ).toContainText("plano");
+    await expect(page.getByTestId("impediment-item")).toHaveCount(0);
+    await expect(page.getByTestId("publish-button")).toBeEnabled();
   });
 });

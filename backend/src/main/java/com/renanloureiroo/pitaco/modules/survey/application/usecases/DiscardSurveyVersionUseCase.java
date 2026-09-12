@@ -24,7 +24,7 @@ public class DiscardSurveyVersionUseCase
   @Override
   @Transactional
   public void execute(Input input) {
-    var survey = SurveyScope.require(surveysRepository, input.applicationId(), input.surveyId());
+    var survey = SurveyScope.requireLocked(surveysRepository, input.applicationId(), input.surveyId());
 
     // Só há rascunho *de versão* a descartar em pesquisa já publicada: na que nunca publicou, o
     // rascunho é a própria pesquisa, e quem a descarta é DiscardSurveyUseCase.

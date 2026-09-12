@@ -46,3 +46,28 @@ export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   active: "Ativa",
   inactive: "Inativa",
 };
+
+/**
+ * Evento que o SDK desta aplicação já consultou. Alimenta a escolha do evento de disparo na
+ * autoria, para não depender de digitar o nome de memória.
+ */
+export const observedEventSchema = z.object({
+  name: z.string(),
+  firstSeenAt: z.string(),
+  lastSeenAt: z.string(),
+});
+
+export type ObservedEvent = z.infer<typeof observedEventSchema>;
+
+/**
+ * Atributo que o app desta aplicação já enviou, com os valores vistos. Catálogo, não perfil:
+ * nada aqui liga um valor a quem o enviou.
+ */
+export const observedAttributeSchema = z.object({
+  name: z.string(),
+  firstSeenAt: z.string(),
+  lastSeenAt: z.string(),
+  values: z.array(z.object({ value: z.string(), lastSeenAt: z.string() })),
+});
+
+export type ObservedAttribute = z.infer<typeof observedAttributeSchema>;

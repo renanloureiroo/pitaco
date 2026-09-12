@@ -57,13 +57,24 @@ export function invalidFormState(
 
 /**
  * Recusa da API como estado do formulário. As mensagens por campo de um `400` viram
- * `fieldErrors`; o `detail` do backend é exibido como veio, sem reescrita.
+ * `fieldErrors`; uma recusa de regra que aponta `field` vira o erro daquele campo. O `detail` do
+ * backend é exibido como veio, sem reescrita.
  */
 export function failureFormState(failure: ApiFailure, values: FormValues): FormState<never> {
   return {
     status: "error",
     message: describeFailure(failure),
-    fieldErrors: failure.kind === "validation" ? failure.errors : {},
+    fieldErrors: fieldErrorsOf(failure),
     values,
   };
+}
+
+function fieldErrorsOf(failure: ApiFailure): FieldErrors {
+  if (failure.kind === "validation") {
+    return failure.errors;
+  }
+  if (failure.kind !== "unreachable" && failure.field !== undefined) {
+    return { [failure.field]: failure.detail };
+  }
+  return {};
 }

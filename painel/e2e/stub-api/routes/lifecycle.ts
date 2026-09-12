@@ -2,13 +2,6 @@ import { conflict, json, notFound, nowIso, type Route } from "../http.ts";
 import type { StubSurvey, StubTransition } from "../store.ts";
 import { surveyOf, toSurvey } from "./surveys.ts";
 
-/**
- * A máquina de estados de `data-model.md`, do lado do servidor.
- *
- * `GET /transitions` devolve **duas coisas ao mesmo tempo**: o histórico do que já aconteceu e
- * as transições manuais ainda autorizadas. O painel não deriva nada do estado — só oferece o
- * que aparece aqui.
- */
 function allowedNow(survey: StubSurvey): StubTransition["reason"][] {
   switch (survey.state) {
     case "scheduled":
@@ -24,17 +17,7 @@ function allowedNow(survey: StubSurvey): StubTransition["reason"][] {
 }
 
 function transitionsPayload(survey: StubSurvey) {
-  const now = nowIso();
-
-  return [
-    ...survey.transitions,
-    ...allowedNow(survey).map((reason) => ({
-      from: survey.state,
-      to: targetOf(reason),
-      reason,
-      occurredAt: now,
-    })),
-  ];
+  return survey.transitions;
 }
 
 function targetOf(reason: StubTransition["reason"]): StubTransition["to"] {
@@ -44,6 +27,7 @@ function targetOf(reason: StubTransition["reason"]): StubTransition["to"] {
     case "manual_resume":
       return "active";
     case "manual_end":
+    case "quota_reached":
     case "window_closed":
       return "ended";
     case "window_opened":

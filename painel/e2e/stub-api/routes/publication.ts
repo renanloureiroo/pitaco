@@ -47,12 +47,42 @@ export function impedimentsOf(survey: StubSurvey): Impediment[] {
   return impediments;
 }
 
+function contentOf(version: StubVersion): string {
+  return JSON.stringify({
+    questions: version.questions.map((question) => ({
+      key: question.key,
+      statement: question.statement,
+      type: question.type,
+      position: question.position,
+      required: question.required,
+      options: question.options ?? [],
+      range: question.range ?? null,
+    })),
+    trigger:
+      version.trigger === undefined
+        ? null
+        : {
+            eventName: version.trigger.eventName,
+            windowStart: version.trigger.windowStart,
+            windowEnd: version.trigger.windowEnd ?? null,
+            samplingRate: version.trigger.samplingRate,
+            rules: version.trigger.rules.map((rule) => ({
+              attribute: rule.attribute,
+              operation: rule.operation,
+              value: rule.value ?? null,
+            })),
+          },
+  });
+}
+
+function sameContent(published: StubVersion, draft: StubVersion): boolean {
+  return contentOf(published) === contentOf(draft);
+}
+
 export function toVersion(surveyId: string, version: StubVersion) {
   const { number, status, publishedAt, changeKind, changeSummary, comparabilityGroup } = version;
 
   return {
-    // O backend devolve a identidade da versão junto do número; o simulador a deriva, que é o
-    // suficiente para as duas leituras concordarem.
     id: versionIdOf(surveyId, number),
     number,
     status,
@@ -97,6 +127,14 @@ export const publicationRoutes: Route[] = [
       }
 
       const previous = publishedVersion(survey);
+
+      if (previous !== undefined && sameContent(previous, draft)) {
+        return conflict(
+          "survey_version.no_changes",
+          "O rascunho é idêntico à versão publicada: não há o que publicar",
+        );
+      }
+
       const input = (body ?? {}) as Record<string, unknown>;
       const changeKind =
         previous === undefined

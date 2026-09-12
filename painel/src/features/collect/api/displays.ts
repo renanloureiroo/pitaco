@@ -14,13 +14,6 @@ import {
 import { toDisplayFilterQuery, type DisplayFilters } from "../schemas/filters";
 import { displayPath, surveyDisplaysPath } from "./paths";
 
-/**
- * Leitura de exibição. Somente `GET`: esta feature inteira é de leitura (FR-028).
- *
- * `404` chega como `not_found` e a página o traduz em `notFound()`. Número de versão sem
- * exibição alguma **não** é `404`: é página vazia, porque é filtro sem resultado.
- */
-
 const displayPageSchema = pageResponseSchema(displaySummarySchema);
 
 export function listSurveyDisplays(

@@ -58,6 +58,15 @@ export const createApplicationFormSchema = z.object({
 
 export type CreateApplicationForm = z.infer<typeof createApplicationFormSchema>;
 
+/**
+ * Edição: o slug fica de fora por ser imutável. O formulário sempre exibe os três prazos, então
+ * um campo em branco aqui significa "remover" — e é a API da feature que traduz isso em `null`
+ * para o PATCH, onde ausência (não mexer) e `null` (remover) são coisas diferentes.
+ */
+export const updateApplicationFormSchema = createApplicationFormSchema.omit({ slug: true });
+
+export type UpdateApplicationForm = z.infer<typeof updateApplicationFormSchema>;
+
 /** `searchParams` da listagem. Valor desconhecido vira "todas" em vez de quebrar a tela. */
 export const applicationListParamsSchema = z.object({
   status: z.enum(APPLICATION_STATUSES).optional().catch(undefined),

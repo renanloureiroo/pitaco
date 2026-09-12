@@ -1,0 +1,42 @@
+name: compose
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "compose.yaml"
+      - ".env.example"
+      - "ops/**"
+      - ".github/workflows/compose.yml"
+  pull_request:
+    paths:
+      - "compose.yaml"
+      - ".env.example"
+      - "ops/**"
+      - ".github/workflows/compose.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  config:
+    name: compose e backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Valida o compose de produção com um .env fictício
+        run: |
+          cp .env.example .env
+          sed -i \
+            -e 's/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=ci/' \
+            -e 's#^BACKUP_REMOTE=.*#BACKUP_REMOTE=:local:/backups#' \
+            .env
+          docker compose -f compose.yaml config --quiet
+
+      - name: Scripts de backup
+        run: shellcheck ops/backup/*.sh
+
+      - name: Imagem de backup
+        run: docker build --tag pitaco-backup:ci ops/backup

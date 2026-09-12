@@ -30,6 +30,7 @@ import com.renanloureiroo.pitaco.testsupport.factories.AnswerFactory;
 import com.renanloureiroo.pitaco.testsupport.factories.SurveyDisplayFactory;
 import com.renanloureiroo.pitaco.testsupport.gateways.InMemoryCollectApplicationScopeGateway;
 import com.renanloureiroo.pitaco.testsupport.gateways.InMemoryPublishedSurveyCatalog;
+import com.renanloureiroo.pitaco.testsupport.gateways.InMemorySurveyQuotaGateway;
 import com.renanloureiroo.pitaco.testsupport.repositories.InMemoryAnswerRepository;
 import com.renanloureiroo.pitaco.testsupport.repositories.InMemorySurveyDisplayRepository;
 import java.util.List;
@@ -52,6 +53,7 @@ class SubmitSurveyDisplayUseCaseTest {
   private final InMemoryPublishedSurveyCatalog catalog = new InMemoryPublishedSurveyCatalog();
   private final InMemorySurveyDisplayRepository displays = new InMemorySurveyDisplayRepository();
   private final InMemoryAnswerRepository answers = new InMemoryAnswerRepository();
+  private final InMemorySurveyQuotaGateway quotas = new InMemorySurveyQuotaGateway();
 
   private SubmitSurveyDisplayUseCase useCase;
   private ApplicationId applicationId;
@@ -61,7 +63,7 @@ class SubmitSurveyDisplayUseCaseTest {
 
   @BeforeEach
   void setUp() {
-    useCase = new SubmitSurveyDisplayUseCase(applications, catalog, displays, answers);
+    useCase = new SubmitSurveyDisplayUseCase(applications, catalog, displays, answers, quotas);
     applicationId = applications.anActiveApplication();
     surveyId = SurveyId.generate();
     versionId = SurveyVersionId.generate();
@@ -363,5 +365,80 @@ class SubmitSurveyDisplayUseCaseTest {
                 Optional.empty()),
             new DeliverableQuestion(
                 NPS, 3, "De 0 a 10?", QuestionType.NPS, false, List.of(), Optional.of(new ScaleRange(0, 10)))));
+  }
+
+  @Nested
+  @DisplayName("Cota de respostas")
+  class Cota {
+
+    private SubmitSurveyDisplayUseCase.Input completionOf(DisplayId display) {
+      return new SubmitSurveyDisplayUseCase.Input(
+          applicationId.value(),
+          display.value(),
+          DisplayOutcome.COMPLETED,
+          List.of(answered(TEXTO, new RawAnswerValue.RawText("ok"))));
+    }
+
+    @Test
+    @DisplayName("A conclusão que atinge a cota pede o encerramento da pesquisa")
+    void atingir_a_cota_encerra() {
+      quotas.withQuota(surveyId, 1);
+
+      useCase.execute(completion());
+
+      assertThat(quotas.endings()).containsExactly(surveyId);
+      assertThat(quotas.locks())
+          .describedAs("a contagem só acontece com a linha da pesquisa travada")
+          .containsExactly(surveyId);
+    }
+
+    @Test
+    @DisplayName("Abaixo da cota, nada é encerrado")
+    void abaixo_da_cota_nao_encerra() {
+      quotas.withQuota(surveyId, 2);
+
+      useCase.execute(completion());
+
+      assertThat(quotas.endings()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Dispensa não conta para a cota")
+    void dispensa_nao_conta() {
+      quotas.withQuota(surveyId, 1);
+
+      useCase.execute(
+          new SubmitSurveyDisplayUseCase.Input(
+              applicationId.value(), displayId.value(), DisplayOutcome.DISMISSED, List.of()));
+
+      assertThat(quotas.endings()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Sem cota configurada, nunca encerra")
+    void sem_cota_nunca_encerra() {
+      useCase.execute(completion());
+
+      assertThat(quotas.endings()).isEmpty();
+      assertThat(quotas.locks())
+          .describedAs("sem cota, nenhuma conclusão espera pela outra")
+          .isEmpty();
+    }
+
+    @Test
+    @DisplayName("Quem já estava com a pesquisa aberta conclui depois de a cota ser atingida")
+    void sessao_aberta_conclui_depois_da_cota() {
+      quotas.withQuota(surveyId, 1);
+      var aberta = openDisplay();
+
+      useCase.execute(completion());
+      useCase.execute(completionOf(aberta));
+
+      assertThat(displays.findById(aberta, applicationId).orElseThrow().getOutcome())
+          .isEqualTo(DisplayOutcome.COMPLETED);
+      assertThat(displays.countCompleted(surveyId))
+          .describedAs("o total passa um pouco da cota, de propósito")
+          .isEqualTo(2);
+    }
   }
 }

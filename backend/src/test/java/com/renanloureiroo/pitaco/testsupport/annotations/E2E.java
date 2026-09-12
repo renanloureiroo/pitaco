@@ -25,7 +25,25 @@ import org.springframework.context.annotation.Import;
 @Inherited
 @Import({TestcontainersConfiguration.class, DatabaseCleaner.class})
 @AutoConfigureRestTestClient
+// O limite por origem sobe para não interferir: toda a suíte sai do mesmo endereço e, com o
+// padrão de produção, esgotaria a janela no meio de uma classe. O limite por chave fica num
+// valor que nenhuma classe alcança com a própria chave, mas que um teste consegue estourar
+// de propósito — sem abrir um segundo contexto, que custaria outra pilha de containers. O balde
+// dos relatórios de erro do SDK fica no padrão de produção, que um teste estoura de propósito.
 @SpringBootTest(
     classes = PitacoApplication.class,
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public @interface E2E {}
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = {
+      "pitaco.collect.rate-limit.per-key.capacity=" + E2E.RATE_LIMIT_PER_KEY_CAPACITY,
+      "pitaco.collect.rate-limit.per-origin.capacity=1000000",
+      // A descarga do uso de versões é chamada pelo próprio teste; a agendada não pode gravar no
+      // meio de uma classe, depois da limpeza do banco.
+      "pitaco.health.sdk-usage.flush-interval=1h",
+      // A documentação nasce desligada em produção; aqui ela é parte do que se testa.
+      "springdoc.api-docs.enabled=true",
+      "springdoc.swagger-ui.enabled=true"
+    })
+public @interface E2E {
+
+  int RATE_LIMIT_PER_KEY_CAPACITY = 300;
+}

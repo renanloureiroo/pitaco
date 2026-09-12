@@ -12,6 +12,7 @@ public class InMemoryCollectApplicationScopeGateway implements ApplicationScopeG
 
   private final Map<ApplicationId, ApplicationScopeState> states = new HashMap<>();
   private final Map<ApplicationId, Integer> retentionDays = new HashMap<>();
+  private final Map<ApplicationId, Integer> quietPeriodDays = new HashMap<>();
 
   @Override
   public Optional<ApplicationScopeState> stateOf(ApplicationId applicationId) {
@@ -21,6 +22,17 @@ public class InMemoryCollectApplicationScopeGateway implements ApplicationScopeG
   @Override
   public Optional<Integer> effectiveOpenTextRetentionDaysOf(ApplicationId applicationId) {
     return Optional.ofNullable(retentionDays.get(applicationId));
+  }
+
+  @Override
+  public Optional<Integer> quietPeriodDaysOf(ApplicationId applicationId) {
+    return Optional.ofNullable(quietPeriodDays.get(applicationId));
+  }
+
+  public InMemoryCollectApplicationScopeGateway withQuietPeriodDays(
+      ApplicationId applicationId, int days) {
+    quietPeriodDays.put(applicationId, days);
+    return this;
   }
 
   // Ausente é o padrão: sem prazo configurado, texto livre nunca expira.

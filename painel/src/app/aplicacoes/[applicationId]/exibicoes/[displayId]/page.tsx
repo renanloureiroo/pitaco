@@ -13,17 +13,6 @@ import { TIMEZONE_NOTE } from "@/shared/lib";
 
 export const metadata = { title: "Exibição" };
 
-/**
- * Duas leituras, e só duas (SC-009): a exibição é o conteúdo; a versão dá enunciado a cada
- * resposta (R2). A rota é plana sob a aplicação porque a exibição é alcançada de dois eixos (R5).
- *
- * **Em sequência, não em paralelo** — o plano previa paralelo, mas é impossível: `getVersion`
- * precisa do `surveyId` e do `versionNumber`, e os dois só existem depois que a exibição chega.
- * A contagem de leituras da tela continua sendo 2, que é o que SC-009 verifica.
- *
- * A falha na leitura da **versão** não derruba a tela: sem ela as respostas seguem visíveis
- * pela chave, com aviso. Só a falha na leitura da exibição — que é o conteúdo — sobe.
- */
 export default async function DisplayPage({
   params,
 }: PageProps<"/aplicacoes/[applicationId]/exibicoes/[displayId]">) {
@@ -32,8 +21,6 @@ export default async function DisplayPage({
   const displayResult = await getDisplay(applicationId, displayId);
 
   if (!displayResult.ok) {
-    // Exibição de outra aplicação e exibição inexistente levam à mesma tela: o painel não
-    // confirma existência fora do escopo da aplicação.
     if (displayResult.kind === "not_found") {
       notFound();
     }

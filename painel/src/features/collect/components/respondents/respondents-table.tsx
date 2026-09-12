@@ -13,12 +13,6 @@ import { formatDateTime } from "@/shared/lib";
 import { RESPONDENT_IDENTITY_KIND_LABELS } from "../../lib/collect-labels";
 import type { Respondent } from "../../schemas/respondent";
 
-/**
- * Quem a aplicação já viu.
- *
- * A **forma** de identificação é traduzida (FR-020); o **valor** é exibido como veio, porque é
- * opaco para o Pitaco e transformá-lo seria mentir sobre o que a aplicação enviou.
- */
 export function RespondentsTable({
   applicationId,
   respondents,

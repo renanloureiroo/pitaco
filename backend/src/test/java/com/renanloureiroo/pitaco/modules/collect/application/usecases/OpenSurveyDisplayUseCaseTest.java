@@ -120,7 +120,7 @@ class OpenSurveyDisplayUseCaseTest {
             COMPARABILITY_GROUP + 1,
             SamplingRate.of(1.0),
             List.of(),
-            Instant.parse("2026-02-01T00:00:00Z"));
+            Instant.parse("2026-02-01T00:00:00Z"), 0, false);
     catalog.withCandidate(
         applicationId, EventName.of("checkout.completed"), Instant.EPOCH, Optional.empty(), outraVersao);
 
@@ -303,7 +303,7 @@ class OpenSurveyDisplayUseCaseTest {
             COMPARABILITY_GROUP,
             SamplingRate.of(1.0),
             List.of(),
-            Instant.parse("2026-01-01T00:00:00Z"));
+            Instant.parse("2026-01-01T00:00:00Z"), 0, false);
 
     catalog.withCandidate(
         owner, EventName.of("checkout.completed"), Instant.EPOCH, Optional.empty(), candidate);

@@ -102,7 +102,6 @@ describe("DisplayAnswers — nenhuma resposta some (invariante de R2)", () => {
 
     expect(screen.getAllByTestId("answer-item")).toHaveLength(answers.length);
     expect(screen.getByTestId("version-unavailable-note")).toBeInTheDocument();
-    // Sem enunciado, a resposta ainda se identifica pela chave.
     expect(screen.getAllByTestId("answer-question")[0]).toHaveTextContent("nota");
   });
 

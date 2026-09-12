@@ -1,14 +1,3 @@
-/**
- * Fronteira pública da feature de coleta (Princípio I).
- *
- * Só leitura atravessa daqui: quatro consultas, os tipos de domínio, os rótulos e os
- * componentes que `app/` compõe. Nenhuma Server Action — esta entrega não escreve nada.
- *
- * A dependência `collect → surveys` é unidirecional e passa pelo `index.ts` público de
- * `surveys`. A aba "Exibições" é composta em `app/`, não dentro de `surveys`: é o que evita o
- * ciclo (R1).
- */
-
 export { listSurveyDisplays, getDisplay } from "./api/displays";
 export { listRespondents, listRespondentDisplays } from "./api/respondents";
 
@@ -39,8 +28,6 @@ export {
   parseDisplayFilters,
   periodError,
   toDisplayFilterQuery,
-  toLocalInput,
-  toUtcInstant,
   type DisplayFilterQuery,
   type DisplayFilters,
 } from "./schemas/filters";

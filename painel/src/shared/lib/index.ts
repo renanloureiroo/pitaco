@@ -9,6 +9,8 @@ export {
   formatDays,
   formatSamplingRate,
   orNotConfigured,
+  toLocalInput,
+  toUtcInstant,
 } from "./format";
 
 export {

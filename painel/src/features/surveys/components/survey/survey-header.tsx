@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { listApplications } from "@/features/applications";
 import { orNotConfigured } from "@/shared/lib";
 
 import { getTransitions } from "../../api/lifecycle";
@@ -7,6 +8,7 @@ import { SURVEY_STATE_LABELS, surveyStateVariant } from "../../lib/survey-labels
 import { TransitionActions } from "../lifecycle/transition-actions";
 import { TransitionsHistory } from "../lifecycle/transitions-history";
 import { DiscardSurveyButton } from "./discard-survey-button";
+import { DuplicateSurveyDialog } from "./duplicate-survey-dialog";
 import { RenameSurvey } from "./rename-survey";
 
 /**
@@ -22,9 +24,11 @@ export async function SurveyHeader({
   applicationId: string;
   surveyId: string;
 }) {
-  const [result, transitionsResult] = await Promise.all([
+  const [result, transitionsResult, applicationsResult] = await Promise.all([
     getSurvey(applicationId, surveyId),
     getTransitions(applicationId, surveyId),
+    // Só as ativas: a cópia não nasce numa aplicação que não entrega pesquisa.
+    listApplications({ status: "active", page: 0, size: 100 }),
   ]);
 
   if (!result.ok) {
@@ -56,19 +60,31 @@ export async function SurveyHeader({
           {ended ? null : (
             <RenameSurvey applicationId={applicationId} surveyId={surveyId} name={survey.name} />
           )}
+          <DuplicateSurveyDialog
+            applicationId={applicationId}
+            surveyId={surveyId}
+            surveyName={survey.name}
+            applications={
+              applicationsResult.ok
+                ? applicationsResult.data.items.map((application) => ({
+                    id: application.id,
+                    name: application.name,
+                  }))
+                : []
+            }
+          />
           {neverPublished ? (
             <DiscardSurveyButton applicationId={applicationId} surveyId={surveyId} />
           ) : null}
           <TransitionActions
             applicationId={applicationId}
             surveyId={surveyId}
-            transitions={transitions}
             currentState={survey.state}
           />
         </div>
       </div>
 
-      <TransitionsHistory transitions={transitions} currentState={survey.state} />
+      <TransitionsHistory transitions={transitions} />
     </header>
   );
 }

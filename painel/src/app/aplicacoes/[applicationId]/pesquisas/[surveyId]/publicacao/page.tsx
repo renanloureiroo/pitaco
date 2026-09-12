@@ -4,7 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ImpedimentsList,
   PublishForm,
+  WarningsList,
   getPublicationImpediments,
+  getPublicationWarnings,
   getSurvey,
 } from "@/features/surveys";
 import { ApiUnavailableError } from "@/shared/api";
@@ -16,9 +18,10 @@ export default async function PublicationPage({
 }: PageProps<"/aplicacoes/[applicationId]/pesquisas/[surveyId]/publicacao">) {
   const { applicationId, surveyId } = await params;
 
-  const [surveyResult, impedimentsResult] = await Promise.all([
+  const [surveyResult, impedimentsResult, warningsResult] = await Promise.all([
     getSurvey(applicationId, surveyId),
     getPublicationImpediments(applicationId, surveyId),
+    getPublicationWarnings(applicationId, surveyId),
   ]);
 
   if (!surveyResult.ok) {
@@ -31,6 +34,12 @@ export default async function PublicationPage({
   if (!impedimentsResult.ok) {
     throw new ApiUnavailableError(impedimentsResult);
   }
+
+  if (!warningsResult.ok) {
+    throw new ApiUnavailableError(warningsResult);
+  }
+
+  const warnings = warningsResult.data;
 
   const impediments = impedimentsResult.data;
   // A mesma lista que a publicação usaria para recusar: a tela nunca promete o que ela negaria.
@@ -50,6 +59,20 @@ export default async function PublicationPage({
           />
         </CardContent>
       </Card>
+
+      {warnings.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Avisos</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <p className="text-sm text-muted-foreground">
+              Nenhum aviso impede a publicação: eles existem para a escolha ser consciente.
+            </p>
+            <WarningsList applicationId={applicationId} warnings={warnings} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

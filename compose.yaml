@@ -50,6 +50,9 @@ services:
       #
       # 4318 é OTLP sobre HTTP; 4317 seria gRPC.
       OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
+      # Swagger UI e /v3/api-docs nascem desligados: /api passa pelo túnel sem Access, e
+      # ligados expõem o mapa inteiro da API. Para ligar de propósito:
+      # PITACO_API_DOCS_ENABLED: "true"
     depends_on:
       postgres:
         condition: service_healthy
@@ -68,10 +71,6 @@ services:
       # O painel só fala com a api por dentro da rede internal, pelo nome do
       # serviço. /api é o context-path do backend.
       PITACO_API_URL: http://api:8080/api
-      # 3001, e não 3000: a stack de desenvolvimento do backend publica o
-      # Grafana LGTM em 3000, e manter o painel na mesma porta faria o
-      # ambiente local divergir do publicado. O túnel em ~/apps/infra precisa
-      # apontar para pitaco-painel:3001.
       PORT: 3001
     depends_on:
       - api
@@ -79,6 +78,34 @@ services:
       internal:
       edge:
         aliases: [pitaco-painel]
+
+  # pg_dump diário para object storage fora desta máquina: backup que mora na mesma VPS não é
+  # backup. Só na rede internal; a saída para a internet é a do bridge padrão. O restore e o
+  # ensaio de restore estão em ops/RUNBOOK.md.
+  backup:
+    build:
+      context: ./ops/backup
+    restart: unless-stopped
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      BACKUP_REMOTE: ${BACKUP_REMOTE:-}
+      BACKUP_KEEP: ${BACKUP_KEEP:-14}
+      BACKUP_INTERVAL: ${BACKUP_INTERVAL:-86400}
+      # O remoto "pitacobackup" do rclone, definido só por ambiente. S3 e compatíveis (B2, R2,
+      # MinIO): troque PROVIDER e ENDPOINT conforme o provedor.
+      RCLONE_CONFIG_PITACOBACKUP_TYPE: ${RCLONE_CONFIG_PITACOBACKUP_TYPE:-s3}
+      RCLONE_CONFIG_PITACOBACKUP_PROVIDER: ${RCLONE_CONFIG_PITACOBACKUP_PROVIDER:-Other}
+      RCLONE_CONFIG_PITACOBACKUP_ACCESS_KEY_ID: ${RCLONE_CONFIG_PITACOBACKUP_ACCESS_KEY_ID:-}
+      RCLONE_CONFIG_PITACOBACKUP_SECRET_ACCESS_KEY: ${RCLONE_CONFIG_PITACOBACKUP_SECRET_ACCESS_KEY:-}
+      RCLONE_CONFIG_PITACOBACKUP_ENDPOINT: ${RCLONE_CONFIG_PITACOBACKUP_ENDPOINT:-}
+      RCLONE_CONFIG_PITACOBACKUP_REGION: ${RCLONE_CONFIG_PITACOBACKUP_REGION:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [internal]
 
 volumes:
   pg_data:

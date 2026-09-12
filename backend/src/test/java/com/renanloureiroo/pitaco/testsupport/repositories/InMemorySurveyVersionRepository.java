@@ -46,8 +46,11 @@ public class InMemorySurveyVersionRepository implements SurveyVersionRepository 
   }
 
   @Override
-  public Page<SurveyVersion> findPublishedPage(ListSurveyVersionsQuery query) {
-    var matching = publishedOf(query.surveyId()).toList();
+  public Page<SurveyVersion> findPage(ListSurveyVersionsQuery query) {
+    var matching =
+        of(query.surveyId())
+            .sorted(Comparator.comparingInt(SurveyVersion::getNumber).reversed())
+            .toList();
 
     var items =
         matching.stream()

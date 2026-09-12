@@ -19,17 +19,6 @@ import {
 } from "../../lib/collect-labels";
 import type { DisplaySummary, RespondentDisplay } from "../../schemas/display";
 
-/**
- * Uma tabela, dois eixos (R8).
- *
- * A listagem por pesquisa não mostra a coluna de pesquisa — a pesquisa é o contexto. O
- * histórico do respondente mostra, porque lá ela varia. A diferença entra como propriedade
- * explícita, e não como inferência a partir dos dados.
- *
- * A ordem vem da API (`openedAt` desc). O painel **não** reordena: reordenar no cliente
- * quebraria a paginação, que só é coerente com a ordem do servidor.
- */
-
 type Row = DisplaySummary & { surveyId?: string };
 
 export function DisplaysTable({
@@ -41,7 +30,6 @@ export function DisplaysTable({
   applicationId: string;
   displays: DisplaySummary[] | RespondentDisplay[];
   showSurvey?: boolean;
-  /** Nome por pesquisa, quando a tela já o conhece. Sem ele, o vínculo mostra o identificador. */
   surveyNames?: Record<string, string>;
 }) {
   return (

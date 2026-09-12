@@ -22,7 +22,7 @@ public interface SurveyVersionRepository {
 
   Optional<SurveyVersion> findPublished(SurveyId surveyId);
 
-  Page<SurveyVersion> findPublishedPage(ListSurveyVersionsQuery query);
+  Page<SurveyVersion> findPage(ListSurveyVersionsQuery query);
 
   List<SurveyVersion> findAllPublished(SurveyId surveyId);
 

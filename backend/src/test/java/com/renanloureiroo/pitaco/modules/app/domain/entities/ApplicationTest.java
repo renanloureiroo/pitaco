@@ -211,4 +211,33 @@ class ApplicationTest {
     assertThat(application.effectiveOpenTextRetentionDays()).contains(90);
     assertTouchedSince(application, before);
   }
+
+  @Test
+  @DisplayName("retenção geral não pode ficar menor que o prazo de texto livre já definido")
+  void retencao_geral_nao_pode_ficar_menor_que_o_texto_livre() {
+    var application = newApplication();
+    application.defineRetention(180);
+    application.defineOpenTextRetention(30);
+
+    assertThatThrownBy(() -> application.defineRetention(10))
+        .isInstanceOf(DomainException.class)
+        .satisfies(
+            error ->
+                assertThat(((DomainException) error).code())
+                    .isEqualTo("application.retention_invalid"));
+    assertThat(application.retentionDays()).contains(180);
+  }
+
+  @Test
+  @DisplayName("remover a retenção geral deixa o prazo de texto livre valendo sozinho")
+  void remover_a_retencao_geral_preserva_o_texto_livre() {
+    var application = newApplication();
+    application.defineRetention(180);
+    application.defineOpenTextRetention(30);
+
+    application.removeRetention();
+
+    assertThat(application.retentionDays()).isEmpty();
+    assertThat(application.effectiveOpenTextRetentionDays()).contains(30);
+  }
 }

@@ -33,4 +33,9 @@ public class ApplicationScopeGatewayApp implements ApplicationScopeGateway {
         .findById(applicationId)
         .flatMap(application -> application.effectiveOpenTextRetentionDays());
   }
+
+  @Override
+  public Optional<Integer> quietPeriodDaysOf(ApplicationId applicationId) {
+    return applications.findById(applicationId).flatMap(application -> application.quietPeriodDays());
+  }
 }

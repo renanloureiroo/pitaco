@@ -16,9 +16,10 @@ public record AnswerReadResponseDTO(
         String questionKey,
     @Schema(
             description =
-                "ANSWERED quando respondida, SKIPPED quando a pessoa pulou, EXPIRED quando era "
+                "ANSWERED quando respondida, SKIPPED quando a pessoa pulou, NOT_APPLICABLE quando "
+                    + "a condição de exibição tirou a pergunta do caminho, EXPIRED quando era "
                     + "texto livre e o prazo de retenção da aplicação já venceu",
-            allowableValues = {"ANSWERED", "SKIPPED", "EXPIRED"},
+            allowableValues = {"ANSWERED", "SKIPPED", "NOT_APPLICABLE", "EXPIRED"},
             example = "ANSWERED",
             requiredMode = Schema.RequiredMode.REQUIRED)
         AnswerReadStatus status,

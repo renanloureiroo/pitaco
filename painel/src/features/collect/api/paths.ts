@@ -1,9 +1,3 @@
-/**
- * Todo caminho da coleta é escopado pela aplicação — não existe listagem global de exibição
- * nem de respondente. A exibição é alcançada por rota **plana** sob a aplicação (R5): seu
- * identificador é global e ela própria já determina a pesquisa.
- */
-
 function applicationPath(applicationId: string): string {
   return `/applications/${encodeURIComponent(applicationId)}`;
 }

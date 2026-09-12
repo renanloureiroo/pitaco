@@ -25,16 +25,20 @@ public interface CollectEligibilitySwagger {
       description =
           """
           Aplica as camadas de elegibilidade na ordem: aplicação ativa, pesquisa no ar, janela \
-          aberta, evento exato, histórico do respondente, segmentação e sorteio. Devolve no \
-          máximo uma pesquisa, com a versão publicada inteira.
+          aberta, evento exato, histórico do respondente, intervalo de descanso da aplicação, \
+          segmentação e sorteio. Devolve no máximo uma pesquisa, com a versão publicada inteira.
 
-          Quando mais de uma sobrevive, vence a de publicação mais antiga; empate técnico é \
-          desfeito pelo identificador da pesquisa em ordem lexicográfica, de modo que a mesma \
-          consulta repetida devolve sempre a mesma pesquisa.
+          Quando mais de uma sobrevive, vence a de maior prioridade; em empate, a de publicação \
+          mais antiga, e depois o identificador da pesquisa em ordem lexicográfica, de modo que \
+          a mesma consulta repetida devolve sempre a mesma pesquisa.
 
           Aplicação inativa, pesquisa pausada, fora da janela, evento sem pesquisa, regra não \
           satisfeita, não sorteado e já resolvida não são erro: todos devolvem `survey` nulo, e \
           nada é gravado.
+
+          O cabeçalho `X-Pitaco-Sdk-Version` alimenta a distribuição de versões em uso. Valor \
+          fora do formato semver é ignorado em silêncio: a consulta nunca é recusada por causa \
+          dele.
           """)
   @Parameter(
       in = ParameterIn.HEADER,
@@ -67,5 +71,13 @@ public interface CollectEligibilitySwagger {
                 schema = @Schema(implementation = ApiErrorResponse.class)))
   })
   EligibilityResponseDTO check(
-      EligibilityRequestDTO request, AuthenticatedApplication application);
+      EligibilityRequestDTO request,
+      @Parameter(
+              in = ParameterIn.HEADER,
+              name = SdkVersionHeader.NAME,
+              required = false,
+              description = "Versão semver do SDK que faz a chamada; inválida é ignorada",
+              schema = @Schema(type = "string", example = "1.4.2", maxLength = 40))
+          String sdkVersion,
+      AuthenticatedApplication application);
 }

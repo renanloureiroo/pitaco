@@ -10,13 +10,6 @@ import {
   usingStubApi,
 } from "./support/helpers";
 
-/**
- * Fluxo crítico da leitura da coleta (SC-007).
- *
- * O painel é somente leitura: exibição, resposta e respondente vêm do SDK, e por isso o teste
- * os semeia pelo simulador (R9). Com `E2E_API=real` o simulador não sobe, e a suíte pula — o
- * arranjo dependeria de um SDK que não existe aqui.
- */
 test.skip(
   !usingStubApi,
   "A leitura da coleta exige dados que só o SDK cria; com E2E_API=real não há como semeá-los.",
@@ -26,14 +19,6 @@ const NPS = "Qual sua nota?";
 const TEXTO = "O que faltou?";
 const MOTIVO = "Por que essa nota?";
 
-/**
- * Preenche o par de período e confirma que os **dois** valores ficaram.
- *
- * O formulário é controlado: um `fill` que chega antes de a hidratação terminar é descartado no
- * primeiro render, e o campo volta ao estado inicial — inclusive um campo já preenchido, quando
- * a remontagem acontece entre um `fill` e o outro. Nenhuma pessoa digita rápido assim; o teste
- * digita, então ele repete o par até os dois campos aceitarem.
- */
 async function preencherPeriodo(from: Locator, to: Locator, start: string, end: string) {
   await expect(async () => {
     await from.fill(start);
@@ -51,7 +36,6 @@ type Cenario = {
   displayIds: string[];
 };
 
-/** Uma pesquisa publicada com três perguntas, e coleta semeada sobre ela. */
 async function cenario(page: Page, request: Parameters<typeof seedCollect>[0]): Promise<Cenario> {
   const application = await createApplication(page);
   const survey = await createSurvey(page, application.id);
@@ -122,7 +106,6 @@ test.describe("US1 — ver as exibições de uma pesquisa", () => {
     await expect(linhas.first()).toContainText("08/09/2026");
     await expect(linhas.last()).toContainText("06/09/2026");
 
-    // Exibição ainda aberta: ausência com texto próprio, nunca data vazia (FR-008).
     await expect(linhas.last()).toContainText("ainda aberta");
     await expect(linhas.last()).toContainText("não informada");
   });
@@ -140,7 +123,6 @@ test.describe("US1 — ver as exibições de uma pesquisa", () => {
     await expect(page.getByTestId("display-row")).toHaveCount(1);
     await expect(page.getByTestId("display-outcome-badge")).toContainText("Concluída");
 
-    // O recorte sobrevive a recarregar a página (SC-004).
     await page.reload();
     await expect(page.getByTestId("display-row")).toHaveCount(1);
 
@@ -155,7 +137,6 @@ test.describe("US1 — ver as exibições de uma pesquisa", () => {
 
     await expect(page.getByTestId("field-error-periodo")).toBeVisible();
     expect(page.url()).toBe(antes);
-    // A listagem anterior permanece visível enquanto a pessoa corrige (FR-007).
     await expect(page.getByTestId("display-row")).toHaveCount(1);
   });
 
@@ -204,16 +185,13 @@ test.describe("US2 — ler o que foi respondido em uma exibição", () => {
     await expect(page.getByTestId("display-detail")).toBeVisible();
     await expect(page.getByTestId("answer-item")).toHaveCount(3);
 
-    // Cada resposta ao lado do enunciado da versão exibida (FR-011).
     await expect(page.getByTestId("display-answers")).toContainText(NPS);
     await expect(page.getByTestId("answer-value").first()).toContainText("9");
 
-    // As três situações precisam ser distinguíveis por quem lê (SC-006).
     await expect(page.getByTestId("answer-skipped")).toContainText("Pulada");
     await expect(page.getByTestId("answer-expired")).toContainText("Texto expirado");
     await expect(page.getByTestId("answer-expired")).toContainText("retenção");
 
-    // O instantâneo pertence à exibição, e a tela diz isso (FR-014).
     await expect(page.getByTestId("display-attributes")).toContainText("Atributos desta exibição");
     await expect(page.getByTestId("attribute-item")).toHaveCount(1);
     await expect(page.getByTestId("display-attributes")).toContainText("pro");
@@ -256,12 +234,10 @@ test.describe("Navegação fechada (SC-008, FR-029)", () => {
     await page.goto(`${base}/exibicoes?desfecho=COMPLETED`);
     await page.getByTestId("display-row").getByRole("link", { name: "v1" }).click();
 
-    // Exibição → pesquisa.
     await page.getByTestId("display-survey-link").click();
     await page.waitForURL(new RegExp(`/pesquisas/${surveyId}/exibicoes$`));
     await expect(page.getByTestId("displays-table")).toBeVisible();
 
-    // Exibição → respondente → pesquisa, pela coluna que só o histórico mostra.
     await page.getByTestId("display-row").first().getByRole("link", { name: "v1" }).click();
     await page.getByTestId("display-respondent-link").click();
     await page.waitForURL(/\/respondentes\/[^/]+$/);
@@ -285,11 +261,9 @@ test.describe("US3 — respondentes e histórico", () => {
     await page.waitForURL(/\/respondentes\/[^/]+$/);
 
     await expect(page.getByTestId("respondent-summary")).toBeVisible();
-    // O respondente 0 recebeu duas exibições das três semeadas.
     await expect(page.getByTestId("display-row")).toHaveCount(2);
     await expect(page.getByTestId("display-survey-cell").first()).toBeVisible();
 
-    // Sem filtro de versão aqui (FR-022).
     await expect(page.getByTestId("filter-version")).toHaveCount(0);
     await expect(page.getByTestId("filter-outcome")).toBeVisible();
   });

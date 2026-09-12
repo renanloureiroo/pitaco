@@ -35,7 +35,9 @@ public class ApiKeyAuthenticationInterceptor implements HandlerInterceptor {
     request.setAttribute(
         REQUEST_ATTRIBUTE,
         new AuthenticatedApplication(
-            authenticated.applicationId(), authenticated.applicationActive()));
+            authenticated.applicationId(),
+            authenticated.apiKeyId(),
+            authenticated.applicationActive()));
 
     return true;
   }

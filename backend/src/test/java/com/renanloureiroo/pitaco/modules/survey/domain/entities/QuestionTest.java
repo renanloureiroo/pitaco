@@ -145,15 +145,23 @@ class QuestionTest {
   @ParameterizedTest
   @EnumSource(
       value = QuestionType.class,
-      names = {"RATING", "SCALE", "NPS"})
-  @DisplayName("Faixa ausente em tipo que exige faixa é recusada")
+      names = {"RATING", "SCALE"})
+  @DisplayName("Faixa ausente em tipo que exige faixa e não a fixa é recusada")
   void recusa_faixa_ausente_em_tipo_que_exige(QuestionType type) {
     assertThatThrownBy(() -> Question.create(draft(type, List.of(), null), 1))
         .satisfies(erro -> assertCode(erro, "question.scale_range_invalid"));
   }
 
   @Test
-  @DisplayName("NPS só aceita a faixa fixa de 0 a 10")
+  @DisplayName("NPS impõe a faixa fixa de 0 a 10 quando nenhuma é declarada")
+  void nps_impoe_a_faixa_fixa() {
+    var nps = Question.create(draft(QuestionType.NPS, List.of(), null), 1);
+
+    assertThat(nps.range()).contains(ScaleRange.NPS);
+  }
+
+  @Test
+  @DisplayName("NPS aceita a própria faixa declarada e recusa qualquer outra")
   void nps_recusa_faixa_fora_de_zero_a_dez() {
     assertThatThrownBy(
             () -> Question.create(draft(QuestionType.NPS, List.of(), new ScaleRange(1, 5)), 1))

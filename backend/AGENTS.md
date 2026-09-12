@@ -24,7 +24,7 @@ com.renanloureiroo.pitaco
 ├── core        entity/ error/ identity/ pagination/                 Java puro
 │            transaction/ usecase/
 ├── infra       PitacoApplication, http/config, http/error, transaction/
-└── modules/<contexto>                          hoje: app, survey
+└── modules/<contexto>        hoje: app, survey, collect, results, privacy
     ├── domain        entidades, value objects, enums de estado    Java puro
     │                 publication/ quando há regra de saída
     ├── application   casos de uso, portas (repositories/, gateways/),  Java puro
@@ -164,14 +164,18 @@ Correção de bug entra com o teste que o reproduz, escrito **antes** da correç
 ## Comandos
 
 ```bash
-./mvnw test                     # suíte completa (746 testes; Docker precisa estar de pé)
+./mvnw test                     # suíte completa (1709 testes; Docker precisa estar de pé)
 ./mvnw verify                   # testes + empacotamento — o portão antes de qualquer PR
 ./mvnw test -Dtest=SlugTest     # uma classe
 ./mvnw spring-boot:run          # sobe a app; Postgres e LGTM sobem junto
 ```
 
-Sem Docker, é preciso excluir as quatro classes que sobem contexto:
-`-Dtest='!*E2ETest,!ContextPathTest,!OpenApiConfigTest,!PitacoApplicationTests'`.
+Toda classe `@E2E` compartilha **um** contexto Spring, com uma pilha de containers só. Não
+acrescente `@Import`, `@MockitoBean` ou `properties` numa classe `@E2E`: cada variação sobe outro
+contexto e outra pilha. Condição de configuração se prova com `ApplicationContextRunner`.
+
+Sem Docker, é preciso excluir as classes `@E2E`:
+`-Dtest='!*E2ETest,!*OpenApiTest,!*RaceTest,!CollectRepositoriesTest,!ContextPathTest,!OpenApiConfigTest,!PitacoApplicationTests,!PrivacyLoggingTest,!PublishedSurveyCatalogSurveyTest'`.
 
 API em `http://localhost:8080/api` · Swagger em `/api/swagger-ui.html`.
 
@@ -180,7 +184,8 @@ API em `http://localhost:8080/api` · Swagger em `/api/swagger-ui.html`.
 ## O que ainda não existe
 
 Não procure — não sumiu, ainda não nasceu: `AggregateRoot` (só com evento de domínio),
-autenticação, cache, SLO numérico. O Redis saiu do projeto em 2026-09-08: ficou dois anos
+autenticação de usuário do painel (a superfície `/applications/**` não autentica ninguém; entra
+com o SSO, ainda não decidido), cache, SLO numérico. O Redis saiu do projeto em 2026-09-08: ficou dois anos
 de feature sem uso, e cache só entra quando houver problema medido para resolver.
 
 ---
@@ -194,6 +199,9 @@ de feature sem uso, e cache só entra quando houver problema medido para resolve
 | [`docs/backend/testes.md`](docs/backend/testes.md)                   | os seis tipos de teste e a receita de cada um                       |
 | [`docs/adrs`](docs/adrs)                                             | as decisões tomadas e o que se aceitou pagar por elas               |
 | [`README.md`](README.md)                                             | como rodar, endereços, formato de erro                              |
+| [`docs/backend/contrato-sdk.md`](docs/backend/contrato-sdk.md)       | o contrato público `/collect` que o SDK consome                     |
+| [`docs/backend/proxy.md`](docs/backend/proxy.md)                     | o contrato do gateway do app hospedeiro                             |
+| [`../ops/RUNBOOK.md`](../ops/RUNBOOK.md)                             | backup, restore, ensaio de restore e incidentes                     |
 
 Skills: **`pitaco-backend`** para escrever código novo, **`pitaco-tests`** para
 escrever teste.

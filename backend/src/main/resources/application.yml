@@ -31,11 +31,6 @@ spring:
   application:
     name: pitaco
   jackson:
-    # Campo ausente sai **omitido**, não como `null`. É o que os contratos desta API descrevem
-    # ("ausente quando não informada") e o que os consumidores assumem: o painel valida cada
-    # corpo por schema e trata ausência como ausência, então um `null` no lugar da omissão
-    # derruba a resposta inteira na fronteira. Estava declarado só em ApplicationResponseDTO,
-    # via @JsonInclude — daí a tela de aplicações funcionar e as demais não.
     default-property-inclusion: non_null
   threads:
     virtual:
@@ -68,6 +63,71 @@ pitaco:
     display-timeout: 30m
     # Abandonos no mesmo grupo de comparabilidade antes de parar de entregar a pesquisa.
     max-attempts: 3
+    # Janela fixa em memória na superfície pública, contada por chave e por origem. Estouro
+    # responde 429 com Retry-After. A chave atende um app inteiro e por isso aguenta mais que
+    # uma origem, que é um endereço só.
+    rate-limit:
+      per-key:
+        capacity: 1200
+        window: 1m
+      per-origin:
+        capacity: 120
+        window: 1m
+      # Balde próprio por chave para os relatórios de erro do SDK, fora do per-key: uma
+      # tempestade de falhas não consome a cota das consultas de elegibilidade.
+      sdk-errors:
+        capacity: 30
+        window: 1m
+      # De onde sai a origem contada no limite por origem. Só vale o que um proxy confiável
+      # escreveu: quem conecta direto é a própria origem; atrás de proxy confiável, vale o
+      # cabeçalho abaixo e, sem ele, o X-Forwarded-For lido do fim, pulando os confiáveis. Em
+      # produção o par imediato é o cloudflared, na rede privada do Docker, e a Cloudflare põe o
+      # IP do cliente em CF-Connecting-IP. Deixe o cabeçalho vazio para desligá-lo.
+      origin:
+        client-ip-header: CF-Connecting-IP
+        trusted-proxies:
+          - 127.0.0.0/8
+          - ::1/128
+          - 10.0.0.0/8
+          - 172.16.0.0/12
+          - 192.168.0.0/16
+          - fc00::/7
+  health:
+    sdk-usage:
+      # O uso de cada versão do SDK acumula em memória e desce ao banco neste intervalo. O que
+      # não desceu se perde num reinício: a contagem é aproximada por natureza.
+      flush-interval: 1m
+      # Janela da proporção de tráfego e do aviso de compatibilidade antes de publicar.
+      recent-window: 14d
+      # Versão sem consulta há mais que isto aparece como "sumiu do tráfego".
+      stale-after: 14d
+      # O total por dia só serve à janela recente; o acumulado por versão fica.
+      daily-retention: 90d
+    suppressions:
+      # A mesma supressão do mesmo respondente na mesma versão conta uma vez nesta janela.
+      dedup-window: 24h
+      # Período da leitura de saúde quando o painel não informa um.
+      default-window: 30d
+      # Avisar a partir desta proporção de supressões sobre o alcance, e deste total.
+      relevant-share: 0.05
+      relevant-minimum: 5
+    sdk-errors:
+      retention: 90d
+      # Todo dia às 03:17 UTC, fora de qualquer pico.
+      purge-cron: "0 17 3 * * *"
+  privacy:
+    retention:
+      # Descarte automático das respostas vencidas pela política de cada aplicação. Sem prazo
+      # configurado na aplicação, nada é apagado: o padrão é não apagar.
+      enabled: true
+      # Todo dia às 03:47 UTC, depois do expurgo de saúde e fora de qualquer pico.
+      cron: "0 47 3 * * *"
+      # Respostas por transação: o agregado do lote é congelado e o lote sai junto.
+      batch-size: 1000
+  results:
+    # Abaixo disto, a proporção é exibida com aviso de amostra pequena: "80%" de quatro
+    # pessoas não é o mesmo número que "80%" de quatrocentas.
+    small-sample-threshold: 10
 
 management:
   endpoints:
@@ -84,15 +144,14 @@ management:
       probability: 1.0
 
 springdoc:
-  # TEMPORÁRIO: ligado também em produção enquanto a API está em construção.
-  # Como /api tem policy de Bypass no Cloudflare Access, isto deixa o mapa
-  # inteiro da API público em pitaco.renanloureiro.me/api/swagger-ui.html.
-  # Desligar aqui (ou proteger o path no Access) antes de haver dado real.
+  # Desligado por padrão. /api tem policy de Bypass no Cloudflare Access, então
+  # ligado aqui o mapa inteiro da API ficaria público. PITACO_API_DOCS_ENABLED=true
+  # liga os dois; o perfil local já liga.
   api-docs:
-    enabled: true
+    enabled: ${PITACO_API_DOCS_ENABLED:false}
     path: /v3/api-docs
   swagger-ui:
-    enabled: true
+    enabled: ${PITACO_API_DOCS_ENABLED:false}
     path: /swagger-ui.html
     operations-sorter: alpha
     tags-sorter: alpha

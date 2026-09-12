@@ -39,7 +39,57 @@ public record SurveyResponseDTO(
             nullable = true)
         Integer draftVersionNumber,
     @Schema(
+            description =
+                "Prioridade no desempate entre pesquisas que disputam o mesmo evento; maior vence",
+            example = "0",
+            minimum = "-100",
+            maximum = "100",
+            requiredMode = Schema.RequiredMode.REQUIRED)
+        int priority,
+    @Schema(
+            description =
+                "Respostas concluídas que encerram a pesquisa sozinha. Ausente quando não há cota",
+            example = "100",
+            minimum = "1",
+            nullable = true)
+        Integer responseQuota,
+    @Schema(
+            description = "Se a pesquisa ignora o intervalo de descanso da aplicação",
+            example = "false",
+            requiredMode = Schema.RequiredMode.REQUIRED)
+        boolean ignoresQuietPeriod,
+    @Schema(
+            description =
+                "Modelo de onde a pesquisa partiu; ausente quando nasceu em branco. Com nps, o "
+                    + "resultado calcula o NPS sozinho",
+            allowableValues = {"nps", "csat", "ces"},
+            example = "nps",
+            nullable = true)
+        String templateKind,
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) FreeTextNoticeDTO freeTextNotice,
+    @Schema(
             description = "Instante da criação, em UTC",
             example = "2026-09-08T14:32:10Z",
             requiredMode = Schema.RequiredMode.REQUIRED)
-        Instant createdAt) {}
+        Instant createdAt) {
+
+  @Schema(
+      name = "FreeTextNotice",
+      description =
+          "Aviso para não escrever dado pessoal, exibido pelo SDK junto dos campos de texto livre")
+  public record FreeTextNoticeDTO(
+      @Schema(example = "true", requiredMode = Schema.RequiredMode.REQUIRED) boolean enabled,
+      @Schema(
+              description = "Texto próprio da pesquisa. Ausente quando vale o padrão",
+              nullable = true)
+          String customText,
+      @Schema(
+              description = "O texto que o respondente vê: o próprio, ou o padrão",
+              example = "Evite escrever dados pessoais, como nome, telefone ou e-mail.",
+              requiredMode = Schema.RequiredMode.REQUIRED)
+          String text,
+      @Schema(
+              description = "Texto padrão do sistema, para a tela mostrar quando não há próprio",
+              requiredMode = Schema.RequiredMode.REQUIRED)
+          String defaultText) {}
+}

@@ -8,30 +8,27 @@ import { ConfirmDialog, FormError } from "@/shared/components";
 
 import { endSurveyAction, pauseSurveyAction, resumeSurveyAction } from "../../actions";
 import type { SurveyState } from "../../schemas/survey";
-import { allowedManualReasons, type SurveyStateTransition } from "../../schemas/transition";
+import { allowedManualReasons } from "../../schemas/transition";
 
 /**
- * Renderiza **apenas** o que `getTransitions` autoriza (FR-035): nada aqui é derivado do
- * estado da pesquisa. Lista de transições vazia ⇒ nenhuma ação oferecida, que é exatamente o
- * caso de uma pesquisa encerrada.
+ * As ações manuais possíveis saem do estado da pesquisa (`allowedManualReasons`): nenhuma na
+ * encerrada.
  *
  * Encerrar é irreversível, e por isso passa por confirmação explícita.
  */
 export function TransitionActions({
   applicationId,
   surveyId,
-  transitions,
   currentState,
 }: {
   applicationId: string;
   surveyId: string;
-  transitions: SurveyStateTransition[];
   currentState: SurveyState;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>();
 
-  const allowed = allowedManualReasons(transitions, currentState);
+  const allowed = allowedManualReasons(currentState);
 
   if (allowed.length === 0) {
     return null;

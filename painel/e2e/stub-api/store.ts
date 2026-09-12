@@ -40,7 +40,16 @@ export type StubQuestion = {
   position: number;
   required: boolean;
   options?: StubQuestionOption[];
-  range?: { min: number; max: number };
+  range?: { min: number; max: number; minLabel?: string; maxLabel?: string };
+  condition?: StubCondition;
+};
+
+export type StubCondition = {
+  sourceKey: string;
+  operator: "equals" | "not_equals" | "in" | "between";
+  values: string[];
+  min?: number;
+  max?: number;
 };
 
 export type StubSegmentationRule = {
@@ -77,6 +86,7 @@ export type StubTransition = {
     | "manual_pause"
     | "manual_resume"
     | "manual_end"
+    | "quota_reached"
     | "window_opened"
     | "window_closed";
   occurredAt: string;
@@ -89,16 +99,17 @@ export type StubSurvey = {
   state: "draft" | "scheduled" | "active" | "paused" | "ended";
   versions: StubVersion[];
   transitions: StubTransition[];
+  /** Exposição: ausente equivale ao padrão — prioridade zero e respeitando o descanso. */
+  priority?: number;
+  responseQuota?: number;
+  ignoresQuietPeriod?: boolean;
+  /** Modelo de origem; ausente é pesquisa em branco. */
+  templateKind?: "nps" | "csat" | "ces";
+  /** Aviso de texto livre: ausente é ligado, com o texto padrão. */
+  freeTextNoticeEnabled?: boolean;
+  freeTextNoticeText?: string;
   createdAt: string;
 };
-
-/**
- * Coleta: exibição, resposta e respondente.
- *
- * Estes três não nascem por nenhuma tela — o painel é somente leitura, e quem cria exibição é
- * o SDK. Entram no simulador por semeadura direta (R9 de 002), o que mantém a regra de cada
- * teste criar os próprios dados sem inventar uma tela de escrita que não existe.
- */
 
 export type StubRespondent = {
   id: string;
@@ -111,7 +122,7 @@ export type StubRespondent = {
 
 export type StubAnswer = {
   questionKey: string;
-  status: "ANSWERED" | "SKIPPED" | "EXPIRED";
+  status: "ANSWERED" | "SKIPPED" | "NOT_APPLICABLE" | "EXPIRED";
   text?: string;
   number?: number;
   options: string[];
@@ -130,22 +141,94 @@ export type StubDisplay = {
   attributes: Record<string, string>;
   answers: StubAnswer[];
   openedAt: string;
-  /** Presente se e somente se o desfecho é final. */
   closedAt?: string;
+};
+
+export type StubObservedEvent = {
+  applicationId: string;
+  name: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
+};
+
+export type StubObservedAttribute = {
+  applicationId: string;
+  name: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  values: Array<{ value: string; lastSeenAt: string }>;
+};
+
+export type StubSdkVersion = {
+  applicationId: string;
+  version: string;
+  requestCount: number;
+  recentRequestCount: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+};
+
+export type StubSdkErrorKind =
+  | "render_error"
+  | "network_error"
+  | "malformed_response"
+  | "storage_error"
+  | "unknown";
+
+export type StubSdkError = {
+  id: string;
+  applicationId: string;
+  sdkVersion?: string;
+  kind: StubSdkErrorKind;
+  message: string;
+  context: Record<string, unknown>;
+  occurredAt: string;
+  receivedAt: string;
+};
+
+export type StubSuppression = {
+  applicationId: string;
+  surveyId: string;
+  reason: "unknown_question_type" | "unsupported_feature";
+  sdkVersion?: string;
+  occurredAt: string;
+};
+
+export const DEFAULT_FREE_TEXT_NOTICE =
+  "Evite escrever dados pessoais, como nome, telefone ou e-mail.";
+
+export type StubDeletionAudit = {
+  id: string;
+  applicationId: string;
+  displaysDeleted: number;
+  answersDeleted: number;
+  performedAt: string;
+};
+
+/** O que a retenção congelou de uma pesquisa; o simulador só guarda quando foi. */
+export type StubRetentionSnapshot = {
+  surveyId: string;
+  discardedBefore: string;
 };
 
 export const store = {
   applications: new Map<string, StubApplication>(),
+  /** Catálogo: uma entrada por (aplicação, nome), nunca duas. */
+  observedEvents: [] as StubObservedEvent[],
+  /** Catálogo: um nome por aplicação e um valor por nome. */
+  observedAttributes: [] as StubObservedAttribute[],
   apiKeys: new Map<string, StubApiKey>(),
   surveys: new Map<string, StubSurvey>(),
   respondents: new Map<string, StubRespondent>(),
   displays: new Map<string, StubDisplay>(),
+  /** Rollup por (aplicação, versão), como no backend. */
+  sdkVersions: [] as StubSdkVersion[],
+  sdkErrors: [] as StubSdkError[],
+  suppressions: [] as StubSuppression[],
+  deletionAudits: [] as StubDeletionAudit[],
+  retentionSnapshots: [] as StubRetentionSnapshot[],
 };
 
-/**
- * A versão exibida é identificada pelo número dentro da pesquisa; o identificador só existe
- * porque o contrato o devolve. Derivá-lo mantém listagem e detalhe concordando.
- */
 export function versionIdOf(surveyId: string, versionNumber: number): string {
   return `ver-${surveyId}-${versionNumber}`;
 }

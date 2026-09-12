@@ -40,6 +40,7 @@ public final class SubmissionValidation {
 
     var known = answers.stream().filter(answer -> byKey.containsKey(answer.questionKey())).toList();
 
+    problems.addAll(unconditionalNotApplicable(byKey, known));
     problems.addAll(missingValues(known));
     problems.addAll(typeMismatches(byKey, known));
     problems.addAll(unknownOptions(byKey, known));
@@ -78,9 +79,13 @@ public final class SubmissionValidation {
       return List.of();
     }
 
+    // Obrigatória pulada pela condição nunca foi feita à pessoa: não aplicável a satisfaz.
     var answered =
         answers.stream()
-            .filter(answer -> answer.status() == AnswerStatus.ANSWERED)
+            .filter(
+                answer ->
+                    answer.status() == AnswerStatus.ANSWERED
+                        || answer.status() == AnswerStatus.NOT_APPLICABLE)
             .map(AnswerDraft::questionKey)
             .collect(Collectors.toSet());
 
@@ -88,6 +93,21 @@ public final class SubmissionValidation {
         .filter(DeliverableQuestion::required)
         .filter(question -> !answered.contains(question.key()))
         .map(question -> SubmissionProblem.of(SubmissionProblem.REQUIRED_MISSING, question.key()))
+        .toList();
+  }
+
+  // Não aplicável é o que a condição pulou. Pergunta sem condição não tem como ter sido pulada por
+  // ela, e aceitar o status ali deixaria uma não resposta passar por pergunta que nunca foi feita.
+  // Se o SDK avaliou a condição certo não é verificado: só ele percorre a árvore.
+  private static List<SubmissionProblem> unconditionalNotApplicable(
+      Map<QuestionKey, DeliverableQuestion> byKey, List<AnswerDraft> answers) {
+    return answers.stream()
+        .filter(answer -> answer.status() == AnswerStatus.NOT_APPLICABLE)
+        .filter(answer -> !byKey.get(answer.questionKey()).isConditional())
+        .map(
+            answer ->
+                SubmissionProblem.of(
+                    SubmissionProblem.NOT_APPLICABLE_UNCONDITIONAL, answer.questionKey()))
         .toList();
   }
 

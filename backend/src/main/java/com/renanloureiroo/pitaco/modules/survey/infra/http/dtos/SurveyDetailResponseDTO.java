@@ -18,6 +18,12 @@ public record SurveyDetailResponseDTO(
         String state,
     @Schema(nullable = true) Integer publishedVersionNumber,
     @Schema(nullable = true) Integer draftVersionNumber,
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) int priority,
+    @Schema(nullable = true) Integer responseQuota,
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) boolean ignoresQuietPeriod,
+    @Schema(allowableValues = {"nps", "csat", "ces"}, nullable = true) String templateKind,
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+        SurveyResponseDTO.FreeTextNoticeDTO freeTextNotice,
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant createdAt,
     @Schema(description = "Conteúdo montado; ausente quando não há nenhuma versão", nullable = true)
         Content content) {

@@ -25,7 +25,14 @@ public interface QuestionControllerSwagger {
   String PROBLEM_JSON = "application/problem+json";
   String FROZEN =
       "Conteúdo publicado está congelado (survey.content_frozen) — não há rascunho aberto para "
-          + "receber a escrita";
+          + "receber a escrita —, ou a condição de exibição é inválida: origem inexistente, "
+          + "posterior ou de texto livre (question.condition_source_invalid), operador que o tipo"
+          + " da origem não aceita (question.condition_operator_invalid), valor fora das opções "
+          + "ou da escala (question.condition_value_invalid), mudança que invalidaria a condição "
+          + "de outra pergunta (question.condition_source_in_use) ou ordem que poria a "
+          + "condicionada antes da origem (question.condition_order_invalid). O corpo traz o "
+          + "campo em `field` e, quando a culpa é de outra pergunta, a chave dela em "
+          + "`questionKey`";
 
   @Operation(
       summary = "Acrescenta uma pergunta ao rascunho",

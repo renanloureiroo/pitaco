@@ -85,6 +85,11 @@ Erros de Bean Validation acrescentam ainda `errors`, um mapa de campo → mensag
 | `POST` | `/applications` | Cria uma aplicação |
 | `POST` | `/applications/{applicationId}/api-keys` | Emite uma chave de API — o segredo em claro sai **uma única vez**, nesta resposta |
 | `DELETE` | `/applications/{applicationId}/api-keys/{apiKeyId}` | Revoga a chave: imediata, irreversível, e o registro permanece para a trilha |
+| `GET` | `/applications/{applicationId}/sdk-versions` | Versões do SDK que falaram com a aplicação: acumulado, proporção do tráfego recente e a que sumiu do tráfego (`stale`) |
+| `GET` | `/applications/{applicationId}/sdk-errors` | Relatórios de falha do SDK, já sanitizados, paginados e filtráveis por tipo e versão |
+| `DELETE` | `/applications/{applicationId}/respondents?reference=` ou `?deviceId=` | Exclui o respondente e tudo que ele respondeu na aplicação, em cascata. Irreversível; registra quando e quanto saiu, nunca quem. Pedido repetido devolve `deleted: false` sem registro novo |
+| `GET` | `/applications/{applicationId}/deletion-audits` | Registros de exclusão, paginados, sem nenhuma referência ao respondente |
+| `GET` | `/applications/{applicationId}/retention-preview` | O que a política de retenção descarta na próxima execução e na semana seguinte, e se já houve descarte |
 
 E a autoria de pesquisa, toda aninhada na aplicação dona — o escopo é parte da rota, não um
 parâmetro que se pode esquecer de aplicar:
@@ -92,7 +97,7 @@ parâmetro que se pode esquecer de aplicar:
 | Método | Rota (sob `/applications/{applicationId}/surveys`) | O que faz |
 | --- | --- | --- |
 | `POST` `GET` | `` | Cria a pesquisa em rascunho, junto da versão 1; lista as da aplicação, paginado |
-| `GET` `PATCH` `DELETE` | `/{surveyId}` | Consulta com o conteúdo montado; renomeia; descarta a nunca publicada |
+| `GET` `PATCH` `DELETE` | `/{surveyId}` | Consulta com o conteúdo montado; edita nome, exposição e aviso de texto livre (`freeTextNoticeEnabled`, `freeTextNoticeText`, com `null` voltando ao texto padrão); descarta a nunca publicada |
 | `POST` | `/{surveyId}/questions` | Acrescenta pergunta, na última posição e com chave estável nova |
 | `PUT` `DELETE` | `/{surveyId}/questions/{questionId}` | Reescreve preservando a chave; remove recompactando as posições |
 | `PUT` | `/{surveyId}/questions/order` | Redefine a ordem, exigindo permutação exata |
@@ -106,6 +111,10 @@ parâmetro que se pode esquecer de aplicar:
 | `DELETE` | `/{surveyId}/versions/draft` | Descarta o rascunho de versão |
 | `GET` | `/{surveyId}/versions/{number}` | O conteúdo congelado naquela versão |
 | `GET` | `/{surveyId}/versions/comparability` | Quais versões têm respostas somáveis entre si |
+| `GET` | `/{surveyId}/results` | Taxa de resposta, série por dia e agregado por pergunta, sob recorte de período, atributo e versão. Pergunta sem resposta vem sem `aggregate`, distinta de zero |
+| `GET` | `/{surveyId}/results/open-answers` | Texto livre paginado, com busca por termo e o contexto da mesma exibição; texto vencido pela retenção não aparece |
+| `GET` | `/{surveyId}/results/export` | CSV em fluxo, uma linha por exibição (dispensadas e abandonadas inclusive), no mesmo recorte. Com texto livre na pesquisa, traz `X-Pitaco-Content-Warning: may-contain-personal-data` |
+| `GET` | `/{surveyId}/health` | Supressões por incompatibilidade contra exibições no período, versão mínima do SDK e última chegada do evento do disparo — separa "suprimida" de "o evento nunca chegou" |
 
 E a superfície pública, consumida pelo SDK. A aplicação vem **da chave**, no header
 `X-Pitaco-Key`: nenhuma operação daqui aceita `applicationId` na rota ou no corpo. As rotas
@@ -117,6 +126,23 @@ administrativas fazem o inverso — apresentar a chave do SDK em `/applications/
 | `POST` | `/eligibility` | Há pesquisa para este respondente agora? Devolve no máximo uma, com a versão publicada inteira, ou `{"survey": null}` — sem gravar nada |
 | `POST` | `/displays` | Abre a exibição de exibição. O identificador nasce no dispositivo e é a chave de idempotência: a mesma abertura de novo devolve 200 em vez de 201 |
 | `POST` | `/displays/{displayId}/submission` | Respostas e desfecho em um ato atômico, validado inteiro antes de qualquer gravação |
+| `POST` | `/suppressions` | Pesquisa elegível que o SDK não soube renderizar. 202 sem corpo, grave ou descarte; não abre exibição nem cria respondente |
+| `POST` | `/sdk-errors` | Falha interna do SDK, sanitizada no servidor. 202 sem corpo, com limite de requisições próprio por chave |
+
+A pesquisa entregue na elegibilidade traz `freeTextNotice: { enabled, text }`, com o texto já
+resolvido: o SDK mostra o aviso junto dos campos de texto livre e não conhece o texto padrão.
+
+O limite de requisições da superfície pública conta por chave e por origem. A origem nunca é um
+valor que o cliente escolhe: quem conecta direto é a própria origem, e atrás de proxy confiável
+vale o `CF-Connecting-IP` ou, sem ele, o `X-Forwarded-For` lido do fim para o começo, pulando os
+proxies confiáveis. As faixas confiáveis ficam em
+`pitaco.collect.rate-limit.origin.trusted-proxies`, com loopback e redes privadas por padrão. O
+detalhe, e o que muda para quem usa gateway, está em
+[`docs/backend/proxy.md`](docs/backend/proxy.md).
+
+Toda chamada do SDK pode mandar a própria versão no header `X-Pitaco-Sdk-Version`. Na
+elegibilidade ela alimenta a distribuição de versões, acumulada em memória e gravada em lote a
+cada minuto; valor fora do semver é ignorado, nunca recusado.
 
 Três coisas que essa superfície assume: ausência de pesquisa **não é erro** — aplicação inativa,
 pesquisa pausada, fora da janela, evento sem pesquisa, regra não satisfeita, não sorteado e já
@@ -130,6 +156,13 @@ Duas coisas que essas rotas assumem e que valem registrar: o **estado** de uma p
 somado à janela — não há coluna nem job para ele; e nada fora do escopo da aplicação dona
 responde `403`, sempre `404`, para que a API não vire um oráculo de existência.
 
+A retenção roda num job diário (`pitaco.privacy.retention.cron`, desligável por
+`pitaco.privacy.retention.enabled`). Para cada aplicação com prazo, ela congela o agregado das
+respostas vencidas em `aggregate_snapshots` e as apaga, em lotes de uma transação cada; o prazo de
+texto livre apaga só o texto e deixa a resposta contando como dada. Os resultados somam o
+congelado ao que ficou quando o recorte é só de versão, e avisam em `retention` quando um recorte de
+período ou de atributo o deixa de fora. Sem prazo configurado, nada é apagado.
+
 Os `code` de erro que chegam ao cliente:
 
 | `code` | Status | Quando |
@@ -141,6 +174,8 @@ Os `code` de erro que chegam ao cliente:
 | `application.name_invalid` · `application.slug_invalid` · `application.quiet_period_invalid` · `application.retention_invalid` | 400 | Invariante da aplicação |
 | `application.open_text_retention_invalid` | 422 | Retenção de texto livre maior que a geral |
 | `api_key.label_invalid` | 400 | Rótulo vazio ou acima de 80 caracteres |
+| `respondent.identity_required` · `respondent.identity_ambiguous` | 400 | Exclusão sem referência nem dispositivo, ou com os dois |
+| `survey.free_text_notice_invalid` | 400 | Texto do aviso de texto livre vazio ou acima de 200 caracteres |
 | `survey.not_found` · `survey_version.not_found` · `question.not_found` · `segmentation_rule.not_found` | 404 | Inexistente, de outra aplicação, ou identificador malformado — indistinguíveis de propósito |
 | `survey.name_invalid` · `question.statement_invalid` · `question.options_not_allowed` · `question.options_duplicated` · `question.scale_range_invalid` · `question.order_invalid` | 400 | Invariante do conteúdo da pesquisa |
 | `trigger.event_name_invalid` · `trigger.window_invalid` · `trigger.sampling_rate_invalid` · `segmentation_rule.invalid` | 400 | Invariante do disparo e das regras |
@@ -197,6 +232,22 @@ Alternativa, sem Docker Compose: `./mvnw spring-boot:test-run` sobe a aplicaçã
 | Actuator | http://localhost:8080/api/actuator |
 | Grafana | http://localhost:3000 |
 
+### Documentação da API
+
+Swagger UI e `/v3/api-docs` nascem **desligados**. Em produção, `/api` passa pelo túnel sem
+Cloudflare Access, e ligados eles expõem o mapa inteiro da API. O perfil `local` e os testes ligam.
+
+| Variável | Padrão | Efeito |
+| --- | --- | --- |
+| `PITACO_API_DOCS_ENABLED` | `false` | `true` liga o Swagger UI e o `/v3/api-docs`. |
+
+Com a UI ligada, as entradas da API levam a ela: `GET /`, `GET /api` e `GET /api/` respondem
+`302` com `Location: /api/swagger-ui.html`. O `Location` é relativo, então atrás do túnel o
+navegador o resolve contra o host e o esquema externos. Quem responde é uma valve do Tomcat, antes
+do contexto, sem passar pelo limite de requisições nem pelos interceptors de chave. Com a UI
+desligada, nada redireciona: as três respostas continuam as de sempre, e o redirecionamento
+automático do Tomcat de `/api` para `/api/` volta a valer.
+
 ---
 
 ## Testes
@@ -244,3 +295,6 @@ java -jar target/pitaco-0.0.1-SNAPSHOT.jar
 | [Testes](docs/backend/testes.md) | os seis tipos de teste, o ferramental de `testsupport` e a receita de cada um |
 | [Constituição](.specify/memory/constitution.md) | os princípios obrigatórios e os portões de qualidade |
 | [ADRs](docs/adrs) | as decisões de arquitetura e o que se aceitou pagar por elas |
+| [Contrato do SDK](docs/backend/contrato-sdk.md) | as rotas `/collect`, cabeçalhos, payloads, códigos e a fila local esperada do SDK |
+| [Contrato do proxy](docs/backend/proxy.md) | o que um gateway do app hospedeiro precisa repassar, preservar e não alterar |
+| [Runbook](../ops/RUNBOOK.md) | subir, backup, restore, ensaio de restore e resposta a incidente |

@@ -8,10 +8,12 @@ import com.renanloureiroo.pitaco.core.identity.SurveyVersionId;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.TriggerWindow;
 import com.renanloureiroo.pitaco.modules.survey.infra.database.jpa.mappers.SurveyVersionJpaMapper;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -44,14 +46,18 @@ public class SurveyVersionRepositoryJpa implements SurveyVersionRepository {
   }
 
   @Override
-  public Page<SurveyVersion> findPublishedPage(ListSurveyVersionsQuery query) {
+  public Page<SurveyVersion> findPage(ListSurveyVersionsQuery query) {
     // O recorte é aplicado sobre a lista já ordenada por número: o join fetch das coleções e o
     // limit do banco não convivem, e a quantidade de versões de uma pesquisa é pequena.
-    var published = findAllPublished(query.surveyId());
+    var all =
+        Stream.concat(
+                findDraft(query.surveyId()).stream(), findAllPublished(query.surveyId()).stream())
+            .sorted(Comparator.comparingInt(SurveyVersion::getNumber).reversed())
+            .toList();
 
-    var items = published.stream().skip(query.offset()).limit(Math.max(query.size(), 0)).toList();
+    var items = all.stream().skip(query.offset()).limit(Math.max(query.size(), 0)).toList();
 
-    return new Page<>(items, published.size());
+    return new Page<>(items, all.size());
   }
 
   @Override

@@ -6,15 +6,6 @@ import { formatDateTime } from "@/shared/lib";
 import { RESPONDENT_IDENTITY_KIND_LABELS } from "../../lib/collect-labels";
 import type { Respondent } from "../../schemas/respondent";
 
-/**
- * Cabeçalho do histórico: quem é esta pessoa para a aplicação.
- *
- * A API **não** tem leitura de um respondente isolado — só a listagem paginada. Buscar a
- * listagem inteira para rotular um cabeçalho seria exatamente a consulta extra que SC-009
- * proíbe, então o histórico se identifica pelo identificador e aponta para a listagem, que é
- * onde a identificação completa está. Quando quem compõe já conhece o respondente, ele entra
- * por propriedade e o cabeçalho fica completo — sem leitura nenhuma a mais.
- */
 export function RespondentSummary({
   applicationId,
   respondentId,

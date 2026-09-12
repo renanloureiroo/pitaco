@@ -4,6 +4,7 @@ import com.renanloureiroo.pitaco.core.error.DomainException;
 import com.renanloureiroo.pitaco.core.error.ErrorType;
 import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.core.identity.SurveyId;
+import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.Exposure;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SurveyName;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.TriggerWindow;
 import java.time.Instant;
@@ -52,7 +53,7 @@ class SurveyTest {
 
     var survey =
         Survey.restore(
-            id, applicationId, SurveyName.of("Antiga"), SurveyLifecycle.PAUSED, 2, null, NOW);
+            id, applicationId, SurveyName.of("Antiga"), SurveyLifecycle.PAUSED, 2, null, Exposure.standard(), NOW);
 
     assertThat(survey.id()).isEqualTo(id);
     assertThat(survey.getLifecycle()).isEqualTo(SurveyLifecycle.PAUSED);
@@ -140,7 +141,7 @@ class SurveyTest {
             SurveyLifecycle.PAUSED,
             1,
             null,
-            NOW);
+            Exposure.standard(), NOW);
     var closed = TriggerWindow.of(NOW.minusSeconds(120), NOW.minusSeconds(60));
 
     assertThat(survey.stateAt(NOW, Optional.of(closed))).isEqualTo(SurveyState.PAUSED);
@@ -157,7 +158,7 @@ class SurveyTest {
             SurveyLifecycle.ENDED,
             1,
             null,
-            NOW);
+            Exposure.standard(), NOW);
     var open = TriggerWindow.of(NOW.minusSeconds(60), null);
 
     assertThat(survey.stateAt(NOW, Optional.of(open))).isEqualTo(SurveyState.ENDED);

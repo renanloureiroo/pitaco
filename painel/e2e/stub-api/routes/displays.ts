@@ -12,7 +12,6 @@ import { surveyOf } from "./surveys.ts";
 
 const OUTCOMES = ["STARTED", "COMPLETED", "DISMISSED"];
 
-/** Ordem do contrato: abertura desc, desempate por identificador desc. */
 export function orderDisplays(displays: StubDisplay[]): StubDisplay[] {
   return [...displays].sort(
     (a, b) => b.openedAt.localeCompare(a.openedAt) || b.id.localeCompare(a.id),
@@ -26,11 +25,6 @@ export type DisplayFilter = {
   openedTo?: string;
 };
 
-/**
- * Recusa de parâmetro, com a mesma semântica do backend: número de versão menor que 1 e
- * período invertido são `400` apontando o campo; número de versão que não existe na pesquisa
- * é filtro sem resultado, e devolve página vazia.
- */
 export function readDisplayFilter(
   query: URLSearchParams,
   { acceptsVersion }: { acceptsVersion: boolean },
@@ -87,7 +81,6 @@ export function readDisplayFilter(
   return filter;
 }
 
-/** Período inclusivo nos dois extremos, como o contrato exige. */
 export function matchesFilter(display: StubDisplay, filter: DisplayFilter): boolean {
   const openedAt = new Date(display.openedAt).toISOString();
 
@@ -108,7 +101,6 @@ export function toSummary(display: StubDisplay) {
     outcome: display.outcome,
     ...(display.sdkVersion !== undefined ? { sdkVersion: display.sdkVersion } : {}),
     openedAt: display.openedAt,
-    // Ausente quando o desfecho não é final: é o que a tela exibe como "ainda aberta".
     ...(display.closedAt !== undefined ? { closedAt: display.closedAt } : {}),
   };
 }
@@ -146,8 +138,6 @@ export const displayRoutes: Route[] = [
     handler: ({ params }) => {
       const display = store.displays.get(params.displayId);
 
-      // Exibição de outra aplicação responde igual à inexistente: o painel não confirma
-      // existência fora do escopo da aplicação.
       if (display === undefined || display.applicationId !== params.applicationId) {
         return notFound("display.not_found", "Exibição não encontrada.");
       }

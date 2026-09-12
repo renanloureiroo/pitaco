@@ -62,6 +62,12 @@ public final class AnswerFactory {
     return this;
   }
 
+  public AnswerFactory notApplicable() {
+    this.status = AnswerStatus.NOT_APPLICABLE;
+    this.value = null;
+    return this;
+  }
+
   public AnswerFactory answeredAt(Instant answeredAt) {
     this.answeredAt = answeredAt;
     return this;

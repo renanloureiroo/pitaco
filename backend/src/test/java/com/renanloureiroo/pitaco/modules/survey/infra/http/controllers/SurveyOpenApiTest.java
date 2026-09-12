@@ -39,6 +39,7 @@ class SurveyOpenApiTest {
           Map.entry(
               BASE + "/{surveyId}/trigger/rules/{ruleId}.delete", List.of("204", "404", "422")),
           Map.entry(BASE + "/{surveyId}/publication-impediments.get", List.of("200", "404")),
+          Map.entry(BASE + "/{surveyId}/publication-warnings.get", List.of("200", "404")),
           Map.entry(
               BASE + "/{surveyId}/publication.post", List.of("201", "400", "404", "409", "422")),
           Map.entry(BASE + "/{surveyId}/pause.post", List.of("200", "404", "422")),
@@ -75,8 +76,8 @@ class SurveyOpenApiTest {
   }
 
   @Test
-  @DisplayName("Os 23 caminhos do contrato estão publicados")
-  void publica_os_vinte_e_tres_caminhos() {
+  @DisplayName("Os 24 caminhos do contrato estão publicados")
+  void publica_os_vinte_e_quatro_caminhos() {
     var paths = document().get("paths");
 
     var declarados =
@@ -85,7 +86,7 @@ class SurveyOpenApiTest {
             .distinct()
             .toList();
 
-    assertThat(EXPECTED_STATUSES).hasSize(23);
+    assertThat(EXPECTED_STATUSES).hasSize(24);
     assertThat(declarados).allSatisfy(path -> assertThat(paths.has(path)).as(path).isTrue());
   }
 

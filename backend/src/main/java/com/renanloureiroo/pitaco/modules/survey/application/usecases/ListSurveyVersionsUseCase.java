@@ -26,7 +26,7 @@ public class ListSurveyVersionsUseCase
     var survey = SurveyScope.require(surveysRepository, input.applicationId(), input.surveyId());
 
     var page =
-        surveyVersionsRepository.findPublishedPage(
+        surveyVersionsRepository.findPage(
             new SurveyVersionRepository.ListSurveyVersionsQuery(
                 survey.id(), input.page(), input.size()));
 

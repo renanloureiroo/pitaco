@@ -126,6 +126,10 @@ public class GetSurveyDisplayUseCase
     if (answer.getStatus() == AnswerStatus.SKIPPED) {
       return AnswerReadOutput.withoutValue(answer.getQuestionKey(), AnswerReadStatus.SKIPPED);
     }
+    if (answer.getStatus() == AnswerStatus.NOT_APPLICABLE) {
+      return AnswerReadOutput.withoutValue(
+          answer.getQuestionKey(), AnswerReadStatus.NOT_APPLICABLE);
+    }
 
     var value = answer.value().orElseThrow();
 

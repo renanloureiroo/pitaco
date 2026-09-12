@@ -114,3 +114,36 @@ describe("triggerSchema", () => {
     expect(parsed.windowEnd).toBeUndefined();
   });
 });
+
+describe("janela: do campo da tela para o instante da API (regressão)", () => {
+  const base = { eventName: "checkout.completed", windowStart: "2026-09-09T12:00" };
+
+  it("converte a data-hora do campo em instante ISO UTC antes de enviar", () => {
+    // O `datetime-local` não tem fuso, e a API só aceita instante: sem esta travessia o corpo
+    // vai malformado e a API recusa com "Corpo da requisição malformado".
+    const parsed = triggerFormSchema.parse(base);
+
+    expect(parsed.windowStart).toBe("2026-09-09T15:00:00.000Z");
+    expect(parsed.windowStart).toMatch(/Z$/);
+  });
+
+  it("interpreta no fuso de referência, o mesmo em que a tela exibe", () => {
+    const parsed = triggerFormSchema.parse({ ...base, windowStart: "2026-09-09T00:00" });
+
+    expect(parsed.windowStart).toBe("2026-09-09T03:00:00.000Z");
+  });
+
+  it("converte também o fim da janela, e deixa em branco significar janela aberta", () => {
+    expect(triggerFormSchema.parse({ ...base, windowEnd: "2026-09-10T12:00" }).windowEnd).toBe(
+      "2026-09-10T15:00:00.000Z",
+    );
+    expect(triggerFormSchema.parse({ ...base, windowEnd: "" }).windowEnd).toBeUndefined();
+  });
+
+  it("recusa data-hora que não existe no calendário, em vez de deslizar para outra", () => {
+    expect(triggerFormSchema.safeParse({ ...base, windowStart: "2026-02-31T10:00" }).success).toBe(
+      false,
+    );
+    expect(triggerFormSchema.safeParse({ ...base, windowEnd: "amanhã" }).success).toBe(false);
+  });
+});

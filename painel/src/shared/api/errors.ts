@@ -35,6 +35,8 @@ export type ApiFailure =
       code: string;
       detail: string;
       traceId?: string;
+      /** campo que causou a recusa de regra, quando o backend o aponta (ex.: `condition.values`) */
+      field?: string;
     }
   | { ok: false; kind: "unreachable" };
 
@@ -50,6 +52,7 @@ const problemDetailsSchema = z.object({
   code: z.string().optional(),
   traceId: z.string().optional(),
   errors: z.record(z.string(), z.string()).optional(),
+  field: z.string().optional(),
 });
 
 export type ProblemDetails = z.infer<typeof problemDetailsSchema>;
@@ -98,6 +101,7 @@ export function toApiFailure(status: number, body: unknown): ApiFailure {
     code,
     detail,
     ...(problem.traceId !== undefined ? { traceId: problem.traceId } : {}),
+    ...(problem.field !== undefined ? { field: problem.field } : {}),
   };
 }
 

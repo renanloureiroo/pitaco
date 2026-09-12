@@ -36,11 +36,16 @@ public record EligibilityRequestDTO(
             attributes) {
 
   public FindEligibleSurveyUseCase.Input toInput(String applicationId) {
+    return toInput(applicationId, null);
+  }
+
+  public FindEligibleSurveyUseCase.Input toInput(String applicationId, String sdkVersion) {
     return new FindEligibleSurveyUseCase.Input(
         applicationId,
         Optional.ofNullable(respondent).flatMap(RespondentDTO::referenceOrEmpty),
         Optional.ofNullable(respondent).flatMap(RespondentDTO::deviceIdOrEmpty),
         event,
-        attributes == null ? Map.of() : attributes);
+        attributes == null ? Map.of() : attributes,
+        Optional.ofNullable(sdkVersion));
   }
 }

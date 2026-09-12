@@ -49,4 +49,19 @@ public record QuestionResponseDTO(
             requiredMode = Schema.RequiredMode.REQUIRED)
         List<QuestionOptionDTO> options,
     @Schema(description = "Faixa numérica; ausente nos tipos que não a aceitam", nullable = true)
-        ScaleRangeDTO range) {}
+        ScaleRangeDTO range,
+    @Schema(description = "Condição de exibição; ausente quando a pergunta aparece para todos", nullable = true)
+        ConditionDTO condition) {
+
+  public QuestionResponseDTO(
+      String id,
+      String key,
+      String statement,
+      String type,
+      int position,
+      boolean required,
+      List<QuestionOptionDTO> options,
+      ScaleRangeDTO range) {
+    this(id, key, statement, type, position, required, options, range, null);
+  }
+}

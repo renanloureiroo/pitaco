@@ -11,7 +11,6 @@ describe("absent — as duas formas de ausência que a API pode usar", () => {
   });
 
   it("aceita a chave presente com null — é assim que o backend já serializou", () => {
-    // Um `.optional()` puro recusaria isto, e a resposta inteira viraria erro de tela.
     expect(schema.parse({ nome: "x", prazo: null })).toEqual({ nome: "x", prazo: undefined });
   });
 

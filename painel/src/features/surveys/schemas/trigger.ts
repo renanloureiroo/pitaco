@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { absent } from "@/shared/api";
+import { toUtcInstant } from "@/shared/lib";
 
 /**
  * Disparo e regras de segmentação.
@@ -60,10 +61,14 @@ export const triggerFormSchema = z.object({
       ),
   ),
   windowStart: z.preprocess(
-    (value) => (typeof value === "string" ? value.trim() : ""),
-    z.string().min(1, "Informe o início da janela."),
+    (value) => (typeof value === "string" ? toUtcInstant(value.trim()) : undefined),
+    z.string({ error: "Informe o início da janela." }),
   ),
-  windowEnd: optionalText,
+  windowEnd: z.preprocess(
+    (value) =>
+      typeof value === "string" && value.trim() !== "" ? (toUtcInstant(value.trim()) ?? "") : undefined,
+    z.string().min(1, "Informe uma data e hora válidas para o fim da janela.").optional(),
+  ),
   /** Ausente no envio significa `0.0` — o backend trata a ausência assim, e o painel também. */
   samplingRate: z.preprocess(
     (value) => (typeof value === "string" && value.trim() !== "" ? value.trim() : "0"),

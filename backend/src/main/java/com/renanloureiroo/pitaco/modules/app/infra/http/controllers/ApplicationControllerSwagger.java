@@ -8,6 +8,7 @@ import com.renanloureiroo.pitaco.modules.app.infra.http.dtos.ApplicationSummaryR
 import com.renanloureiroo.pitaco.modules.app.infra.http.dtos.CreateApplicationRequestDTO;
 import com.renanloureiroo.pitaco.modules.app.infra.http.dtos.CreateApplicationResponseDTO;
 import com.renanloureiroo.pitaco.modules.app.infra.http.dtos.ListApplicationsQueryDTO;
+import com.renanloureiroo.pitaco.modules.app.infra.http.dtos.UpdateApplicationRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.headers.Header;
@@ -138,4 +139,123 @@ public interface ApplicationControllerSwagger {
   ResponseEntity<ApplicationResponseDTO> get(
       @Parameter(description = "Identificador da aplicação, devolvido na criação")
           String applicationId);
+
+  @Operation(
+      summary = "Altera uma aplicação",
+      description =
+          "Aplica só os campos enviados: campo omitido não muda, prazo enviado como null é "
+              + "removido. O slug é imutável. Responde a aplicação inteira já alterada.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Aplicação alterada",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ApplicationResponseDTO.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description =
+            "Nome em branco ou fora do formato aceito, prazo menor que um dia, ou corpo "
+                + "malformado — inclusive nome enviado como null",
+        content =
+            @Content(
+                mediaType = PROBLEM_JSON,
+                schema = @Schema(implementation = ApiValidationErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "403",
+        description =
+            "Requisição apresentou o header de chave de aplicação: a chave do SDK não vale no "
+                + "painel",
+        content =
+            @Content(
+                mediaType = PROBLEM_JSON,
+                schema = @Schema(implementation = ApiErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Aplicação não encontrada, ou identificador em formato inválido",
+        content =
+            @Content(
+                mediaType = PROBLEM_JSON,
+                schema = @Schema(implementation = ApiErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "422",
+        description =
+            "Prazo de retenção de texto livre maior que o prazo geral, ou prazo geral menor que "
+                + "o de texto livre",
+        content =
+            @Content(
+                mediaType = PROBLEM_JSON,
+                schema = @Schema(implementation = ApiErrorResponse.class)))
+  })
+  ResponseEntity<ApplicationResponseDTO> update(
+      @Parameter(description = "Identificador da aplicação") String applicationId,
+      UpdateApplicationRequestDTO request);
+
+  @Operation(
+      summary = "Desativa uma aplicação",
+      description =
+          "A superfície pública passa a responder silêncio para as chaves desta aplicação; "
+              + "pesquisas, respondentes e respostas continuam legíveis no painel. Idempotente: "
+              + "desativar o que já está inativo responde 200 sem alterar nada.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Aplicação inativa",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ApplicationResponseDTO.class))),
+    @ApiResponse(
+        responseCode = "403",
+        description =
+            "Requisição apresentou o header de chave de aplicação: a chave do SDK não vale no "
+                + "painel",
+        content =
+            @Content(
+                mediaType = PROBLEM_JSON,
+                schema = @Schema(implementation = ApiErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Aplicação não encontrada, ou identificador em formato inválido",
+        content =
+            @Content(
+                mediaType = PROBLEM_JSON,
+                schema = @Schema(implementation = ApiErrorResponse.class)))
+  })
+  ResponseEntity<ApplicationResponseDTO> deactivate(
+      @Parameter(description = "Identificador da aplicação") String applicationId);
+
+  @Operation(
+      summary = "Reativa uma aplicação",
+      description =
+          "Volta a entregar pesquisas pelas chaves ativas da aplicação. Idempotente: reativar o "
+              + "que já está ativo responde 200 sem alterar nada.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Aplicação ativa",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ApplicationResponseDTO.class))),
+    @ApiResponse(
+        responseCode = "403",
+        description =
+            "Requisição apresentou o header de chave de aplicação: a chave do SDK não vale no "
+                + "painel",
+        content =
+            @Content(
+                mediaType = PROBLEM_JSON,
+                schema = @Schema(implementation = ApiErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Aplicação não encontrada, ou identificador em formato inválido",
+        content =
+            @Content(
+                mediaType = PROBLEM_JSON,
+                schema = @Schema(implementation = ApiErrorResponse.class)))
+  })
+  ResponseEntity<ApplicationResponseDTO> activate(
+      @Parameter(description = "Identificador da aplicação") String applicationId);
 }

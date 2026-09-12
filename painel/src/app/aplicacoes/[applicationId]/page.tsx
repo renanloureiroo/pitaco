@@ -3,7 +3,12 @@ import { notFound } from "next/navigation";
 import { KeyRoundIcon, ListChecksIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { ApplicationDetail, getApplication } from "@/features/applications";
+import {
+  ApplicationDetail,
+  ApplicationStatusButton,
+  EditApplicationDialog,
+  getApplication,
+} from "@/features/applications";
 import { ApiUnavailableError } from "@/shared/api";
 
 export default async function ApplicationPage({
@@ -24,9 +29,15 @@ export default async function ApplicationPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-heading text-2xl font-semibold tracking-tight">
-        {result.data.name}
-      </h1>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="font-heading text-2xl font-semibold tracking-tight">
+          {result.data.name}
+        </h1>
+        <div className="flex flex-wrap gap-2">
+          <EditApplicationDialog application={result.data} />
+          <ApplicationStatusButton application={result.data} />
+        </div>
+      </div>
 
       <ApplicationDetail application={result.data} />
 

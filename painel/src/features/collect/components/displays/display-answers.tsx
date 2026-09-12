@@ -5,24 +5,13 @@ import { answerValueText, type ResolvedAnswer } from "../../lib/answers";
 import {
   ANSWER_BLANK,
   ANSWER_EXPIRED_EXPLANATION,
+  ANSWER_NOT_APPLICABLE_EXPLANATION,
   ANSWER_SKIPPED_EXPLANATION,
   ANSWER_STATUS_LABELS,
   QUESTION_NOT_IN_VERSION,
 } from "../../lib/collect-labels";
 import type { DisplayOutcome } from "../../schemas/display";
 
-/**
- * As respostas, na ordem em que a API as devolveu — que é a ordem das perguntas da versão
- * exibida (R2).
- *
- * Três ausências que **nunca** podem colapsar numa só (FR-012, SC-006): pulada é escolha de
- * quem respondeu; texto expirado é dado que existiu e foi descartado pela retenção; em branco é
- * resposta sem valor registrado. Cada uma tem texto próprio.
- *
- * Se a leitura da versão falhou, o bloco ainda renderiza: as respostas aparecem pela chave, com
- * aviso de que os enunciados não puderam ser carregados. Nenhuma resposta some da tela por
- * falha de enriquecimento.
- */
 export function DisplayAnswers({
   answers,
   outcome,
@@ -80,7 +69,6 @@ function typeLine(question: Question | undefined): string {
     : QUESTION_TYPE_LABELS[question.type];
 }
 
-/** Coerente com o desfecho: aberta e dispensada não têm resposta pelo mesmo motivo (FR-015). */
 function emptyReason(outcome: DisplayOutcome): string {
   switch (outcome) {
     case "STARTED":
@@ -98,6 +86,15 @@ function AnswerValue({ answer }: { answer: ResolvedAnswer["answer"] }) {
       <p data-testid="answer-skipped" className="text-sm">
         <span className="font-medium">{ANSWER_STATUS_LABELS.SKIPPED}</span>{" "}
         <span className="text-muted-foreground">{ANSWER_SKIPPED_EXPLANATION}</span>
+      </p>
+    );
+  }
+
+  if (answer.status === "NOT_APPLICABLE") {
+    return (
+      <p data-testid="answer-not-applicable" className="text-sm">
+        <span className="font-medium">{ANSWER_STATUS_LABELS.NOT_APPLICABLE}</span>{" "}
+        <span className="text-muted-foreground">{ANSWER_NOT_APPLICABLE_EXPLANATION}</span>
       </p>
     );
   }

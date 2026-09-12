@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
@@ -9,8 +10,8 @@ import {
   type FormState,
 } from "@/shared/lib";
 
-import { createApplication } from "./api";
-import { createApplicationFormSchema } from "./schemas/forms";
+import { activateApplication, createApplication, deactivateApplication, updateApplication } from "./api";
+import { createApplicationFormSchema, updateApplicationFormSchema } from "./schemas/forms";
 
 /**
  * Mutações de aplicação.
@@ -38,4 +39,44 @@ export async function createApplicationAction(
 
   // `redirect` lança um controle de fluxo tratado pelo framework: nada abaixo executa.
   redirect(`/aplicacoes/${result.data.id}`);
+}
+
+/** Edição termina na mesma tela: `refresh()` realinha o detalhe com o que o backend gravou. */
+export async function updateApplicationAction(
+  applicationId: string,
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const values = readFormValues(formData);
+  const parsed = updateApplicationFormSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return invalidFormState(parsed.error, values);
+  }
+
+  const result = await updateApplication(applicationId, parsed.data);
+
+  if (!result.ok) {
+    return failureFormState(result, values);
+  }
+
+  refresh();
+  return { status: "success", data: undefined };
+}
+
+export async function setApplicationStatusAction(
+  applicationId: string,
+  action: "activate" | "deactivate",
+): Promise<FormState> {
+  const result =
+    action === "deactivate"
+      ? await deactivateApplication(applicationId)
+      : await activateApplication(applicationId);
+
+  if (!result.ok) {
+    return failureFormState(result, {});
+  }
+
+  refresh();
+  return { status: "success", data: undefined };
 }

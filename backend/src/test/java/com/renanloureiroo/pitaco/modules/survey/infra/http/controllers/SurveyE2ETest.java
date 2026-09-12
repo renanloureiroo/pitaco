@@ -9,7 +9,6 @@ import com.renanloureiroo.pitaco.modules.app.infra.database.jpa.repositories.App
 import com.renanloureiroo.pitaco.modules.survey.infra.database.jpa.repositories.SurveyJpaRepository;
 import com.renanloureiroo.pitaco.modules.survey.infra.database.jpa.repositories.SurveyVersionJpaRepository;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.CreateSurveyRequestDTO;
-import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.RenameSurveyRequestDTO;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.SurveyDetailResponseDTO;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.SurveyResponseDTO;
 import com.renanloureiroo.pitaco.testsupport.annotations.E2E;
@@ -318,7 +317,7 @@ class SurveyE2ETest {
             .patch()
             .uri(uri() + "/" + created.id())
             .contentType(MediaType.APPLICATION_JSON)
-            .body(new RenameSurveyRequestDTO("Nome novo"))
+            .body("{\"name\":\"Nome novo\"}")
             .exchange()
             .expectStatus()
             .isOk()
@@ -340,7 +339,7 @@ class SurveyE2ETest {
         .patch()
         .uri(uri() + "/" + created.id())
         .contentType(MediaType.APPLICATION_JSON)
-        .body(new RenameSurveyRequestDTO("   "))
+        .body("{\"name\":\"   \"}")
         .exchange()
         .expectStatus()
         .isBadRequest();

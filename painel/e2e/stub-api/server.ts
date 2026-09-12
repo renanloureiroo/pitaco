@@ -20,8 +20,20 @@ function stripContextPath(pathname: string): string {
 
 function send(
   response: import("node:http").ServerResponse,
-  { status, body }: StubResponse,
+  { status, body, raw }: StubResponse,
 ): void {
+  if (raw !== undefined) {
+    const bytes = Buffer.from(raw.text, "utf8");
+    response
+      .writeHead(status, {
+        "Content-Type": raw.contentType,
+        "Content-Length": bytes.length,
+        ...(raw.headers ?? {}),
+      })
+      .end(bytes);
+    return;
+  }
+
   if (body === undefined) {
     response.writeHead(status).end();
     return;

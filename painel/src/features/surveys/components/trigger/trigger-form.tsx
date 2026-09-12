@@ -1,40 +1,34 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { FieldMessage, FormError, SubmitButton } from "@/shared/components";
-import { idleFormState, type FormState } from "@/shared/lib";
+import { idleFormState, toLocalInput, type FormState } from "@/shared/lib";
 
 import { defineTriggerAction } from "../../actions";
 import type { Trigger } from "../../schemas/trigger";
 
-/** Data ISO UTC no formato que o `datetime-local` aceita. */
-function toLocalInput(iso: string | undefined): string {
-  if (iso === undefined) {
-    return "";
-  }
-
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
-    date.getHours(),
-  )}:${pad(date.getMinutes())}`;
+function windowValue(iso: string | undefined): string {
+  return toLocalInput(iso) ?? "";
 }
 
+/**
+ * O evento é digitação livre com sugestão: os já vistos na aplicação viram atalhos que
+ * preenchem o campo, mas o evento pode ainda não ter sido disparado por ninguém.
+ */
 export function TriggerForm({
   applicationId,
   surveyId,
   trigger,
+  observedEvents = [],
 }: {
   applicationId: string;
   surveyId: string;
   trigger?: Trigger;
+  observedEvents?: string[];
 }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     defineTriggerAction.bind(null, applicationId, surveyId),
@@ -43,6 +37,10 @@ export function TriggerForm({
 
   const values = state.status === "error" ? state.values : {};
   const errors = state.status === "error" ? state.fieldErrors : {};
+
+  // Controlado só para que a sugestão consiga preencher o campo; o valor enviado continua
+  // sendo o do `FormData`, como nos demais.
+  const [eventName, setEventName] = useState(values.eventName ?? trigger?.eventName ?? "");
 
   return (
     <form action={formAction} data-testid="trigger-form" className="flex max-w-xl flex-col gap-6">
@@ -56,13 +54,39 @@ export function TriggerForm({
           data-testid="event-name-input"
           required
           placeholder="checkout.completed"
-          defaultValue={values.eventName ?? trigger?.eventName ?? ""}
+          value={eventName}
+          onChange={(event) => setEventName(event.target.value)}
           aria-invalid={errors.eventName !== undefined}
         />
         <FieldDescription>
           Letras minúsculas, números, ponto e sublinhado, começando por letra.
         </FieldDescription>
         <FieldMessage name="eventName" errors={errors} />
+        {observedEvents.length === 0 ? (
+          <p data-testid="observed-events-empty" className="text-sm text-muted-foreground">
+            Esta aplicação ainda não disparou nenhum evento; digite o nome que o app vai usar.
+          </p>
+        ) : (
+          <div data-testid="observed-events" className="flex flex-col gap-2">
+            <p className="text-sm text-muted-foreground">Já vistos nesta aplicação:</p>
+            <ul className="flex flex-wrap gap-2" aria-label="Eventos já observados">
+              {observedEvents.map((name) => (
+                <li key={name}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    data-testid="observed-event-suggestion"
+                    aria-pressed={eventName === name}
+                    onClick={() => setEventName(name)}
+                  >
+                    <span className="font-mono">{name}</span>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -74,7 +98,7 @@ export function TriggerForm({
             data-testid="window-start-input"
             type="datetime-local"
             required
-            defaultValue={values.windowStart ?? toLocalInput(trigger?.windowStart)}
+            defaultValue={values.windowStart ?? windowValue(trigger?.windowStart)}
             aria-invalid={errors.windowStart !== undefined}
           />
           <FieldMessage name="windowStart" errors={errors} />
@@ -87,7 +111,7 @@ export function TriggerForm({
             name="windowEnd"
             data-testid="window-end-input"
             type="datetime-local"
-            defaultValue={values.windowEnd ?? toLocalInput(trigger?.windowEnd)}
+            defaultValue={values.windowEnd ?? windowValue(trigger?.windowEnd)}
             aria-invalid={errors.windowEnd !== undefined}
           />
           <FieldDescription>Em branco deixa a janela aberta.</FieldDescription>

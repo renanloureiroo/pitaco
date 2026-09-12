@@ -1,11 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-/**
- * O instantâneo de atributos pertence à **exibição**, não ao respondente (FR-014).
- *
- * A tela precisa dizer isso em texto: o mesmo respondente pode ter instantâneos diferentes em
- * exibições diferentes, e lê-lo como perfil seria erro de interpretação, não de layout.
- */
 export function DisplayAttributes({ attributes }: { attributes: Record<string, string> }) {
   const entries = Object.entries(attributes);
 

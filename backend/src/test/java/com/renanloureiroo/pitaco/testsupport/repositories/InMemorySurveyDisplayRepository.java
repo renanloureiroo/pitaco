@@ -7,6 +7,7 @@ import com.renanloureiroo.pitaco.core.pagination.Page;
 import com.renanloureiroo.pitaco.modules.collect.application.repositories.SurveyDisplayRepository;
 import com.renanloureiroo.pitaco.modules.collect.domain.entities.RespondentId;
 import com.renanloureiroo.pitaco.modules.collect.domain.entities.DisplayId;
+import com.renanloureiroo.pitaco.modules.collect.domain.entities.DisplayOutcome;
 import com.renanloureiroo.pitaco.modules.collect.domain.entities.SurveyDisplay;
 import java.time.Instant;
 import java.util.Comparator;
@@ -63,6 +64,31 @@ public class InMemorySurveyDisplayRepository implements SurveyDisplayRepository 
                     display.getOutcome(),
                     display.getOpenedAt()))
         .toList();
+  }
+
+  @Override
+  public Optional<Instant> lastOpenedAt(RespondentId respondentId) {
+    return displays.values().stream()
+        .filter(display -> display.getRespondentId().equals(respondentId))
+        .map(SurveyDisplay::getOpenedAt)
+        .max(Comparator.naturalOrder());
+  }
+
+  @Override
+  public long countCompleted(SurveyId surveyId) {
+    return displays.values().stream()
+        .filter(display -> display.getSurveyId().equals(surveyId))
+        .filter(display -> display.getOutcome() == DisplayOutcome.COMPLETED)
+        .count();
+  }
+
+  @Override
+  public long countOpenedBetween(SurveyId surveyId, Instant from, Instant to) {
+    return displays.values().stream()
+        .filter(display -> display.getSurveyId().equals(surveyId))
+        .filter(display -> !display.getOpenedAt().isBefore(from))
+        .filter(display -> !display.getOpenedAt().isAfter(to))
+        .count();
   }
 
   @Override
@@ -126,8 +152,6 @@ public class InMemorySurveyDisplayRepository implements SurveyDisplayRepository 
         .toList();
   }
 
-  // O adaptador filtra por v.number na junção; aqui, pelo número registrado para a versão da
-  // exibição — a mesma tradução que summaryOf faz ao projetar.
   private Predicate<SurveyDisplay> matchesVersionNumber(Optional<Integer> versionNumber) {
     return display ->
         versionNumber

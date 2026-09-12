@@ -173,8 +173,20 @@ public final class Application extends Entity<ApplicationId> {
   }
 
   private void setRetentionDays(Integer days) {
-    this.retentionDays =
-        days == null ? null : positive(days, RETENTION_INVALID_CODE, "prazo de retenção");
+    if (days == null) {
+      this.retentionDays = null;
+      return;
+    }
+
+    var validated = positive(days, RETENTION_INVALID_CODE, "prazo de retenção");
+    if (openTextRetentionDays != null && openTextRetentionDays > validated) {
+      throw new DomainException(
+          ErrorType.BUSINESS_RULE,
+          RETENTION_INVALID_CODE,
+          "Prazo de retenção geral não pode ser menor que o prazo de texto livre");
+    }
+
+    this.retentionDays = validated;
   }
 
   private void setOpenTextRetentionDays(Integer days) {

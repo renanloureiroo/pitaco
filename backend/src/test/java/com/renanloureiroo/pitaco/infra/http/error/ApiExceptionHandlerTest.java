@@ -7,11 +7,13 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.renanloureiroo.pitaco.core.error.DomainException;
 import com.renanloureiroo.pitaco.core.error.NotFoundException;
+import com.renanloureiroo.pitaco.core.error.RateLimitedException;
 import io.micrometer.tracing.Span;
 import io.micrometer.tracing.TraceContext;
 import io.micrometer.tracing.Tracer;
@@ -44,6 +46,11 @@ class ApiExceptionHandlerTest {
     @GetMapping("/answers/business-rule")
     String businessRule() {
       throw new DomainException("answer.already_submitted", "Resposta já foi enviada");
+    }
+
+    @GetMapping("/answers/rate-limited")
+    String rateLimited() {
+      throw new RateLimitedException("rate_limit.exceeded", "Limite excedido", 37);
     }
 
     @GetMapping("/answers/boom")
@@ -98,6 +105,17 @@ class ApiExceptionHandlerTest {
         .perform(get("/answers/business-rule"))
         .andExpect(status().isUnprocessableEntity())
         .andExpect(jsonPath("$.code").value("answer.already_submitted"));
+  }
+
+  @Test
+  void traduz_limite_excedido_para_429_com_retry_after() throws Exception {
+    mockMvcWithoutTracing()
+        .perform(get("/answers/rate-limited"))
+        .andExpect(status().isTooManyRequests())
+        .andExpect(header().string("Retry-After", "37"))
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("rate_limit.exceeded"))
+        .andExpect(jsonPath("$.status").value(429));
   }
 
   @Test

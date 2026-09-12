@@ -18,6 +18,11 @@ public final class GetSurveyPresenter {
         survey.state(),
         survey.publishedVersionNumber(),
         survey.draftVersionNumber(),
+        survey.priority(),
+        survey.responseQuota(),
+        survey.ignoresQuietPeriod(),
+        survey.templateKind(),
+        survey.freeTextNotice(),
         survey.createdAt(),
         output.content().map(GetSurveyPresenter::contentOf).orElse(null));
   }

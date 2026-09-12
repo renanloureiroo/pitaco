@@ -6,9 +6,8 @@ import {
   parseDisplayFilters,
   periodError,
   toDisplayFilterQuery,
-  toLocalInput,
-  toUtcInstant,
 } from "../schemas/filters";
+import { toLocalInput, toUtcInstant } from "@/shared/lib";
 
 describe("parseDisplayFilters — valor desconhecido cai no padrão", () => {
   it("ignora desfecho que o backend não aceita, em vez de quebrar a tela", () => {
@@ -71,8 +70,6 @@ describe("período incoerente — duas validações, propósitos diferentes", ()
 
 describe("conversão do fuso de referência (R3)", () => {
   it("interpreta o que a pessoa digita no fuso de referência, não em UTC", () => {
-    // Meia-noite de 8 de setembro em Brasília é 03:00Z — filtrar por "8 de setembro" precisa
-    // casar com o que a tela mostra como 8 de setembro.
     expect(toUtcInstant("2026-09-08T00:00")).toBe("2026-09-08T03:00:00.000Z");
   });
 

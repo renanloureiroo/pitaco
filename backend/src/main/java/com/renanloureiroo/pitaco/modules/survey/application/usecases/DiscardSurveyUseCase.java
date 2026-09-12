@@ -23,7 +23,7 @@ public class DiscardSurveyUseCase implements UseCaseWithoutOutput<DiscardSurveyU
   @Override
   @Transactional
   public void execute(Input input) {
-    var survey = SurveyScope.require(surveysRepository, input.applicationId(), input.surveyId());
+    var survey = SurveyScope.requireLocked(surveysRepository, input.applicationId(), input.surveyId());
 
     if (survey.isPublished()) {
       throw new PublishedSurveyCannotBeDiscarded(survey.id());

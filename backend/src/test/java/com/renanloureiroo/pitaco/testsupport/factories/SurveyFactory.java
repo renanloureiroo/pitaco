@@ -5,6 +5,8 @@ import com.renanloureiroo.pitaco.modules.survey.application.repositories.SurveyR
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.Survey;
 import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.modules.survey.domain.entities.SurveyLifecycle;
+import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.Exposure;
+import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.FreeTextNotice;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SurveyName;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -23,6 +25,8 @@ public final class SurveyFactory {
   private Integer publishedVersionNumber;
   private Integer draftVersionNumber = 1;
   private Instant createdAt = BATCH_FIRST_CREATED_AT;
+  private Exposure exposure = Exposure.standard();
+  private FreeTextNotice freeTextNotice = FreeTextNotice.standard();
 
   private SurveyFactory() {}
 
@@ -69,6 +73,31 @@ public final class SurveyFactory {
     return this;
   }
 
+  public SurveyFactory withPriority(int priority) {
+    this.exposure = exposure.withPriority(priority);
+    return this;
+  }
+
+  public SurveyFactory withResponseQuota(int quota) {
+    this.exposure = exposure.withResponseQuota(quota);
+    return this;
+  }
+
+  public SurveyFactory ignoringQuietPeriod() {
+    this.exposure = exposure.ignoringQuietPeriod(true);
+    return this;
+  }
+
+  public SurveyFactory withoutFreeTextNotice() {
+    this.freeTextNotice = freeTextNotice.enabled(false);
+    return this;
+  }
+
+  public SurveyFactory withFreeTextNoticeText(String text) {
+    this.freeTextNotice = freeTextNotice.withText(text);
+    return this;
+  }
+
   public SurveyFactory createdAt(Instant createdAt) {
     this.createdAt = createdAt;
     return this;
@@ -82,6 +111,9 @@ public final class SurveyFactory {
         lifecycle,
         publishedVersionNumber,
         draftVersionNumber,
+        exposure,
+        java.util.Optional.empty(),
+        freeTextNotice,
         createdAt);
   }
 

@@ -11,12 +11,16 @@ const actions = vi.hoisted(() => ({
   updateQuestionAction: vi.fn(),
   removeQuestionAction: vi.fn(),
   moveQuestionAction: vi.fn(),
+  reorderQuestionsAction: vi.fn(),
 }));
 
 vi.mock("../actions", () => actions);
 
 const { QuestionForm } = await import("../components/questions/question-form");
 const { QuestionsPanel } = await import("../components/questions/questions-panel");
+const { SortableQuestionsList, reorderOnDrop } = await import(
+  "../components/questions/sortable-questions-list"
+);
 
 const nps: Question = {
   id: "q-1",
@@ -217,5 +221,132 @@ describe("QuestionsPanel", () => {
 
     expect(screen.getByTestId("empty-state")).toBeInTheDocument();
     expect(screen.getByTestId("add-question-button")).toBeInTheDocument();
+  });
+});
+
+describe("SortableQuestionsList", () => {
+  it("oferece uma alça de arrastar por pergunta, na ordem de position", () => {
+    render(
+      <SortableQuestionsList
+        applicationId="app-1"
+        surveyId="srv-1"
+        questions={[choice, nps]}
+      />,
+    );
+
+    const handles = screen.getAllByTestId("drag-question-handle");
+    expect(handles).toHaveLength(2);
+    expect(handles[0]).toHaveAccessibleName('Arrastar pergunta "Qual sua nota?"');
+    expect(handles[1]).toHaveAccessibleName('Arrastar pergunta "Qual sua preferida?"');
+  });
+
+  it("soltar sobre outra pergunta envia a permutação completa e realinha a tela", async () => {
+    const showPending = vi.fn();
+    const showError = vi.fn();
+    const work: Array<() => Promise<void>> = [];
+
+    reorderOnDrop({
+      applicationId: "app-1",
+      surveyId: "srv-1",
+      ids: ["q-1", "q-2", "q-3"],
+      event: { active: { id: "q-1" }, over: { id: "q-3" } } as never,
+      showPending,
+      showError,
+      run: (fn) => {
+        work.push(fn);
+      },
+    });
+
+    // A ordem pretendida aparece antes da resposta chegar.
+    expect(showPending).toHaveBeenCalledWith(["q-2", "q-3", "q-1"]);
+    await Promise.all(work.map((fn) => fn()));
+
+    expect(actions.reorderQuestionsAction).toHaveBeenCalledWith("app-1", "srv-1", [
+      "q-2",
+      "q-3",
+      "q-1",
+    ]);
+    expect(showPending).toHaveBeenLastCalledWith(undefined);
+    expect(showError).not.toHaveBeenCalledWith(expect.any(String));
+  });
+
+  it("soltar fora da lista ou no mesmo lugar não envia nada", () => {
+    const run = vi.fn();
+
+    reorderOnDrop({
+      applicationId: "app-1",
+      surveyId: "srv-1",
+      ids: ["q-1", "q-2"],
+      event: { active: { id: "q-1" }, over: null } as never,
+      showPending: vi.fn(),
+      showError: vi.fn(),
+      run,
+    });
+    reorderOnDrop({
+      applicationId: "app-1",
+      surveyId: "srv-1",
+      ids: ["q-1", "q-2"],
+      event: { active: { id: "q-1" }, over: { id: "q-1" } } as never,
+      showPending: vi.fn(),
+      showError: vi.fn(),
+      run,
+    });
+
+    expect(run).not.toHaveBeenCalled();
+    expect(actions.reorderQuestionsAction).not.toHaveBeenCalled();
+  });
+
+  it("recusa do backend vira mensagem e a ordem volta à do servidor", async () => {
+    actions.reorderQuestionsAction.mockResolvedValue({
+      status: "error",
+      message: "A pesquisa foi publicada em paralelo.",
+      fieldErrors: {},
+      values: {},
+    } satisfies FormState);
+    const showPending = vi.fn();
+    const showError = vi.fn();
+    const work: Array<() => Promise<void>> = [];
+
+    reorderOnDrop({
+      applicationId: "app-1",
+      surveyId: "srv-1",
+      ids: ["q-1", "q-2"],
+      event: { active: { id: "q-2" }, over: { id: "q-1" } } as never,
+      showPending,
+      showError,
+      run: (fn) => {
+        work.push(fn);
+      },
+    });
+    await Promise.all(work.map((fn) => fn()));
+
+    expect(showError).toHaveBeenLastCalledWith("A pesquisa foi publicada em paralelo.");
+    expect(showPending).toHaveBeenLastCalledWith(undefined);
+  });
+
+  it("a alça é desabilitada enquanto uma reordenação está em curso", () => {
+    render(
+      <SortableQuestionsList
+        applicationId="app-1"
+        surveyId="srv-1"
+        questions={[nps, choice]}
+      />,
+    );
+
+    for (const handle of screen.getAllByTestId("drag-question-handle")) {
+      expect(handle).toBeEnabled();
+    }
+  });
+});
+
+describe("QuestionsPanel em somente leitura", () => {
+  it("não oferece alça de arrastar nem ações", () => {
+    render(
+      <QuestionsPanel applicationId="app-1" surveyId="srv-1" questions={[nps, choice]} readOnly />,
+    );
+
+    expect(screen.getAllByTestId("question-item")).toHaveLength(2);
+    expect(screen.queryByTestId("drag-question-handle")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("edit-question-button")).not.toBeInTheDocument();
   });
 });

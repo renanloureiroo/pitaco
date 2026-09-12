@@ -1,5 +1,9 @@
 package com.renanloureiroo.pitaco.modules.survey.domain.entities;
 
+import com.renanloureiroo.pitaco.core.catalog.SdkCapabilities;
+import com.renanloureiroo.pitaco.core.catalog.QuestionType;
+import com.renanloureiroo.pitaco.core.catalog.SdkFeature;
+import com.renanloureiroo.pitaco.core.catalog.SdkVersion;
 import com.renanloureiroo.pitaco.core.catalog.QuestionKey;
 import com.renanloureiroo.pitaco.core.entity.Entity;
 import com.renanloureiroo.pitaco.core.error.DomainException;
@@ -8,10 +12,13 @@ import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.core.identity.SurveyVersionId;
 import com.renanloureiroo.pitaco.modules.survey.domain.publication.ChangeClassification;
 import com.renanloureiroo.pitaco.modules.survey.domain.publication.PublicationImpediment;
+import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.DisplayCondition;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SegmentationRule;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.Trigger;
+import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.TriggerWindow;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -139,6 +146,35 @@ public final class SurveyVersion extends Entity<SurveyVersionId> {
     return Optional.ofNullable(publishedAt);
   }
 
+  // O que o SDK precisa saber fazer para desenhar esta versão inteira: o tipo de cada pergunta e
+  // os recursos que alguma delas usa.
+  public SdkVersion requiredSdkVersion() {
+    return requiredSdkVersion(false);
+  }
+
+  // O aviso de texto livre é da pesquisa, não da versão: quem sabe se ele está ligado informa.
+  // Só exige o recurso quando há campo de texto livre para ele acompanhar.
+  public SdkVersion requiredSdkVersion(boolean freeTextNoticeEnabled) {
+    var features = java.util.EnumSet.noneOf(SdkFeature.class);
+
+    if (freeTextNoticeEnabled
+        && questions.stream().anyMatch(question -> question.getType() == QuestionType.FREE_TEXT)) {
+      features.add(SdkFeature.FREE_TEXT_NOTICE);
+    }
+
+    for (var question : questions) {
+      if (question.condition().isPresent()) {
+        features.add(SdkFeature.CONDITIONAL_DISPLAY);
+      }
+      if (!question.getLabels().isEmpty()) {
+        features.add(SdkFeature.SCALE_LABELS);
+      }
+    }
+
+    return SdkCapabilities.minimumFor(
+        questions.stream().map(Question::getType).toList(), features);
+  }
+
   public boolean isEditable() {
     return status == SurveyVersionStatus.DRAFT;
   }
@@ -151,6 +187,7 @@ public final class SurveyVersion extends Entity<SurveyVersionId> {
     requireEditable();
 
     var question = Question.create(draft, questions.size() + 1);
+    QuestionConditions.check(question, questions);
     questions.add(question);
     return question;
   }
@@ -159,13 +196,25 @@ public final class SurveyVersion extends Entity<SurveyVersionId> {
     requireEditable();
 
     var index = indexOf(id);
-    questions.set(index, questions.get(index).rewrittenAs(draft));
+    var rewritten = questions.get(index).rewrittenAs(draft);
+    var candidate = new ArrayList<>(questions);
+    candidate.set(index, rewritten);
+
+    QuestionConditions.check(rewritten, candidate);
+    QuestionConditions.requireDependentsStillValid(rewritten, candidate);
+
+    questions.set(index, rewritten);
   }
 
+  // Remover a origem de uma condição é recusado em vez de limpar a condição da dependente: a
+  // pergunta passaria a aparecer para todos sem que ninguém tivesse pedido isso.
   public void removeQuestion(QuestionId id) {
     requireEditable();
 
-    questions.remove(indexOf(id));
+    var index = indexOf(id);
+    QuestionConditions.requireNoDependents(questions.get(index), questions);
+
+    questions.remove(index);
     compactPositions();
   }
 
@@ -184,12 +233,14 @@ public final class SurveyVersion extends Entity<SurveyVersionId> {
           "A nova ordem deve conter exatamente as perguntas desta versão, sem repetição");
     }
 
-    var reordered =
-        newOrder.stream().map(id -> question(id).orElseThrow()).collect(Collectors.toList());
+    var reordered = new ArrayList<Question>();
+    for (var index = 0; index < newOrder.size(); index++) {
+      reordered.add(question(newOrder.get(index)).orElseThrow().movedTo(index + 1));
+    }
+    QuestionConditions.requireSourcesFirst(reordered);
 
     questions.clear();
     questions.addAll(reordered);
-    compactPositions();
   }
 
   public void defineTrigger(Trigger newTrigger) {
@@ -335,6 +386,47 @@ public final class SurveyVersion extends Entity<SurveyVersionId> {
         Optional.empty());
   }
 
+  // Pesquisa nova a partir desta versão: rascunho número 1, chaves novas — não há resposta
+  // anterior com que comparar — e condições reapontadas para as chaves novas. Janela já
+  // encerrada não serve a ninguém; vira janela aberta a partir de agora e sem fim, que o
+  // autor revê antes de publicar.
+  public SurveyVersion duplicateFor(SurveyId newSurveyId, Instant now) {
+    var keys = new HashMap<QuestionKey, QuestionKey>();
+    questions.forEach(question -> keys.put(question.getKey(), QuestionKey.generate()));
+
+    var copied =
+        questions.stream()
+            .map(
+                question ->
+                    question.duplicatedAs(
+                        keys.get(question.getKey()),
+                        question
+                            .condition()
+                            .map(condition -> condition.pointingTo(keys.get(condition.sourceKey())))))
+            .toList();
+
+    return new SurveyVersion(
+        SurveyVersionId.generate(),
+        newSurveyId,
+        Survey.FIRST_VERSION_NUMBER,
+        SurveyVersionStatus.DRAFT,
+        copied,
+        trigger().map(current -> reopenedIfClosed(current, now)),
+        rules.stream().map(SegmentationRule::copyForNewVersion).toList(),
+        Optional.empty(),
+        Optional.empty(),
+        FIRST_COMPARABILITY_GROUP,
+        Optional.empty());
+  }
+
+  private static Trigger reopenedIfClosed(Trigger trigger, Instant now) {
+    if (!trigger.window().hasClosedAt(now)) {
+      return trigger;
+    }
+    return new Trigger(
+        trigger.event(), new TriggerWindow(now, Optional.empty()), trigger.rate());
+  }
+
   public boolean sameContentAs(SurveyVersion other) {
     return Objects.equals(trigger, other.trigger)
         && ruleFingerprintOf(this).equals(ruleFingerprintOf(other))
@@ -352,7 +444,11 @@ public final class SurveyVersion extends Entity<SurveyVersionId> {
                     question.getType().name(),
                     String.valueOf(question.isRequired()),
                     optionFingerprintOf(question),
-                    question.range().map(String::valueOf).orElse("-")))
+                    question.range().map(String::valueOf).orElse("-"),
+                    question.getLabels().min().orElse("-")
+                        + "~"
+                        + question.getLabels().max().orElse("-"),
+                    question.condition().map(DisplayCondition::fingerprint).orElse("-")))
         .toList();
   }
 

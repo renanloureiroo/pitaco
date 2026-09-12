@@ -12,10 +12,12 @@ import { APPLICATION_STATUS_LABELS, type Application } from "../schemas/applicat
 function DetailItem({
   label,
   value,
+  hint,
   testId,
 }: {
   label: string;
   value: string;
+  hint?: string;
   testId?: string;
 }) {
   return (
@@ -24,6 +26,7 @@ function DetailItem({
         {label}
       </dt>
       <dd className="text-sm">{value}</dd>
+      {hint === undefined ? null : <dd className="text-xs text-muted-foreground">{hint}</dd>}
     </div>
   );
 }
@@ -45,6 +48,7 @@ export function ApplicationDetail({ application }: { application: Application })
           <DetailItem
             label="Período de descanso"
             value={formatDays(application.quietPeriodDays)}
+            hint="Vale entre pesquisas diferentes: quem viu uma não recebe outra antes do prazo."
             testId="quiet-period"
           />
           <DetailItem

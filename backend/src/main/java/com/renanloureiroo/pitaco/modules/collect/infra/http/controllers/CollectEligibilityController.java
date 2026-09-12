@@ -8,6 +8,7 @@ import com.renanloureiroo.pitaco.modules.collect.infra.http.presenters.Eligibili
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,8 +26,10 @@ public class CollectEligibilityController implements CollectEligibilitySwagger {
   @Override
   @PostMapping("/eligibility")
   public EligibilityResponseDTO check(
-      @Valid @RequestBody EligibilityRequestDTO request, AuthenticatedApplication application) {
+      @Valid @RequestBody EligibilityRequestDTO request,
+      @RequestHeader(value = SdkVersionHeader.NAME, required = false) String sdkVersion,
+      AuthenticatedApplication application) {
     return EligibilityPresenter.present(
-        findEligibleSurvey.execute(request.toInput(application.applicationId())));
+        findEligibleSurvey.execute(request.toInput(application.applicationId(), sdkVersion)));
   }
 }

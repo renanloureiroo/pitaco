@@ -1,24 +1,29 @@
 package com.renanloureiroo.pitaco.modules.survey.infra.http.controllers;
 
 import com.renanloureiroo.pitaco.infra.http.dtos.PageResponseDTO;
+import com.renanloureiroo.pitaco.modules.survey.application.usecases.CheckPublicationWarningsUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.CheckSurveyPublicationUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.CreateSurveyUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.DiscardSurveyUseCase;
+import com.renanloureiroo.pitaco.modules.survey.application.usecases.DuplicateSurveyUseCase;
+import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.DuplicateSurveyRequestDTO;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.GetSurveyUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.ListSurveysUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.PublishSurveyUseCase;
-import com.renanloureiroo.pitaco.modules.survey.application.usecases.RenameSurveyUseCase;
+import com.renanloureiroo.pitaco.modules.survey.application.usecases.UpdateSurveyUseCase;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.CreateSurveyRequestDTO;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.ListSurveysQueryDTO;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.PublicationImpedimentsResponseDTO;
+import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.PublicationWarningsResponseDTO;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.PublishSurveyRequestDTO;
-import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.RenameSurveyRequestDTO;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.SurveyDetailResponseDTO;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.SurveyResponseDTO;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.SurveyVersionResponseDTO;
+import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.UpdateSurveyRequestDTO;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.presenters.GetSurveyPresenter;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.presenters.ListSurveysPresenter;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.presenters.PublicationImpedimentsPresenter;
+import com.renanloureiroo.pitaco.modules.survey.infra.http.presenters.PublicationWarningsPresenter;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.presenters.SurveyPresenter;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.presenters.SurveyVersionPresenter;
 import jakarta.validation.Valid;
@@ -40,27 +45,33 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 public class SurveyController implements SurveyControllerSwagger {
 
   private final CreateSurveyUseCase createSurveyUseCase;
+  private final DuplicateSurveyUseCase duplicateSurveyUseCase;
   private final ListSurveysUseCase listSurveysUseCase;
   private final GetSurveyUseCase getSurveyUseCase;
-  private final RenameSurveyUseCase renameSurveyUseCase;
+  private final UpdateSurveyUseCase updateSurveyUseCase;
   private final DiscardSurveyUseCase discardSurveyUseCase;
   private final CheckSurveyPublicationUseCase checkSurveyPublicationUseCase;
+  private final CheckPublicationWarningsUseCase checkPublicationWarningsUseCase;
   private final PublishSurveyUseCase publishSurveyUseCase;
 
   SurveyController(
       CreateSurveyUseCase createSurveyUseCase,
+      DuplicateSurveyUseCase duplicateSurveyUseCase,
       ListSurveysUseCase listSurveysUseCase,
       GetSurveyUseCase getSurveyUseCase,
-      RenameSurveyUseCase renameSurveyUseCase,
+      UpdateSurveyUseCase updateSurveyUseCase,
       DiscardSurveyUseCase discardSurveyUseCase,
       CheckSurveyPublicationUseCase checkSurveyPublicationUseCase,
+      CheckPublicationWarningsUseCase checkPublicationWarningsUseCase,
       PublishSurveyUseCase publishSurveyUseCase) {
     this.createSurveyUseCase = createSurveyUseCase;
+    this.duplicateSurveyUseCase = duplicateSurveyUseCase;
     this.listSurveysUseCase = listSurveysUseCase;
     this.getSurveyUseCase = getSurveyUseCase;
-    this.renameSurveyUseCase = renameSurveyUseCase;
+    this.updateSurveyUseCase = updateSurveyUseCase;
     this.discardSurveyUseCase = discardSurveyUseCase;
     this.checkSurveyPublicationUseCase = checkSurveyPublicationUseCase;
+    this.checkPublicationWarningsUseCase = checkPublicationWarningsUseCase;
     this.publishSurveyUseCase = publishSurveyUseCase;
   }
 
@@ -95,11 +106,11 @@ public class SurveyController implements SurveyControllerSwagger {
 
   @Override
   @PatchMapping("/{surveyId}")
-  public ResponseEntity<SurveyResponseDTO> rename(
+  public ResponseEntity<SurveyResponseDTO> update(
       @PathVariable String applicationId,
       @PathVariable String surveyId,
-      @Valid @RequestBody RenameSurveyRequestDTO request) {
-    var output = renameSurveyUseCase.execute(request.toInput(applicationId, surveyId));
+      @Valid @RequestBody UpdateSurveyRequestDTO request) {
+    var output = updateSurveyUseCase.execute(request.toInput(applicationId, surveyId));
 
     return ResponseEntity.ok(SurveyPresenter.present(output));
   }
@@ -125,6 +136,17 @@ public class SurveyController implements SurveyControllerSwagger {
   }
 
   @Override
+  @GetMapping("/{surveyId}/publication-warnings")
+  public ResponseEntity<PublicationWarningsResponseDTO> checkPublicationWarnings(
+      @PathVariable String applicationId, @PathVariable String surveyId) {
+    var output =
+        checkPublicationWarningsUseCase.execute(
+            new CheckPublicationWarningsUseCase.Input(applicationId, surveyId));
+
+    return ResponseEntity.ok(PublicationWarningsPresenter.present(output));
+  }
+
+  @Override
   @PostMapping("/{surveyId}/publication")
   public ResponseEntity<SurveyVersionResponseDTO> publish(
       @PathVariable String applicationId,
@@ -140,6 +162,25 @@ public class SurveyController implements SurveyControllerSwagger {
             .toUri();
 
     return ResponseEntity.created(location).body(SurveyVersionPresenter.present(output));
+  }
+
+  // O Location aponta para a aplicação de destino, que pode não ser a da URL da requisição.
+  @Override
+  @PostMapping("/{surveyId}/duplicate")
+  public ResponseEntity<SurveyResponseDTO> duplicate(
+      @PathVariable String applicationId,
+      @PathVariable String surveyId,
+      @Valid @RequestBody(required = false) DuplicateSurveyRequestDTO request) {
+    var body = request == null ? DuplicateSurveyRequestDTO.empty() : request;
+    var output = duplicateSurveyUseCase.execute(body.toInput(applicationId, surveyId));
+
+    var location =
+        ServletUriComponentsBuilder.fromCurrentContextPath()
+            .path("/applications/{applicationId}/surveys/{surveyId}")
+            .buildAndExpand(output.applicationId(), output.id())
+            .toUri();
+
+    return ResponseEntity.created(location).body(SurveyPresenter.present(output));
   }
 
   private static java.net.URI locationOf(String surveyId) {

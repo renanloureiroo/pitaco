@@ -38,6 +38,24 @@ public class SurveyJpaEntity {
   @Column(name = "draft_version_number")
   private Integer draftVersionNumber;
 
+  @Column(nullable = false)
+  private int priority;
+
+  @Column(name = "response_quota")
+  private Integer responseQuota;
+
+  @Column(name = "ignores_quiet_period", nullable = false)
+  private boolean ignoresQuietPeriod;
+
+  @Column(name = "template_kind", length = 8, updatable = false)
+  private String templateKind;
+
+  @Column(name = "free_text_notice_enabled", nullable = false)
+  private boolean freeTextNoticeEnabled;
+
+  @Column(name = "free_text_notice_text", length = 200)
+  private String freeTextNoticeText;
+
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;
 }

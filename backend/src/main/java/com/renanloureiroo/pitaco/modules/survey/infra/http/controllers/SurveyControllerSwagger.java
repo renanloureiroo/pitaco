@@ -4,13 +4,15 @@ import com.renanloureiroo.pitaco.infra.http.dtos.PageResponseDTO;
 import com.renanloureiroo.pitaco.infra.http.error.ApiErrorResponse;
 import com.renanloureiroo.pitaco.infra.http.error.ApiValidationErrorResponse;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.CreateSurveyRequestDTO;
+import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.DuplicateSurveyRequestDTO;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.ListSurveysQueryDTO;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.PublicationImpedimentsResponseDTO;
+import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.PublicationWarningsResponseDTO;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.PublishSurveyRequestDTO;
-import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.RenameSurveyRequestDTO;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.SurveyDetailResponseDTO;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.SurveyResponseDTO;
 import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.SurveyVersionResponseDTO;
+import com.renanloureiroo.pitaco.modules.survey.infra.http.dtos.UpdateSurveyRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.headers.Header;
@@ -31,8 +33,10 @@ public interface SurveyControllerSwagger {
   @Operation(
       summary = "Cria uma pesquisa em rascunho",
       description =
-          "A pesquisa nasce em rascunho, sem perguntas, sem disparo e sem versão publicada, "
-              + "junto de sua versão 1 em rascunho. Exige aplicação existente e ativa.")
+          "A pesquisa nasce em rascunho, sem disparo e sem versão publicada, junto de sua versão"
+              + " 1 em rascunho. Sem modelo, nasce sem perguntas; com nps, csat ou ces, nasce com"
+              + " a pergunta do formato — enunciado, escala e rótulos —, editável como qualquer"
+              + " outra. Exige aplicação existente e ativa.")
   @ApiResponses({
     @ApiResponse(
         responseCode = "201",
@@ -48,7 +52,7 @@ public interface SurveyControllerSwagger {
                 schema = @Schema(implementation = String.class))),
     @ApiResponse(
         responseCode = "400",
-        description = "Nome ausente, em branco ou acima de 120 caracteres",
+        description = "Nome ausente, em branco ou acima de 120 caracteres, ou modelo desconhecido",
         content =
             @Content(
                 mediaType = PROBLEM_JSON,
@@ -73,6 +77,54 @@ public interface SurveyControllerSwagger {
   ResponseEntity<SurveyResponseDTO> create(
       @Parameter(description = "Identificador da aplicação dona") String applicationId,
       CreateSurveyRequestDTO request);
+
+  @Operation(
+      summary = "Duplica uma pesquisa, na mesma aplicação ou em outra",
+      description =
+          "Copia as perguntas — com chaves novas e condições reapontadas —, o disparo, as "
+              + "regras de segmentação, a exposição e o modelo de origem, a partir da versão "
+              + "publicada corrente, ou do rascunho de quem nunca publicou. A cópia nasce em "
+              + "rascunho, versão 1, sem respostas e sem histórico. Janela de disparo já "
+              + "encerrada vira janela aberta a partir da duplicação e sem fim.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "201",
+        description = "Cópia criada em rascunho",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = SurveyResponseDTO.class)),
+        headers =
+            @Header(
+                name = "Location",
+                description = "URI da cópia, sob a aplicação de destino",
+                schema = @Schema(implementation = String.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Nome em branco ou acima de 120 caracteres, ou corpo malformado",
+        content =
+            @Content(
+                mediaType = PROBLEM_JSON,
+                schema = @Schema(implementation = ApiValidationErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Pesquisa de origem ou aplicação de destino não encontrada",
+        content =
+            @Content(
+                mediaType = PROBLEM_JSON,
+                schema = @Schema(implementation = ApiErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "422",
+        description = "Aplicação de destino inativa",
+        content =
+            @Content(
+                mediaType = PROBLEM_JSON,
+                schema = @Schema(implementation = ApiErrorResponse.class)))
+  })
+  ResponseEntity<SurveyResponseDTO> duplicate(
+      @Parameter(description = "Identificador da aplicação dona da original") String applicationId,
+      @Parameter(description = "Identificador da pesquisa original") String surveyId,
+      DuplicateSurveyRequestDTO request);
 
   @Operation(
       summary = "Lista as pesquisas de uma aplicação",
@@ -128,18 +180,27 @@ public interface SurveyControllerSwagger {
       @Parameter(description = "Identificador da aplicação dona") String applicationId,
       @Parameter(description = "Identificador da pesquisa") String surveyId);
 
-  @Operation(summary = "Renomeia a pesquisa", description = "O estado não muda.")
+  @Operation(
+      summary = "Edita nome e exposição da pesquisa",
+      description =
+          "Nome, prioridade no desempate, cota de respostas e isenção do intervalo de descanso. "
+              + "Campo omitido não muda; cota null é removida. Nenhum deles abre versão nem "
+              + "muda o estado, e todos valem também com a pesquisa no ar. A cota é conferida "
+              + "a cada resposta concluída, e também aqui: reduzi-la até o total já concluído "
+              + "encerra a pesquisa na hora, com o motivo quota_reached no histórico.")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
-        description = "Nome alterado",
+        description = "Pesquisa alterada",
         content =
             @Content(
                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                 schema = @Schema(implementation = SurveyResponseDTO.class))),
     @ApiResponse(
         responseCode = "400",
-        description = "Nome ausente, em branco ou acima de 120 caracteres",
+        description =
+            "Nome em branco ou acima de 120 caracteres, prioridade fora de -100 a 100, cota "
+                + "abaixo de 1, null em campo não removível, ou corpo malformado",
         content =
             @Content(
                 mediaType = PROBLEM_JSON,
@@ -152,10 +213,10 @@ public interface SurveyControllerSwagger {
                 mediaType = PROBLEM_JSON,
                 schema = @Schema(implementation = ApiErrorResponse.class)))
   })
-  ResponseEntity<SurveyResponseDTO> rename(
+  ResponseEntity<SurveyResponseDTO> update(
       @Parameter(description = "Identificador da aplicação dona") String applicationId,
       @Parameter(description = "Identificador da pesquisa") String surveyId,
-      RenameSurveyRequestDTO request);
+      UpdateSurveyRequestDTO request);
 
   @Operation(
       summary = "Descarta uma pesquisa nunca publicada",
@@ -203,6 +264,34 @@ public interface SurveyControllerSwagger {
                 schema = @Schema(implementation = ApiErrorResponse.class)))
   })
   ResponseEntity<PublicationImpedimentsResponseDTO> checkPublication(
+      @Parameter(description = "Identificador da aplicação dona") String applicationId,
+      @Parameter(description = "Identificador da pesquisa") String surveyId);
+
+  @Operation(
+      summary = "O que convém saber antes de publicar",
+      description =
+          "Avisos que não impedem a publicação: regra de segmentação que exige atributo ou valor "
+              + "que o app nunca enviou (segmentation.no_known_match), regras que se contradizem "
+              + "(segmentation.contradictory) e outras pesquisas no ar ou agendadas escutando o "
+              + "mesmo evento (trigger.competing_surveys). Lê o rascunho quando existe e a "
+              + "versão publicada caso contrário.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "Lista de avisos; vazia quando não há nada a observar",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = PublicationWarningsResponseDTO.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description = "Pesquisa não encontrada",
+        content =
+            @Content(
+                mediaType = PROBLEM_JSON,
+                schema = @Schema(implementation = ApiErrorResponse.class)))
+  })
+  ResponseEntity<PublicationWarningsResponseDTO> checkPublicationWarnings(
       @Parameter(description = "Identificador da aplicação dona") String applicationId,
       @Parameter(description = "Identificador da pesquisa") String surveyId);
 

@@ -281,6 +281,67 @@ class CollectEligibilityE2ETest {
         .isEqualTo("request.invalid");
   }
 
+  @Test
+  @DisplayName("Toda consulta registra o evento no catálogo da aplicação, mesmo sem pesquisa")
+  void registra_o_evento_observado() {
+    eligibility(
+        new EligibilityRequestDTO("tela.aberta", new RespondentDTO(REFERENCE, null), null));
+
+    var rows =
+        jdbc.sql(
+                "select application_id, name from application_events where application_id = :app")
+            .param("app", applicationId.value())
+            .query((rs, i) -> rs.getString("name"))
+            .list();
+
+    assertThat(rows).containsExactly("tela.aberta");
+    assertThat(
+            jdbc.sql("select first_seen_at = last_seen_at from application_events")
+                .query(Boolean.class)
+                .single())
+        .isTrue();
+  }
+
+  @Test
+  @DisplayName("O mesmo evento repetido continua sendo uma linha só no catálogo")
+  void repeticao_nao_duplica_o_evento() {
+    publishedSurvey();
+
+    eligibility(request(Map.of()));
+    eligibility(request(Map.of()));
+    eligibility(
+        new EligibilityRequestDTO(EVENT, new RespondentDTO("outro-respondente", null), null));
+
+    assertThat(
+            jdbc.sql("select count(*) from application_events where name = :name")
+                .param("name", EVENT)
+                .query(Long.class)
+                .single())
+        .isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("Aplicação inativa não alimenta o catálogo")
+  void aplicacao_inativa_nao_registra_evento() {
+    var inactive = ApplicationFactory.anApplication().withSlug("inativa").inactive().build();
+    applications.save(ApplicationJpaMapper.toJpa(inactive));
+    var issued = ApiKey.issue(inactive.id(), ApiKeyLabel.of("app inativo"));
+    apiKeys.save(ApiKeyJpaMapper.toJpa(issued.apiKey()));
+
+    client
+        .post()
+        .uri(ELIGIBILITY)
+        .header(HEADER, issued.plainSecret())
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(request(Map.of()))
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    assertThat(jdbc.sql("select count(*) from application_events").query(Long.class).single())
+        .isZero();
+  }
+
   private EligibilityResponseDTO eligibility(EligibilityRequestDTO request) {
     var body =
         client

@@ -9,9 +9,6 @@ import { defineConfig, devices } from "@playwright/test";
  * contra o backend de verdade.
  */
 
-// 3001, e não 3000: a stack local do backend publica o Grafana LGTM em 3000, e um painel
-// nessa porta seria sequestrado por ele — inclusive para o `reuseExistingServer` do Playwright,
-// que veria a porta respondendo e nem subiria o Next.
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3001";
 const stubPort = process.env.STUB_API_PORT ?? "4010";
 const stubApiUrl = `http://localhost:${stubPort}/api`;

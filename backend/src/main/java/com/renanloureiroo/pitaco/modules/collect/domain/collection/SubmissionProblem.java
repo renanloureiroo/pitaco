@@ -15,6 +15,7 @@ public record SubmissionProblem(String code, Optional<QuestionKey> questionKey) 
   public static final String OPTIONS_DUPLICATED = "answer.options_duplicated";
   public static final String VALUE_OUT_OF_RANGE = "answer.value_out_of_range";
   public static final String TEXT_TOO_LONG = "answer.text_too_long";
+  public static final String NOT_APPLICABLE_UNCONDITIONAL = "answer.not_applicable_unconditional";
 
   public static SubmissionProblem of(String code, QuestionKey questionKey) {
     return new SubmissionProblem(code, Optional.ofNullable(questionKey));

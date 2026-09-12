@@ -29,7 +29,7 @@ public class OpenSurveyVersionUseCase
   @Override
   @Transactional
   public SurveyVersionOutput execute(Input input) {
-    var survey = SurveyScope.require(surveysRepository, input.applicationId(), input.surveyId());
+    var survey = SurveyScope.requireLocked(surveysRepository, input.applicationId(), input.surveyId());
 
     if (!survey.isPublished()) {
       throw new SurveyNotPublished(survey.id());

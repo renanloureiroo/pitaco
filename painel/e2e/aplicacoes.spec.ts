@@ -88,4 +88,73 @@ test.describe("US1 — ver e criar aplicações", () => {
     await expect(page.getByRole("heading", { name: "Esta aplicação não existe" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Voltar para a listagem" })).toBeVisible();
   });
+
+  test("edita nome e prazos pelo detalhe, e prazo em branco é removido", async ({ page }) => {
+    const application = await createApplication(page);
+
+    await page.getByTestId("edit-application-button").click();
+    await page.getByLabel("Nome").fill(`${application.name} v2`);
+    await page.getByLabel("Período de descanso (dias)").fill("7");
+    await page.getByLabel("Retenção (dias)").fill("90");
+    await page.getByTestId("edit-application-submit").click();
+
+    await expect(page.getByTestId("edit-application-form")).toHaveCount(0);
+    await expect(page.getByTestId("application-detail")).toContainText(`${application.name} v2`);
+    await expect(page.getByTestId("quiet-period")).toContainText("7 dias");
+    await expect(page.getByTestId("retention")).toContainText("90 dias");
+    await expect(page.getByTestId("application-detail")).toContainText(application.slug);
+
+    await page.getByTestId("edit-application-button").click();
+    await page.getByLabel("Período de descanso (dias)").fill("");
+    await page.getByTestId("edit-application-submit").click();
+
+    await expect(page.getByTestId("edit-application-form")).toHaveCount(0);
+    await expect(page.getByTestId("quiet-period")).toContainText("não configurado");
+    await expect(page.getByTestId("retention")).toContainText("90 dias");
+  });
+
+  test("recusa retenção de texto livre acima da geral sem fechar o diálogo", async ({ page }) => {
+    await createApplication(page);
+
+    await page.getByTestId("edit-application-button").click();
+    await page.getByLabel("Retenção (dias)").fill("30");
+    await page.getByLabel("Retenção de texto livre (dias)").fill("90");
+    await page.getByTestId("edit-application-submit").click();
+
+    await expect(page.getByTestId("form-error")).toContainText(/texto livre/i);
+    await expect(page.getByLabel("Retenção de texto livre (dias)")).toHaveValue("90");
+  });
+
+  test("desativa com confirmação e reativa; o estado aparece no detalhe e na lista", async ({
+    page,
+  }) => {
+    const application = await createApplication(page);
+
+    await page.getByTestId("deactivate-application-button").click();
+    await expect(page.getByTestId("confirm-dialog")).toBeVisible();
+    await page.getByTestId("confirm-button").click();
+
+    await expect(page.getByTestId("application-detail")).toContainText("Inativa");
+    await expect(page.getByTestId("deactivate-application-button")).toHaveCount(0);
+
+    await page.goto("/aplicacoes?status=inactive");
+    await expect(
+      page.getByTestId("application-row").filter({ hasText: application.name }),
+    ).toContainText("Inativa");
+
+    await page.goto(`/aplicacoes/${application.id}`);
+    await page.getByTestId("activate-application-button").click();
+
+    await expect(page.getByTestId("application-detail")).toContainText("Ativa");
+    await expect(page.getByTestId("deactivate-application-button")).toBeVisible();
+  });
+
+  test("cancelar a confirmação mantém a aplicação ativa", async ({ page }) => {
+    await createApplication(page);
+
+    await page.getByTestId("deactivate-application-button").click();
+    await page.getByTestId("cancel-button").click();
+
+    await expect(page.getByTestId("application-detail")).toContainText("Ativa");
+  });
 });

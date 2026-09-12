@@ -2,6 +2,7 @@ package com.renanloureiroo.pitaco.testsupport.gateways;
 
 import com.renanloureiroo.pitaco.core.catalog.EventName;
 import com.renanloureiroo.pitaco.core.identity.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.core.identity.SurveyVersionId;
 import com.renanloureiroo.pitaco.modules.collect.application.gateways.PublishedSurveyCatalog;
 import java.time.Instant;
@@ -24,6 +25,7 @@ public class InMemoryPublishedSurveyCatalog implements PublishedSurveyCatalog {
 
   private final List<Entry> entries = new ArrayList<>();
   private final Map<SurveyVersionId, DeliverableSurvey> contents = new LinkedHashMap<>();
+  private final Map<SurveyId, CurrentPublication> publications = new LinkedHashMap<>();
 
   private int candidateCalls;
   private int contentCalls;
@@ -63,6 +65,17 @@ public class InMemoryPublishedSurveyCatalog implements PublishedSurveyCatalog {
                     entry.candidate().versionId(),
                     entry.candidate().versionNumber(),
                     entry.candidate().comparabilityGroup()));
+  }
+
+  @Override
+  public Optional<CurrentPublication> currentPublicationOf(SurveyId surveyId) {
+    return Optional.ofNullable(publications.get(surveyId));
+  }
+
+  public InMemoryPublishedSurveyCatalog withCurrentPublication(
+      SurveyId surveyId, SurveyVersionId versionId, Optional<EventName> event) {
+    publications.put(surveyId, new CurrentPublication(versionId, event));
+    return this;
   }
 
   public InMemoryPublishedSurveyCatalog withCandidate(

@@ -37,7 +37,7 @@ public class EndSurveyUseCase implements UseCase<EndSurveyUseCase.Input, SurveyO
   @Override
   @Transactional
   public SurveyOutput execute(Input input) {
-    var survey = SurveyScope.require(surveysRepository, input.applicationId(), input.surveyId());
+    var survey = SurveyScope.requireLocked(surveysRepository, input.applicationId(), input.surveyId());
 
     if (survey.getLifecycle() == SurveyLifecycle.DRAFT) {
       throw new SurveyNotPublished(survey.id());

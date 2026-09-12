@@ -12,11 +12,6 @@ import {
 } from "../../lib/collect-labels";
 import type { DisplayDetail } from "../../schemas/display";
 
-/**
- * Resumo da exibição, com os dois vínculos que fecham a navegação (FR-016, SC-008): daqui se
- * chega à pesquisa e ao respondente. A rota do detalhe é plana sob a aplicação e fica fora do
- * layout da pesquisa (R5) — o vínculo explícito é mais honesto do que fingir contexto.
- */
 export function DisplaySummaryCard({
   applicationId,
   display,

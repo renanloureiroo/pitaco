@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { createApplication, createSurvey } from "./support/helpers";
+import { createApplication, createSurvey, seedCollect, usingStubApi } from "./support/helpers";
 
 /** Janela já aberta: é o que coloca a pesquisa no ar e destrava pausar e retomar. */
 const JANELA_JA_ABERTA = "2026-01-01T00:00";
@@ -102,5 +102,28 @@ test.describe("US6 — controlar o que está no ar", () => {
     await expect(page.getByTestId("survey-state")).toHaveText("Rascunho");
     await expect(page.getByTestId("pause-survey-button")).toHaveCount(0);
     await expect(page.getByTestId("end-survey-button")).toHaveCount(0);
+  });
+
+  test("encerra sozinha ao atingir a cota e registra o motivo", async ({ page, request }) => {
+    test.skip(!usingStubApi, "A conclusão chega pelo SDK; com E2E_API=real não há como semeá-la.");
+
+    const application = await createApplication(page);
+    const survey = await createSurvey(page, application.id);
+    const base = await publicar(page, application.id, survey.id);
+
+    await page.goto(`${base}/disparo`);
+    await page.getByTestId("quota-input").fill("1");
+    await page.getByTestId("save-exposure-button").click();
+    await expect(page.getByTestId("quota-progress")).toHaveText("Concluídas: 0 de 1");
+
+    await seedCollect(request, {
+      applicationId: application.id,
+      respondents: [{}],
+      displays: [{ surveyId: survey.id, outcome: "COMPLETED", closedAt: "2026-09-08T10:05:00Z" }],
+    });
+
+    await page.goto(base);
+    await expect(page.getByTestId("survey-state")).toHaveText("Encerrada");
+    await expect(page.getByTestId("transitions-history")).toContainText("Encerrada por cota");
   });
 });

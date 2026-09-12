@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NOT_CONFIGURED, formatDateTime, formatSamplingRate } from "@/shared/lib";
 
 import type { Trigger } from "../../schemas/trigger";
-import { RulesList } from "./rules-list";
+import { RulesList, type ObservedAttributeSuggestion } from "./rules-list";
 import { TriggerForm } from "./trigger-form";
 
 /**
@@ -14,11 +14,17 @@ export function TriggerPanel({
   applicationId,
   surveyId,
   trigger,
+  observedEvents = [],
+  observedAttributes = [],
   readOnly = false,
 }: {
   applicationId: string;
   surveyId: string;
   trigger?: Trigger;
+  /** Eventos já vistos na aplicação, oferecidos como sugestão no formulário. */
+  observedEvents?: string[];
+  /** Atributos já vistos na aplicação, com seus valores, oferecidos ao montar regras. */
+  observedAttributes?: ObservedAttributeSuggestion[];
   readOnly?: boolean;
 }) {
   return (
@@ -37,7 +43,9 @@ export function TriggerPanel({
             <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="flex flex-col gap-1">
                 <dt className="text-xs tracking-wide text-muted-foreground uppercase">Evento</dt>
-                <dd className="font-mono text-sm">{trigger.eventName}</dd>
+                <dd data-testid="trigger-event" className="font-mono text-sm">
+                  {trigger.eventName}
+                </dd>
               </div>
               <div className="flex flex-col gap-1">
                 <dt className="text-xs tracking-wide text-muted-foreground uppercase">Início</dt>
@@ -64,6 +72,7 @@ export function TriggerPanel({
             applicationId={applicationId}
             surveyId={surveyId}
             rules={trigger?.rules ?? []}
+            observedAttributes={observedAttributes}
             readOnly={readOnly}
           />
         </CardContent>
@@ -77,7 +86,12 @@ export function TriggerPanel({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <TriggerForm applicationId={applicationId} surveyId={surveyId} trigger={trigger} />
+            <TriggerForm
+              applicationId={applicationId}
+              surveyId={surveyId}
+              trigger={trigger}
+              observedEvents={observedEvents}
+            />
           </CardContent>
         </Card>
       )}

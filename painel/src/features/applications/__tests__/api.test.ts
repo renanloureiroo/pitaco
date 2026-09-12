@@ -2,7 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { API_URL_ENV_VAR } from "@/shared/api";
 
-import { createApplication, listApplications } from "../api";
+import {
+  activateApplication,
+  createApplication,
+  deactivateApplication,
+  listApplications,
+  updateApplication,
+} from "../api";
 
 const summary = {
   id: "app-1",
@@ -125,5 +131,70 @@ describe("createApplication", () => {
     });
 
     expect(result).toMatchObject({ kind: "validation", errors: { slug: "Formato inválido." } });
+  });
+});
+
+const detail = {
+  ...summary,
+  updatedAt: "2026-09-10T12:00:00Z",
+};
+
+describe("updateApplication", () => {
+  it("envia PATCH com prazo em branco como null, para que o backend o remova", async () => {
+    const spy = stubFetch(200, detail);
+
+    await updateApplication("app-1", {
+      name: "Acme",
+      quietPeriodDays: undefined,
+      retentionDays: 30,
+      openTextRetentionDays: undefined,
+    });
+
+    const [url, init] = spy.mock.calls[0];
+    expect(url).toBe("http://api.test/api/applications/app-1");
+    expect(init.method).toBe("PATCH");
+    expect(JSON.parse(init.body as string)).toEqual({
+      name: "Acme",
+      quietPeriodDays: null,
+      retentionDays: 30,
+      openTextRetentionDays: null,
+    });
+  });
+
+  it("devolve a aplicação alterada validada pelo schema", async () => {
+    stubFetch(200, { ...detail, name: "Acme Brasil" });
+
+    const result = await updateApplication("app-1", {
+      name: "Acme Brasil",
+      quietPeriodDays: undefined,
+      retentionDays: undefined,
+      openTextRetentionDays: undefined,
+    });
+
+    expect(result).toMatchObject({ ok: true, data: { name: "Acme Brasil" } });
+  });
+});
+
+describe("deactivateApplication / activateApplication", () => {
+  it("chama as transições por POST sem corpo", async () => {
+    const spy = stubFetch(200, { ...detail, status: "inactive" });
+
+    const result = await deactivateApplication("app-1");
+
+    expect(spy.mock.calls[0][0]).toBe("http://api.test/api/applications/app-1/deactivate");
+    expect(spy.mock.calls[0][1].method).toBe("POST");
+    expect(spy.mock.calls[0][1].body).toBeUndefined();
+    expect(result).toMatchObject({ ok: true, data: { status: "inactive" } });
+
+    stubFetch(200, detail);
+    await activateApplication("app-1");
+  });
+
+  it("traduz 404 em recusa tipada", async () => {
+    stubFetch(404, { code: "application.not_found", detail: "Aplicação não encontrada." });
+
+    const result = await activateApplication("app-x");
+
+    expect(result).toMatchObject({ ok: false, kind: "not_found", code: "application.not_found" });
   });
 });

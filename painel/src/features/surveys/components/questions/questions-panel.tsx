@@ -12,6 +12,7 @@ import { MoveQuestionButtons } from "./move-question-buttons";
 import { QuestionForm } from "./question-form";
 import { QuestionsList } from "./questions-list";
 import { RemoveQuestionButton } from "./remove-question-button";
+import { SortableQuestionsList } from "./sortable-questions-list";
 
 /**
  * Montagem das perguntas.
@@ -59,43 +60,47 @@ export function QuestionsPanel({
     );
   }
 
+  const actionsFor = (question: Question) => (
+    <>
+      <MoveQuestionButtons
+        applicationId={applicationId}
+        surveyId={surveyId}
+        questionIds={questionIds}
+        questionId={question.id}
+      />
+      <Button
+        variant="ghost"
+        size="icon"
+        data-testid="edit-question-button"
+        aria-label={`Editar pergunta "${question.statement}"`}
+        onClick={() => {
+          setAdding(false);
+          setEditingId(question.id);
+        }}
+      >
+        <PencilIcon aria-hidden />
+      </Button>
+      <RemoveQuestionButton
+        applicationId={applicationId}
+        surveyId={surveyId}
+        questionId={question.id}
+        statement={question.statement}
+      />
+    </>
+  );
+
   return (
     <div className="flex flex-col gap-4">
-      <QuestionsList
-        questions={ordered}
-        actionsFor={
-          readOnly
-            ? undefined
-            : (question) => (
-                <>
-                  <MoveQuestionButtons
-                    applicationId={applicationId}
-                    surveyId={surveyId}
-                    questionIds={questionIds}
-                    questionId={question.id}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    data-testid="edit-question-button"
-                    aria-label={`Editar pergunta "${question.statement}"`}
-                    onClick={() => {
-                      setAdding(false);
-                      setEditingId(question.id);
-                    }}
-                  >
-                    <PencilIcon aria-hidden />
-                  </Button>
-                  <RemoveQuestionButton
-                    applicationId={applicationId}
-                    surveyId={surveyId}
-                    questionId={question.id}
-                    statement={question.statement}
-                  />
-                </>
-              )
-        }
-      />
+      {readOnly ? (
+        <QuestionsList questions={ordered} />
+      ) : (
+        <SortableQuestionsList
+          applicationId={applicationId}
+          surveyId={surveyId}
+          questions={ordered}
+          actionsFor={actionsFor}
+        />
+      )}
 
       {readOnly ? null : editing !== undefined ? (
         <Card>
@@ -104,6 +109,7 @@ export function QuestionsPanel({
               key={editing.id}
               applicationId={applicationId}
               surveyId={surveyId}
+              questions={ordered}
               question={editing}
               onFinished={() => setEditingId(undefined)}
             />
@@ -115,6 +121,7 @@ export function QuestionsPanel({
             <QuestionForm
               applicationId={applicationId}
               surveyId={surveyId}
+              questions={ordered}
               onFinished={() => setAdding(false)}
             />
           </CardContent>

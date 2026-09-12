@@ -55,18 +55,31 @@ public final class SurveyScope {
 
   public static Survey require(
       SurveyRepository surveysRepository, String applicationId, String surveyId) {
-    ApplicationId scopedApplicationId;
-    SurveyId id;
+    var scoped = scopedIds(applicationId, surveyId);
+
+    return surveysRepository
+        .findByIdAndApplicationId(scoped.surveyId(), scoped.applicationId())
+        .orElseThrow(() -> new SurveyNotFound(surveyId));
+  }
+
+  // Só dentro de transação: a trava vale até o commit.
+  public static Survey requireLocked(
+      SurveyRepository surveysRepository, String applicationId, String surveyId) {
+    var scoped = scopedIds(applicationId, surveyId);
+
+    return surveysRepository
+        .lockByIdAndApplicationId(scoped.surveyId(), scoped.applicationId())
+        .orElseThrow(() -> new SurveyNotFound(surveyId));
+  }
+
+  private record ScopedIds(ApplicationId applicationId, SurveyId surveyId) {}
+
+  private static ScopedIds scopedIds(String applicationId, String surveyId) {
     try {
-      scopedApplicationId = ApplicationId.of(applicationId);
-      id = SurveyId.of(surveyId);
+      return new ScopedIds(ApplicationId.of(applicationId), SurveyId.of(surveyId));
     } catch (DomainException malformed) {
       throw new SurveyNotFound(surveyId);
     }
-
-    return surveysRepository
-        .findByIdAndApplicationId(id, scopedApplicationId)
-        .orElseThrow(() -> new SurveyNotFound(surveyId));
   }
 
   // A versão editável é a única em DRAFT; sem ela, o conteúdo está congelado (D-17).

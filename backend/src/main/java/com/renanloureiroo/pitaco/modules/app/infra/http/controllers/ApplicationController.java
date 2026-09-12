@@ -1,22 +1,27 @@
 package com.renanloureiroo.pitaco.modules.app.infra.http.controllers;
 
 import com.renanloureiroo.pitaco.infra.http.dtos.PageResponseDTO;
+import com.renanloureiroo.pitaco.modules.app.application.usecases.ActivateApplicationUseCase;
 import com.renanloureiroo.pitaco.modules.app.application.usecases.CreateApplicationUseCase;
+import com.renanloureiroo.pitaco.modules.app.application.usecases.DeactivateApplicationUseCase;
 import com.renanloureiroo.pitaco.modules.app.application.usecases.GetApplicationUseCase;
 import com.renanloureiroo.pitaco.modules.app.application.usecases.ListApplicationsUseCase;
+import com.renanloureiroo.pitaco.modules.app.application.usecases.UpdateApplicationUseCase;
 import com.renanloureiroo.pitaco.modules.app.infra.http.dtos.ApplicationResponseDTO;
 import com.renanloureiroo.pitaco.modules.app.infra.http.dtos.ApplicationSummaryResponseDTO;
 import com.renanloureiroo.pitaco.modules.app.infra.http.dtos.CreateApplicationRequestDTO;
 import com.renanloureiroo.pitaco.modules.app.infra.http.dtos.CreateApplicationResponseDTO;
 import com.renanloureiroo.pitaco.modules.app.infra.http.dtos.ListApplicationsQueryDTO;
+import com.renanloureiroo.pitaco.modules.app.infra.http.dtos.UpdateApplicationRequestDTO;
+import com.renanloureiroo.pitaco.modules.app.infra.http.presenters.ApplicationPresenter;
 import com.renanloureiroo.pitaco.modules.app.infra.http.presenters.CreateApplicationPresenter;
-import com.renanloureiroo.pitaco.modules.app.infra.http.presenters.GetApplicationPresenter;
 import com.renanloureiroo.pitaco.modules.app.infra.http.presenters.ListApplicationsPresenter;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,14 +36,23 @@ public class ApplicationController implements ApplicationControllerSwagger {
   private final CreateApplicationUseCase createAppUseCase;
   private final ListApplicationsUseCase listApplicationsUseCase;
   private final GetApplicationUseCase getApplicationUseCase;
+  private final UpdateApplicationUseCase updateApplicationUseCase;
+  private final DeactivateApplicationUseCase deactivateApplicationUseCase;
+  private final ActivateApplicationUseCase activateApplicationUseCase;
 
   ApplicationController(
       CreateApplicationUseCase createAppUseCase,
       ListApplicationsUseCase listApplicationsUseCase,
-      GetApplicationUseCase getApplicationUseCase) {
+      GetApplicationUseCase getApplicationUseCase,
+      UpdateApplicationUseCase updateApplicationUseCase,
+      DeactivateApplicationUseCase deactivateApplicationUseCase,
+      ActivateApplicationUseCase activateApplicationUseCase) {
     this.createAppUseCase = createAppUseCase;
     this.listApplicationsUseCase = listApplicationsUseCase;
     this.getApplicationUseCase = getApplicationUseCase;
+    this.updateApplicationUseCase = updateApplicationUseCase;
+    this.deactivateApplicationUseCase = deactivateApplicationUseCase;
+    this.activateApplicationUseCase = activateApplicationUseCase;
   }
 
   @Override
@@ -71,6 +85,33 @@ public class ApplicationController implements ApplicationControllerSwagger {
   public ResponseEntity<ApplicationResponseDTO> get(@PathVariable String applicationId) {
     var output = getApplicationUseCase.execute(new GetApplicationUseCase.Input(applicationId));
 
-    return ResponseEntity.ok(GetApplicationPresenter.present(output));
+    return ResponseEntity.ok(ApplicationPresenter.present(output));
+  }
+
+  @Override
+  @PatchMapping("/{applicationId}")
+  public ResponseEntity<ApplicationResponseDTO> update(
+      @PathVariable String applicationId, @Valid @RequestBody UpdateApplicationRequestDTO request) {
+    var output = updateApplicationUseCase.execute(request.toInput(applicationId));
+
+    return ResponseEntity.ok(ApplicationPresenter.present(output));
+  }
+
+  @Override
+  @PostMapping("/{applicationId}/deactivate")
+  public ResponseEntity<ApplicationResponseDTO> deactivate(@PathVariable String applicationId) {
+    var output =
+        deactivateApplicationUseCase.execute(new DeactivateApplicationUseCase.Input(applicationId));
+
+    return ResponseEntity.ok(ApplicationPresenter.present(output));
+  }
+
+  @Override
+  @PostMapping("/{applicationId}/activate")
+  public ResponseEntity<ApplicationResponseDTO> activate(@PathVariable String applicationId) {
+    var output =
+        activateApplicationUseCase.execute(new ActivateApplicationUseCase.Input(applicationId));
+
+    return ResponseEntity.ok(ApplicationPresenter.present(output));
   }
 }

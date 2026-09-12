@@ -16,11 +16,6 @@ import { TIMEZONE_NOTE } from "@/shared/lib";
 
 export const metadata = { title: "Exibições" };
 
-/**
- * Três leituras, em paralelo, e cada uma com uma razão de existir (SC-009): a listagem é o
- * conteúdo; a pesquisa diz **qual** dos três vazios mostrar (R6); a comparabilidade povoa o
- * seletor de versão sem carregar a listagem paginada de versões.
- */
 export default async function SurveyDisplaysPage({
   params,
   searchParams,
@@ -100,7 +95,6 @@ export default async function SurveyDisplaysPage({
   );
 }
 
-/** Os três vazios ditos com todas as letras: cada um leva a uma ação diferente (FR-025). */
 function EmptyVariant({
   variant,
   publicationHref,

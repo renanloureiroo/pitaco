@@ -431,6 +431,28 @@ class SurveyVersionE2ETest {
   }
 
   @Test
+  @DisplayName("A listagem traz o rascunho aberto junto das publicadas, e ele vem primeiro")
+  void lista_o_rascunho_junto_das_publicadas() {
+    publishFirstVersion();
+    openVersion();
+
+    var page = listVersions("");
+
+    assertThat(page.total()).isEqualTo(2);
+    assertThat(page.items()).extracting(SurveyVersionResponseDTO::number).containsExactly(2, 1);
+    assertThat(page.items())
+        .extracting(SurveyVersionResponseDTO::status)
+        .containsExactly("draft", "published");
+
+    client.delete().uri(uri() + "/versions/draft").exchange().expectStatus().isNoContent();
+
+    var depois = listVersions("");
+
+    assertThat(depois.total()).isEqualTo(1);
+    assertThat(depois.items()).extracting(SurveyVersionResponseDTO::number).containsExactly(1);
+  }
+
+  @Test
   @DisplayName("A versão devolve o próprio identificador, igual na listagem e no detalhe")
   void devolve_o_identificador_da_versao() {
     publishFirstVersion();
@@ -444,8 +466,6 @@ class SurveyVersionE2ETest {
     assertThat(listed).extracting(SurveyVersionResponseDTO::id).doesNotHaveDuplicates();
 
     for (var item : listed) {
-      // Quem identifica a versão na tela é o número; o identificador existe para casar com o
-      // que a exibição carrega, e por isso as duas leituras precisam concordar.
       assertThat(version(item.number()).id()).isEqualTo(item.id());
     }
   }

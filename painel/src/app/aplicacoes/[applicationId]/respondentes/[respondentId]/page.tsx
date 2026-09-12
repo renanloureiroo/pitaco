@@ -16,11 +16,6 @@ import { TIMEZONE_NOTE } from "@/shared/lib";
 
 export const metadata = { title: "Histórico do respondente" };
 
-/**
- * Uma leitura só (SC-009). A mesma tabela da listagem por pesquisa, agora **com** a coluna de
- * pesquisa (R8): aqui a pesquisa varia. E sem o seletor de versão (FR-022): o histórico
- * atravessa pesquisas, e número de versão só significa algo dentro de uma delas.
- */
 export default async function RespondentHistoryPage({
   params,
   searchParams,

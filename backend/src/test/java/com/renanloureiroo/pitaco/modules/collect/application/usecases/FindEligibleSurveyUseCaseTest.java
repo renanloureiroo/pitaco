@@ -17,7 +17,10 @@ import com.renanloureiroo.pitaco.modules.collect.application.gateways.PublishedS
 import com.renanloureiroo.pitaco.modules.collect.application.gateways.PublishedSurveyCatalog.SurveyCandidate;
 import com.renanloureiroo.pitaco.testsupport.gateways.InMemoryCollectApplicationScopeGateway;
 import com.renanloureiroo.pitaco.testsupport.gateways.InMemoryPublishedSurveyCatalog;
+import com.renanloureiroo.pitaco.testsupport.gateways.InMemorySdkUsageRecorder;
 import com.renanloureiroo.pitaco.testsupport.repositories.InMemoryAnswerRepository;
+import com.renanloureiroo.pitaco.testsupport.repositories.InMemoryObservedAttributeRepository;
+import com.renanloureiroo.pitaco.testsupport.repositories.InMemoryObservedEventRepository;
 import com.renanloureiroo.pitaco.testsupport.repositories.InMemoryRespondentRepository;
 import com.renanloureiroo.pitaco.testsupport.repositories.InMemorySurveyDisplayRepository;
 import java.time.Duration;
@@ -31,6 +34,9 @@ import com.renanloureiroo.pitaco.modules.collect.domain.valueobjects.RespondentI
 import com.renanloureiroo.pitaco.modules.collect.domain.valueobjects.RespondentIdentityKind;
 import com.renanloureiroo.pitaco.testsupport.factories.RespondentFactory;
 import com.renanloureiroo.pitaco.testsupport.factories.SurveyDisplayFactory;
+import com.renanloureiroo.pitaco.testsupport.transaction.DirectTransactor;
+import com.renanloureiroo.pitaco.modules.collect.domain.entities.ObservedAttribute;
+import com.renanloureiroo.pitaco.modules.collect.domain.entities.ObservedEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -51,16 +57,39 @@ class FindEligibleSurveyUseCaseTest {
   private final InMemoryRespondentRepository respondents = new InMemoryRespondentRepository();
   private final InMemorySurveyDisplayRepository displays = new InMemorySurveyDisplayRepository();
   private final InMemoryAnswerRepository answers = new InMemoryAnswerRepository();
+  private final InMemoryObservedEventRepository events = new InMemoryObservedEventRepository();
+  private final InMemoryObservedAttributeRepository attributes =
+      new InMemoryObservedAttributeRepository();
+  private final DirectTransactor transactor = new DirectTransactor();
+  private InMemorySdkUsageRecorder sdkUsage = new InMemorySdkUsageRecorder();
 
   private FindEligibleSurveyUseCase useCase;
   private ApplicationId applicationId;
 
   @BeforeEach
   void setUp() {
-    useCase =
-        new FindEligibleSurveyUseCase(
-            applications, catalog, respondents, displays, DISPLAY_TIMEOUT, MAX_ATTEMPTS);
+    useCase = useCaseOver(events);
     applicationId = applications.anActiveApplication();
+  }
+
+  private FindEligibleSurveyUseCase useCaseOver(InMemoryObservedEventRepository catalogOfEvents) {
+    return useCaseOver(catalogOfEvents, attributes);
+  }
+
+  private FindEligibleSurveyUseCase useCaseOver(
+      InMemoryObservedEventRepository catalogOfEvents,
+      InMemoryObservedAttributeRepository catalogOfAttributes) {
+    return new FindEligibleSurveyUseCase(
+        applications,
+        catalog,
+        respondents,
+        displays,
+        catalogOfEvents,
+        catalogOfAttributes,
+        sdkUsage,
+        transactor,
+        DISPLAY_TIMEOUT,
+        MAX_ATTEMPTS);
   }
 
   @Test
@@ -209,8 +238,96 @@ class FindEligibleSurveyUseCaseTest {
     assertThat(catalog.contentCalls()).isEqualTo(1);
   }
 
+  @Nested
+  @DisplayName("Catálogo de eventos observados")
+  class CatalogoDeEventos {
+
+    @Test
+    @DisplayName("Toda consulta registra o evento, mesmo sem pesquisa para ele")
+    void registra_o_evento_sem_pesquisa() {
+      useCase.execute(
+          new FindEligibleSurveyUseCase.Input(
+              applicationId.value(),
+              Optional.of(REFERENCE),
+              Optional.empty(),
+              "tela.aberta",
+              Map.of()));
+
+      assertThat(events.findAll())
+          .singleElement()
+          .satisfies(
+              event -> {
+                assertThat(event.getApplicationId()).isEqualTo(applicationId);
+                assertThat(event.getName()).isEqualTo(EventName.of("tela.aberta"));
+              });
+      assertThat(transactor.executions()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("O mesmo evento repetido continua sendo uma linha só")
+    void repeticao_nao_duplica() {
+      publishedSurvey(SamplingRate.of(1.0), List.of());
+
+      useCase.execute(input(Map.of()));
+      useCase.execute(input(Map.of()));
+      useCase.execute(input(Map.of()));
+
+      assertThat(events.findAll()).hasSize(1);
+      assertThat(events.findAll().getFirst().getLastSeenAt())
+          .isAfterOrEqualTo(events.findAll().getFirst().getFirstSeenAt());
+    }
+
+    @Test
+    @DisplayName("Aplicação inativa ou desconhecida não alimenta o catálogo")
+    void aplicacao_inativa_nao_registra() {
+      var inactive = applications.anInactiveApplication();
+
+      useCase.execute(
+          new FindEligibleSurveyUseCase.Input(
+              inactive.value(), Optional.of(REFERENCE), Optional.empty(), EVENT, Map.of()));
+      useCase.execute(
+          new FindEligibleSurveyUseCase.Input(
+              ApplicationId.generate().value(),
+              Optional.of(REFERENCE),
+              Optional.empty(),
+              EVENT,
+              Map.of()));
+
+      assertThat(events.isEmpty()).isTrue();
+      assertThat(transactor.executions()).isZero();
+    }
+
+    @Test
+    @DisplayName("Catálogo fora do ar não impede a entrega")
+    void falha_no_catalogo_nao_impede_a_entrega() {
+      var failing = new InMemoryObservedEventRepository().failing();
+      var candidate = publishedSurvey(SamplingRate.of(1.0), List.of());
+
+      var output = useCaseOver(failing).execute(input(Map.of()));
+
+      assertThat(output.survey()).isPresent();
+      assertThat(output.survey().orElseThrow().surveyId())
+          .isEqualTo(candidate.surveyId().value());
+    }
+
+    @Test
+    @DisplayName("O registro acontece antes de saber se há pesquisa")
+    void registra_antes_de_consultar_candidatos() {
+      useCase.execute(
+          new FindEligibleSurveyUseCase.Input(
+              applicationId.value(),
+              Optional.of(REFERENCE),
+              Optional.empty(),
+              "evento.sem.pesquisa",
+              Map.of()));
+
+      assertThat(events.findAll()).extracting(ObservedEvent::getName)
+          .containsExactly(EventName.of("evento.sem.pesquisa"));
+    }
+  }
+
   @Test
-  @DisplayName("Nenhuma escrita em nenhum caminho (D-10, SC-003)")
+  @DisplayName("Nenhuma escrita de coleta em nenhum caminho (D-10, SC-003)")
   void nao_escreve_em_caminho_nenhum() {
     publishedSurvey(SamplingRate.of(1.0), List.of());
 
@@ -252,7 +369,7 @@ class FindEligibleSurveyUseCaseTest {
   private static SurveyCandidate candidate(
       SamplingRate rate, List<SegmentationCriterion> criteria, Instant publishedAt) {
     return new SurveyCandidate(
-        SurveyId.generate(), SurveyVersionId.generate(), 1, 1, rate, criteria, publishedAt);
+        SurveyId.generate(), SurveyVersionId.generate(), 1, 1, rate, criteria, publishedAt, 0, false);
   }
 
   @Nested
@@ -317,7 +434,7 @@ class FindEligibleSurveyUseCaseTest {
               candidate.comparabilityGroup() + 1,
               SamplingRate.of(1.0),
               List.of(),
-              PUBLISHED_AT.plusSeconds(60));
+              PUBLISHED_AT.plusSeconds(60), 0, false);
       catalog.withCandidate(
           applicationId, EventName.of(EVENT), WINDOW_START, Optional.empty(), republicada);
       catalog.withContent(content(republicada));
@@ -380,7 +497,7 @@ class FindEligibleSurveyUseCaseTest {
               1,
               SamplingRate.of(1.0),
               List.of(),
-              PUBLISHED_AT);
+              PUBLISHED_AT, 0, false);
       catalog.withCandidate(
           outraAplicacao, EventName.of(EVENT), WINDOW_START, Optional.empty(), daOutra);
       catalog.withContent(content(daOutra));
@@ -456,5 +573,198 @@ class FindEligibleSurveyUseCaseTest {
                 false,
                 List.of(),
                 Optional.of(new ScaleRange(0, 10)))));
+  }
+
+  @Nested
+  @DisplayName("Controle de exposição — descanso, prioridade e atributos")
+  class ControleDeExposicao {
+
+    private static final int QUIET_DAYS = 7;
+
+    private SurveyCandidate publishWith(int priority, boolean ignoresQuietPeriod, Instant at) {
+      var candidate =
+          new SurveyCandidate(
+              SurveyId.generate(),
+              SurveyVersionId.generate(),
+              1,
+              1,
+              SamplingRate.of(1.0),
+              List.of(),
+              at,
+              priority,
+              ignoresQuietPeriod);
+      catalog.withCandidate(
+          applicationId, EventName.of(EVENT), WINDOW_START, Optional.empty(), candidate);
+      catalog.withContent(content(candidate));
+      return candidate;
+    }
+
+    // Uma exibição de outra pesquisa qualquer: o descanso vale entre pesquisas diferentes.
+    private void sawAnotherSurveyAt(Instant openedAt) {
+      var respondent =
+          respondents
+              .findByIdentity(
+                  applicationId,
+                  new RespondentIdentity(RespondentIdentityKind.APP_REFERENCE, REFERENCE))
+              .orElseGet(
+                  () ->
+                      RespondentFactory.aRespondent()
+                          .forApplication(applicationId)
+                          .identifiedByReference(REFERENCE)
+                          .buildSavedIn(respondents));
+
+      SurveyDisplayFactory.aDisplay()
+          .forApplication(applicationId)
+          .forRespondent(respondent.id())
+          .forSurvey(SurveyId.generate())
+          .openedAt(openedAt)
+          .dismissedAt(openedAt.plusSeconds(30))
+          .buildSavedIn(displays);
+    }
+
+    @Test
+    @DisplayName("Quem viu outra pesquisa dentro do intervalo não recebe esta")
+    void descanso_bloqueia_entre_pesquisas() {
+      applications.withQuietPeriodDays(applicationId, QUIET_DAYS);
+      publishWith(0, false, PUBLISHED_AT);
+      sawAnotherSurveyAt(Instant.now().minus(Duration.ofDays(1)));
+
+      assertThat(useCase.execute(input(Map.of())).survey()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Passado o intervalo, recebe normalmente")
+    void passado_o_intervalo_recebe() {
+      applications.withQuietPeriodDays(applicationId, QUIET_DAYS);
+      publishWith(0, false, PUBLISHED_AT);
+      sawAnotherSurveyAt(Instant.now().minus(Duration.ofDays(QUIET_DAYS + 1)));
+
+      assertThat(useCase.execute(input(Map.of())).survey()).isPresent();
+    }
+
+    @Test
+    @DisplayName("Pesquisa isenta ignora o descanso; a outra continua barrada")
+    void isenta_ignora_o_descanso() {
+      applications.withQuietPeriodDays(applicationId, QUIET_DAYS);
+      publishWith(50, false, PUBLISHED_AT);
+      var isenta = publishWith(0, true, PUBLISHED_AT.plusSeconds(60));
+      sawAnotherSurveyAt(Instant.now().minus(Duration.ofHours(1)));
+
+      assertThat(useCase.execute(input(Map.of())).survey().orElseThrow().surveyId())
+          .isEqualTo(isenta.surveyId().value());
+    }
+
+    @Test
+    @DisplayName("Sem intervalo configurado na aplicação, a exibição recente não barra nada")
+    void sem_intervalo_nada_muda() {
+      publishWith(0, false, PUBLISHED_AT);
+      sawAnotherSurveyAt(Instant.now().minus(Duration.ofMinutes(5)));
+
+      assertThat(useCase.execute(input(Map.of())).survey()).isPresent();
+    }
+
+    @Test
+    @DisplayName("Prioridade maior vence, mesmo publicada depois")
+    void prioridade_vence_a_antiguidade() {
+      publishWith(0, false, PUBLISHED_AT);
+      var prioritaria = publishWith(10, false, PUBLISHED_AT.plusSeconds(3600));
+
+      var primeira = useCase.execute(input(Map.of())).survey().orElseThrow();
+      var segunda = useCase.execute(input(Map.of())).survey().orElseThrow();
+
+      assertThat(primeira.surveyId()).isEqualTo(prioritaria.surveyId().value());
+      assertThat(segunda.surveyId()).isEqualTo(primeira.surveyId());
+    }
+
+    @Test
+    @DisplayName("Os atributos enviados alimentam o catálogo, cada catálogo na sua transação")
+    void atributos_alimentam_o_catalogo() {
+      useCase.execute(input(Map.of("plano", "pro", "versao", "2.1")));
+
+      assertThat(attributes.findAll())
+          .extracting(ObservedAttribute::getName)
+          .containsExactlyInAnyOrder("plano", "versao");
+      assertThat(transactor.executions()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("Catálogo de atributos fora do ar não impede a entrega")
+    void falha_no_catalogo_de_atributos_nao_impede() {
+      var candidate = publishWith(0, false, PUBLISHED_AT);
+
+      var output =
+          useCaseOver(events, new InMemoryObservedAttributeRepository().failing())
+              .execute(input(Map.of("plano", "pro")));
+
+      assertThat(output.survey().orElseThrow().surveyId())
+          .isEqualTo(candidate.surveyId().value());
+      assertThat(events.findAll()).hasSize(1);
+    }
+  }
+
+  @Nested
+  @DisplayName("Versão do SDK")
+  class VersaoDoSdk {
+
+    private FindEligibleSurveyUseCase.Input withVersion(ApplicationId owner, String version) {
+      return new FindEligibleSurveyUseCase.Input(
+          owner.value(), Optional.of(REFERENCE), Optional.empty(), EVENT, Map.of(),
+          Optional.of(version));
+    }
+
+    @Test
+    @DisplayName("Registra a versão informada, com ou sem pesquisa na resposta")
+    void registra_a_versao() {
+      useCase.execute(withVersion(applicationId, "1.4.2"));
+
+      assertThat(sdkUsage.recorded())
+          .singleElement()
+          .satisfies(
+              recorded -> {
+                assertThat(recorded.applicationId()).isEqualTo(applicationId);
+                assertThat(recorded.version().value()).isEqualTo("1.4.2");
+              });
+    }
+
+    @Test
+    @DisplayName("Versão fora do formato é ignorada, e a consulta segue")
+    void ignora_versao_invalida() {
+      publishedSurvey(SamplingRate.of(1.0), List.of());
+
+      var output = useCase.execute(withVersion(applicationId, "v1"));
+
+      assertThat(output.survey()).isPresent();
+      assertThat(sdkUsage.recorded()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Sem versão informada, nada é registrado")
+    void sem_versao() {
+      useCase.execute(input(Map.of()));
+
+      assertThat(sdkUsage.recorded()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Falha ao registrar a versão não impede a entrega")
+    void falha_nao_impede_entrega() {
+      sdkUsage = new InMemorySdkUsageRecorder().failing();
+      useCase = useCaseOver(events);
+      publishedSurvey(SamplingRate.of(1.0), List.of());
+
+      var output = useCase.execute(withVersion(applicationId, "1.0.0"));
+
+      assertThat(output.survey()).isPresent();
+    }
+
+    @Test
+    @DisplayName("Aplicação inativa não registra versão")
+    void inativa_nao_registra() {
+      var inactive = applications.anInactiveApplication();
+
+      useCase.execute(withVersion(inactive, "1.0.0"));
+
+      assertThat(sdkUsage.recorded()).isEmpty();
+    }
   }
 }

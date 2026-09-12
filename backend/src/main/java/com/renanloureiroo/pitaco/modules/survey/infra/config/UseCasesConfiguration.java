@@ -1,16 +1,22 @@
 package com.renanloureiroo.pitaco.modules.survey.infra.config;
 
 import com.renanloureiroo.pitaco.modules.survey.application.gateways.ApplicationScopeGateway;
+import com.renanloureiroo.pitaco.modules.collect.infra.config.HealthProperties;
+import com.renanloureiroo.pitaco.modules.survey.application.gateways.AttributeCatalogGateway;
+import com.renanloureiroo.pitaco.modules.survey.application.gateways.SdkTrafficGateway;
 import com.renanloureiroo.pitaco.modules.survey.application.repositories.SurveyRepository;
 import com.renanloureiroo.pitaco.modules.survey.application.repositories.SurveyStateTransitionRepository;
 import com.renanloureiroo.pitaco.modules.survey.application.repositories.SurveyVersionRepository;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.AddQuestionUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.AddSegmentationRuleUseCase;
+import com.renanloureiroo.pitaco.modules.survey.application.usecases.CheckPublicationWarningsUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.CheckSurveyPublicationUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.CreateSurveyUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.DefineTriggerUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.DiscardSurveyUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.DiscardSurveyVersionUseCase;
+import com.renanloureiroo.pitaco.modules.survey.application.usecases.DuplicateSurveyUseCase;
+import com.renanloureiroo.pitaco.modules.survey.application.usecases.EndSurveyByQuotaUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.EndSurveyUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.GetSurveyUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.GetSurveyVersionUseCase;
@@ -23,10 +29,11 @@ import com.renanloureiroo.pitaco.modules.survey.application.usecases.PauseSurvey
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.PublishSurveyUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.RemoveQuestionUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.RemoveSegmentationRuleUseCase;
-import com.renanloureiroo.pitaco.modules.survey.application.usecases.RenameSurveyUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.ReorderQuestionsUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.ResumeSurveyUseCase;
 import com.renanloureiroo.pitaco.modules.survey.application.usecases.UpdateQuestionUseCase;
+import com.renanloureiroo.pitaco.modules.survey.application.usecases.UpdateSurveyUseCase;
+import com.renanloureiroo.pitaco.modules.survey.application.gateways.CompletedResponsesGateway;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -44,6 +51,14 @@ public class UseCasesConfiguration {
   }
 
   @Bean
+  DuplicateSurveyUseCase duplicateSurveyUseCase(
+      ApplicationScopeGateway applications,
+      SurveyRepository surveys,
+      SurveyVersionRepository versions) {
+    return new DuplicateSurveyUseCase(applications, surveys, versions);
+  }
+
+  @Bean
   ListSurveysUseCase listSurveysUseCase(
       ApplicationScopeGateway applications,
       SurveyRepository surveys,
@@ -57,9 +72,12 @@ public class UseCasesConfiguration {
   }
 
   @Bean
-  RenameSurveyUseCase renameSurveyUseCase(
-      SurveyRepository surveys, SurveyVersionRepository versions) {
-    return new RenameSurveyUseCase(surveys, versions);
+  UpdateSurveyUseCase updateSurveyUseCase(
+      SurveyRepository surveys,
+      SurveyVersionRepository versions,
+      SurveyStateTransitionRepository transitions,
+      CompletedResponsesGateway completedResponses) {
+    return new UpdateSurveyUseCase(surveys, versions, transitions, completedResponses);
   }
 
   @Bean
@@ -117,6 +135,17 @@ public class UseCasesConfiguration {
   }
 
   @Bean
+  CheckPublicationWarningsUseCase checkPublicationWarningsUseCase(
+      SurveyRepository surveys,
+      SurveyVersionRepository versions,
+      AttributeCatalogGateway catalog,
+      SdkTrafficGateway traffic,
+      HealthProperties health) {
+    return new CheckPublicationWarningsUseCase(
+        surveys, versions, catalog, traffic, health.sdkUsage().recentWindow());
+  }
+
+  @Bean
   PublishSurveyUseCase publishSurveyUseCase(
       SurveyRepository surveys,
       SurveyVersionRepository versions,
@@ -152,6 +181,14 @@ public class UseCasesConfiguration {
       SurveyVersionRepository versions,
       SurveyStateTransitionRepository transitions) {
     return new EndSurveyUseCase(surveys, versions, transitions);
+  }
+
+  @Bean
+  EndSurveyByQuotaUseCase endSurveyByQuotaUseCase(
+      SurveyRepository surveys,
+      SurveyVersionRepository versions,
+      SurveyStateTransitionRepository transitions) {
+    return new EndSurveyByQuotaUseCase(surveys, versions, transitions);
   }
 
   @Bean

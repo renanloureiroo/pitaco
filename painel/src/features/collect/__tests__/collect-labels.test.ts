@@ -6,6 +6,7 @@ import { RESPONDENT_IDENTITY_KINDS } from "../schemas/respondent";
 import {
   ANSWER_BLANK,
   ANSWER_EXPIRED_EXPLANATION,
+  ANSWER_NOT_APPLICABLE_EXPLANATION,
   ANSWER_SKIPPED_EXPLANATION,
   ANSWER_STATUS_LABELS,
   DISPLAY_OUTCOME_LABELS,
@@ -73,7 +74,14 @@ describe("situação de resposta (FR-012, SC-006)", () => {
 
   it("respondida não tem rótulo de situação — o que se mostra é o valor", () => {
     expect(ANSWER_STATUSES).toContain("ANSWERED");
-    expect(Object.keys(ANSWER_STATUS_LABELS)).toEqual(["SKIPPED", "EXPIRED"]);
+    expect(Object.keys(ANSWER_STATUS_LABELS)).toEqual(["SKIPPED", "NOT_APPLICABLE", "EXPIRED"]);
+  });
+
+  it("não aplicável não se confunde com pulada: uma a pessoa viu, a outra nunca foi feita", () => {
+    expect(ANSWER_STATUS_LABELS.NOT_APPLICABLE).toBe("Não aplicável");
+    expect(ANSWER_STATUS_LABELS.NOT_APPLICABLE).not.toBe(ANSWER_STATUS_LABELS.SKIPPED);
+    expect(ANSWER_NOT_APPLICABLE_EXPLANATION).toContain("condição");
+    expect(ANSWER_NOT_APPLICABLE_EXPLANATION).not.toBe(ANSWER_SKIPPED_EXPLANATION);
   });
 });
 

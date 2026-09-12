@@ -2,6 +2,7 @@ package com.renanloureiroo.pitaco.modules.survey.domain.entities;
 
 import com.renanloureiroo.pitaco.core.identity.ApplicationId;
 import com.renanloureiroo.pitaco.core.identity.SurveyId;
+import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.Exposure;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.SurveyName;
 import com.renanloureiroo.pitaco.modules.survey.domain.valueobjects.TriggerWindow;
 import java.time.Instant;
@@ -26,7 +27,7 @@ class SurveyStateDerivationTest {
         lifecycle,
         lifecycle == SurveyLifecycle.DRAFT ? null : 1,
         lifecycle == SurveyLifecycle.DRAFT ? 1 : null,
-        NOW);
+        Exposure.standard(), NOW);
   }
 
   private static Optional<TriggerWindow> window(Instant start, Instant end) {

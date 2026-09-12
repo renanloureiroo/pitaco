@@ -24,5 +24,8 @@ public enum ErrorType {
   FORBIDDEN,
 
   /** Invariante de domínio ou regra de negócio violada. */
-  BUSINESS_RULE
+  BUSINESS_RULE,
+
+  /** Solicitante excedeu o limite de requisições no período. */
+  RATE_LIMITED
 }

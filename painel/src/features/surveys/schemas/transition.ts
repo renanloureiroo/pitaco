@@ -15,6 +15,7 @@ export const transitionReasonSchema = z.enum([
   "manual_pause",
   "manual_resume",
   "manual_end",
+  "quota_reached",
   "window_opened",
   "window_closed",
 ]);
@@ -27,6 +28,7 @@ export const TRANSITION_REASON_LABELS: Record<TransitionReason, string> = {
   manual_pause: "Pausada manualmente",
   manual_resume: "Retomada manualmente",
   manual_end: "Encerrada manualmente",
+  quota_reached: "Encerrada por cota",
   window_opened: "Janela abriu",
   window_closed: "Janela fechou",
 };
@@ -44,30 +46,15 @@ export type SurveyStateTransition = z.infer<typeof surveyStateTransitionSchema>;
 export const MANUAL_REASONS = ["manual_pause", "manual_resume", "manual_end"] as const;
 export type ManualReason = (typeof MANUAL_REASONS)[number];
 
-/**
- * `GET .../transitions` serve a dois propósitos no contrato — dizer o que oferecer e registrar
- * o histórico — sem um campo que separe um do outro. A regra que o painel adota: uma entrada
- * cujo `from` é o **estado atual** é uma transição possível agora; as demais já aconteceram.
- *
- * Isto continua sendo o oposto de derivar do estado (FR-035): o conjunto de ações vem da lista
- * da API, e o estado só diz qual recorte dela ainda se aplica. Se a API não oferecer nada a
- * partir do estado atual, o painel não oferece nada.
- */
-export function allowedManualReasons(
-  transitions: SurveyStateTransition[],
-  currentState: SurveyState,
-): ManualReason[] {
-  const offered = transitions.filter((transition) => transition.from === currentState);
-
-  return MANUAL_REASONS.filter((reason) =>
-    offered.some((transition) => transition.reason === reason),
-  );
-}
-
-/** O que já aconteceu: tudo que não é uma transição possível a partir do estado atual. */
-export function registeredTransitions(
-  transitions: SurveyStateTransition[],
-  currentState: SurveyState,
-): SurveyStateTransition[] {
-  return transitions.filter((transition) => transition.from !== currentState);
+export function allowedManualReasons(state: SurveyState): ManualReason[] {
+  switch (state) {
+    case "draft":
+    case "ended":
+      return [];
+    case "paused":
+      return ["manual_resume", "manual_end"];
+    case "scheduled":
+    case "active":
+      return ["manual_pause", "manual_end"];
+  }
 }

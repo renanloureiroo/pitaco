@@ -14,9 +14,17 @@ import type { Application } from "../schemas/application";
  * preservados e submit bloqueado enquanto pendente.
  */
 const actionMock = vi.hoisted(() => vi.fn());
-vi.mock("../actions", () => ({ createApplicationAction: actionMock }));
+const updateMock = vi.hoisted(() => vi.fn());
+const statusMock = vi.hoisted(() => vi.fn());
+vi.mock("../actions", () => ({
+  createApplicationAction: actionMock,
+  updateApplicationAction: updateMock,
+  setApplicationStatusAction: statusMock,
+}));
 
 const { ApplicationForm } = await import("../components/application-form");
+const { EditApplicationDialog } = await import("../components/edit-application-dialog");
+const { ApplicationStatusButton } = await import("../components/application-status-button");
 
 const application: Application = {
   id: "app-1",
@@ -130,5 +138,108 @@ describe("ApplicationForm", () => {
     expect(screen.queryByTestId("form-error")).not.toBeInTheDocument();
     expect(screen.queryByTestId("field-error-slug")).not.toBeInTheDocument();
     expect(screen.getByTestId("submit-button")).toBeEnabled();
+  });
+});
+
+describe("EditApplicationDialog", () => {
+  beforeEach(() => {
+    updateMock.mockReset();
+  });
+
+  it("abre já preenchido com os valores atuais, com prazo ausente em branco", async () => {
+    render(
+      <EditApplicationDialog application={{ ...application, retentionDays: 30 }} />,
+    );
+
+    await userEvent.click(screen.getByTestId("edit-application-button"));
+
+    expect(screen.getByLabelText("Nome")).toHaveValue("Acme");
+    expect(screen.getByLabelText("Retenção (dias)")).toHaveValue("30");
+    expect(screen.getByLabelText("Período de descanso (dias)")).toHaveValue("");
+    expect(screen.queryByLabelText("Slug")).not.toBeInTheDocument();
+  });
+
+  it("mostra a recusa por campo e mantém o que foi digitado", async () => {
+    const rejected: FormState = {
+      status: "error",
+      message: "Requisição inválida.",
+      fieldErrors: { retentionDays: "O prazo precisa ser de pelo menos 1 dia." },
+      values: { name: "Acme", retentionDays: "0" },
+    };
+    updateMock.mockResolvedValue(rejected);
+
+    render(<EditApplicationDialog application={application} />);
+    await userEvent.click(screen.getByTestId("edit-application-button"));
+    await userEvent.type(screen.getByLabelText("Retenção (dias)"), "0");
+    await userEvent.click(screen.getByTestId("edit-application-submit"));
+
+    expect(await screen.findByTestId("field-error-retentionDays")).toHaveTextContent(/1 dia/);
+    expect(screen.getByLabelText("Retenção (dias)")).toHaveValue("0");
+    expect(screen.getByTestId("edit-application-form")).toBeInTheDocument();
+  });
+
+  it("fecha o diálogo quando a action aceita", async () => {
+    updateMock.mockResolvedValue({ status: "success", data: undefined });
+
+    render(<EditApplicationDialog application={application} />);
+    await userEvent.click(screen.getByTestId("edit-application-button"));
+    await userEvent.click(screen.getByTestId("edit-application-submit"));
+
+    await vi.waitFor(() =>
+      expect(screen.queryByTestId("edit-application-form")).not.toBeInTheDocument(),
+    );
+  });
+});
+
+describe("ApplicationStatusButton", () => {
+  beforeEach(() => {
+    statusMock.mockReset();
+  });
+
+  it("desativar pede confirmação e só chama a action depois de confirmar", async () => {
+    statusMock.mockResolvedValue({ status: "success", data: undefined });
+
+    render(<ApplicationStatusButton application={application} />);
+    await userEvent.click(screen.getByTestId("deactivate-application-button"));
+
+    expect(screen.getByTestId("confirm-dialog")).toHaveTextContent(/continuam acessíveis/i);
+    expect(statusMock).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByTestId("confirm-button"));
+
+    await vi.waitFor(() => expect(statusMock).toHaveBeenCalledWith("app-1", "deactivate"));
+  });
+
+  it("cancelar a confirmação não desativa", async () => {
+    render(<ApplicationStatusButton application={application} />);
+    await userEvent.click(screen.getByTestId("deactivate-application-button"));
+    await userEvent.click(screen.getByTestId("cancel-button"));
+
+    expect(statusMock).not.toHaveBeenCalled();
+  });
+
+  it("aplicação inativa oferece reativar, sem confirmação", async () => {
+    statusMock.mockResolvedValue({ status: "success", data: undefined });
+
+    render(<ApplicationStatusButton application={{ ...application, status: "inactive" }} />);
+
+    expect(screen.queryByTestId("deactivate-application-button")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByTestId("activate-application-button"));
+
+    await vi.waitFor(() => expect(statusMock).toHaveBeenCalledWith("app-1", "activate"));
+  });
+
+  it("exibe a recusa da action", async () => {
+    statusMock.mockResolvedValue({
+      status: "error",
+      message: "Aplicação não encontrada.",
+      fieldErrors: {},
+      values: {},
+    });
+
+    render(<ApplicationStatusButton application={{ ...application, status: "inactive" }} />);
+    await userEvent.click(screen.getByTestId("activate-application-button"));
+
+    expect(await screen.findByTestId("form-error")).toHaveTextContent("Aplicação não encontrada.");
   });
 });

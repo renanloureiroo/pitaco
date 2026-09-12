@@ -25,7 +25,9 @@ class CollectOpenApiTest {
           "/collect/eligibility.post", List.of("200", "400", "401"),
           "/collect/displays.post", List.of("200", "201", "400", "401", "404", "409", "422"),
           "/collect/displays/{displayId}/submission.post",
-              List.of("204", "400", "401", "404", "409", "422"));
+              List.of("204", "400", "401", "404", "409", "422"),
+          "/collect/suppressions.post", List.of("202", "400", "401", "429"),
+          "/collect/sdk-errors.post", List.of("202", "400", "401", "429"));
 
   @Autowired RestTestClient client;
 

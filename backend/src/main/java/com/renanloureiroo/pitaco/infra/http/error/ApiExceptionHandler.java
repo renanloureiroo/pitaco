@@ -2,6 +2,7 @@ package com.renanloureiroo.pitaco.infra.http.error;
 
 import com.renanloureiroo.pitaco.core.error.ApplicationException;
 import com.renanloureiroo.pitaco.core.error.ErrorType;
+import com.renanloureiroo.pitaco.core.error.RateLimitedException;
 import io.micrometer.tracing.Tracer;
 import java.net.URI;
 import java.util.LinkedHashMap;
@@ -67,6 +68,19 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         .log("Erro de aplicação [{}] {}", error.code(), error.getMessage());
 
     return ResponseEntity.status(status).body(problem);
+  }
+
+  // O Retry-After é a única informação que não cabe no corpo: o cliente que a honra nem chega
+  // a ler o problem+json.
+  @ExceptionHandler(RateLimitedException.class)
+  public ResponseEntity<ProblemDetail> handleRateLimitedException(
+      RateLimitedException error, WebRequest request) {
+
+    var response = handleApplicationException(error, request);
+
+    return ResponseEntity.status(response.getStatusCode())
+        .header(HttpHeaders.RETRY_AFTER, String.valueOf(error.retryAfterSeconds()))
+        .body(response.getBody());
   }
 
   /** Qualquer erro não previsto: nunca expõe a mensagem interna ao client. */
@@ -138,7 +152,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     return switch (type) {
       case NOT_FOUND, VALIDATION -> Level.DEBUG;
       case CONFLICT, BUSINESS_RULE -> Level.INFO;
-      case UNAUTHORIZED, FORBIDDEN -> Level.WARN;
+      case UNAUTHORIZED, FORBIDDEN, RATE_LIMITED -> Level.WARN;
     };
   }
 

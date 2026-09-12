@@ -7,7 +7,6 @@ import { TIMEZONE_NOTE } from "@/shared/lib";
 
 export const metadata = { title: "Respondentes" };
 
-/** Uma leitura só: a listagem é o conteúdo, e não há número a produzir fora dela (SC-009). */
 export default async function RespondentsPage({
   params,
   searchParams,
@@ -37,8 +36,6 @@ export default async function RespondentsPage({
       </div>
 
       {respondents.items.length === 0 ? (
-        // Aplicação sem contato é convite, nunca erro: não há filtro aqui que possa ter
-        // esvaziado a lista.
         <EmptyState
           title="Esta aplicação ainda não recebeu contato"
           description="Quem for visto pelo SDK aparece aqui, com a identificação que a aplicação informar."

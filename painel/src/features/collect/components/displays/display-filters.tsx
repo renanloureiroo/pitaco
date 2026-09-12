@@ -29,22 +29,6 @@ import {
 const ALL = "all";
 const PERIOD_FIELD = "periodo";
 
-/**
- * Formulário de recorte da listagem de exibições.
- *
- * `"use client"` porque escreve na URL a partir de uma interação — mesma justificativa do
- * filtro de situação de 001, e o único ponto de cliente desta feature.
- *
- * Duas regras que a tela precisa cumprir:
- *
- * - Início posterior ao fim é **recusado no campo, sem navegar** (FR-007): o que a pessoa
- *   digitou fica, e a listagem anterior permanece visível enquanto ela corrige.
- * - Trocar qualquer filtro **volta para a primeira página**: manter a página vigente mostraria
- *   uma tela vazia sempre que o novo recorte tivesse menos resultados que a página atual.
- *
- * `versions` ausente esconde o seletor de versão — é assim que o histórico do respondente
- * reusa este formulário sem oferecer um filtro que a API de lá não aceita (FR-022).
- */
 export function DisplayFiltersForm({
   filters,
   versions,
@@ -71,7 +55,6 @@ export function DisplayFiltersForm({
   function apply() {
     const refusal = periodError(from, to);
 
-    // Recusa antes de navegar: a URL só muda quando o recorte faz sentido.
     if (refusal !== undefined) {
       setError(refusal);
       return;

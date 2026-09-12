@@ -32,12 +32,11 @@ beforeEach(() => {
 });
 
 describe("TransitionActions", () => {
-  it("não oferece ação nenhuma com lista de transições vazia — o caso da encerrada", () => {
+  it("não oferece ação nenhuma na encerrada", () => {
     render(
       <TransitionActions
         applicationId="app-1"
         surveyId="srv-1"
-        transitions={[]}
         currentState="ended"
       />,
     );
@@ -47,48 +46,67 @@ describe("TransitionActions", () => {
     expect(screen.queryByTestId("end-survey-button")).not.toBeInTheDocument();
   });
 
-  it("oferece exatamente o que a API autoriza, e nada mais", () => {
+  it("no ar oferece pausar e encerrar, e não retomar", () => {
     render(
       <TransitionActions
         applicationId="app-1"
         surveyId="srv-1"
-        transitions={[transition("manual_pause"), transition("manual_end", "active", "ended")]}
         currentState="active"
       />,
     );
 
     expect(screen.getByTestId("pause-survey-button")).toBeInTheDocument();
     expect(screen.getByTestId("end-survey-button")).toBeInTheDocument();
-    // Retomar não veio na lista: não é oferecido, ainda que o estado pudesse sugerir.
     expect(screen.queryByTestId("resume-survey-button")).not.toBeInTheDocument();
   });
 
-  it("não deriva ação do estado: transições automáticas não viram botão", () => {
+  it("pausada oferece retomar e encerrar, e não pausar de novo", () => {
     render(
       <TransitionActions
         applicationId="app-1"
         surveyId="srv-1"
-        transitions={[transition("window_opened"), transition("publication")]}
-        currentState="active"
+        currentState="paused"
+      />,
+    );
+
+    expect(screen.getByTestId("resume-survey-button")).toBeInTheDocument();
+    expect(screen.getByTestId("end-survey-button")).toBeInTheDocument();
+    expect(screen.queryByTestId("pause-survey-button")).not.toBeInTheDocument();
+  });
+
+  it("rascunho não oferece transição nenhuma", () => {
+    render(
+      <TransitionActions
+        applicationId="app-1"
+        surveyId="srv-1"
+        currentState="draft"
       />,
     );
 
     expect(screen.queryByTestId("pause-survey-button")).not.toBeInTheDocument();
     expect(screen.queryByTestId("end-survey-button")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("resume-survey-button")).not.toBeInTheDocument();
   });
 
   it("pausa e retoma sem confirmação — são ações reversíveis", async () => {
-    render(
+    const { rerender } = render(
       <TransitionActions
         applicationId="app-1"
         surveyId="srv-1"
-        transitions={[transition("manual_pause"), transition("manual_resume", "active", "active")]}
         currentState="active"
       />,
     );
 
     await userEvent.click(screen.getByTestId("pause-survey-button"));
     expect(actions.pauseSurveyAction).toHaveBeenCalledWith("app-1", "srv-1");
+
+    rerender(
+      <TransitionActions
+        applicationId="app-1"
+        surveyId="srv-1"
+        currentState="paused"
+      />,
+    );
 
     await userEvent.click(screen.getByTestId("resume-survey-button"));
     expect(actions.resumeSurveyAction).toHaveBeenCalledWith("app-1", "srv-1");
@@ -99,7 +117,6 @@ describe("TransitionActions", () => {
       <TransitionActions
         applicationId="app-1"
         surveyId="srv-1"
-        transitions={[transition("manual_end")]}
         currentState="active"
       />,
     );
@@ -118,7 +135,6 @@ describe("TransitionActions", () => {
       <TransitionActions
         applicationId="app-1"
         surveyId="srv-1"
-        transitions={[transition("manual_end")]}
         currentState="active"
       />,
     );
@@ -141,7 +157,6 @@ describe("TransitionActions", () => {
       <TransitionActions
         applicationId="app-1"
         surveyId="srv-1"
-        transitions={[transition("manual_pause")]}
         currentState="active"
       />,
     );
@@ -162,7 +177,6 @@ describe("TransitionsHistory", () => {
           transition("publication", "draft", "scheduled"),
           transition("manual_pause", "active", "paused"),
         ]}
-        currentState="paused"
       />,
     );
 
@@ -173,7 +187,7 @@ describe("TransitionsHistory", () => {
   });
 
   it("não renderiza nada quando não há histórico", () => {
-    render(<TransitionsHistory transitions={[]} currentState="draft" />);
+    render(<TransitionsHistory transitions={[]} />);
 
     expect(screen.queryByTestId("transitions-history")).not.toBeInTheDocument();
   });

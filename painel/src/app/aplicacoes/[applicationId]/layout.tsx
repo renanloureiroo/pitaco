@@ -56,6 +56,8 @@ export default async function ApplicationLayout({
           { href: `${base}/chaves`, label: "Chaves" },
           { href: `${base}/pesquisas`, label: "Pesquisas" },
           { href: `${base}/respondentes`, label: "Respondentes" },
+          { href: `${base}/saude`, label: "Saúde" },
+          { href: `${base}/privacidade`, label: "Privacidade" },
         ]}
       />
 

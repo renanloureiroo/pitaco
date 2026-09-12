@@ -12,7 +12,8 @@ export default async function NewSurveyPage({
       <div className="flex flex-col gap-1">
         <h1 className="font-heading text-2xl font-semibold tracking-tight">Nova pesquisa</h1>
         <p className="text-sm text-muted-foreground">
-          A pesquisa nasce em rascunho, sem perguntas e sem disparo.
+          A pesquisa nasce em rascunho e sem disparo. Um modelo pronto já traz a pergunta do
+          formato; você ajusta o que quiser antes de publicar.
         </p>
       </div>
       <SurveyForm applicationId={applicationId} />

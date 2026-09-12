@@ -25,6 +25,15 @@ public interface SurveyDisplayRepository {
   // é derivado por ResolvedHistory.
   List<DisplayHistoryEntry> historyOf(RespondentId respondentId, List<SurveyId> surveyIds);
 
+  // A exibição mais recente do respondente em qualquer pesquisa: é dela que o descanso conta.
+  Optional<Instant> lastOpenedAt(RespondentId respondentId);
+
+  // Concluídas da pesquisa em todas as versões: é o que a cota mede.
+  long countCompleted(SurveyId surveyId);
+
+  // Todas as exibições abertas no período, qualquer desfecho; inclusivo nos dois extremos.
+  long countOpenedBetween(SurveyId surveyId, Instant from, Instant to);
+
   // items ordenado por openedAt desc com desempate por id desc, recortado em page*size; total
   // conta o conjunto inteiro que atende ao filtro. Página além do fim devolve items vazio, nunca
   // erro. Filtro ausente não restringe. O período é inclusivo nos dois extremos.
@@ -52,8 +61,6 @@ public interface SurveyDisplayRepository {
   record ListDisplaysQuery(
       ApplicationId applicationId,
       SurveyId surveyId,
-      // Número, não identificador: é o que a API de versões expõe e o que a pessoa vê na
-      // tela do painel (R7 de 002).
       Optional<Integer> versionNumber,
       Optional<DisplayOutcome> outcome,
       Optional<Instant> openedFrom,

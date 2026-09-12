@@ -5,6 +5,7 @@ import {
   notFound,
   nowIso,
   paginate,
+  problem,
   readPageQuery,
   validation,
   type Route,
@@ -38,7 +39,60 @@ function readOptionalDays(value: unknown): number | undefined {
   return typeof value === "number" ? value : undefined;
 }
 
+/** Três estados do PATCH: ausente não mexe, `null` remove, número define. */
+function patchDays(
+  target: StubApplication,
+  field: "quietPeriodDays" | "retentionDays" | "openTextRetentionDays",
+  input: Record<string, unknown>,
+): string | undefined {
+  if (!(field in input)) {
+    return undefined;
+  }
+  const value = input[field];
+  if (value === null) {
+    delete target[field];
+    return undefined;
+  }
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 1) {
+    return "O prazo precisa ser de pelo menos 1 dia.";
+  }
+  target[field] = value;
+  return undefined;
+}
+
+function transition(status: "active" | "inactive"): Route["handler"] {
+  return ({ params }) => {
+    const application = store.applications.get(params.applicationId);
+    if (application === undefined) {
+      return notFound("application.not_found", "Aplicação não encontrada.");
+    }
+    if (application.status !== status) {
+      application.status = status;
+      application.updatedAt = nowIso();
+    }
+    return json(200, toDetail(application));
+  };
+}
+
 export const applicationRoutes: Route[] = [
+  {
+    method: "GET",
+    pattern: "/applications/:applicationId/events",
+    handler: ({ params, query }) => {
+      if (!store.applications.has(params.applicationId)) {
+        return notFound("application.not_found", "Aplicação não encontrada.");
+      }
+
+      const items = store.observedEvents
+        .filter((event) => event.applicationId === params.applicationId)
+        .sort(
+          (a, b) => b.lastSeenAt.localeCompare(a.lastSeenAt) || a.name.localeCompare(b.name),
+        )
+        .map(({ name, firstSeenAt, lastSeenAt }) => ({ name, firstSeenAt, lastSeenAt }));
+
+      return json(200, paginate(items, readPageQuery(query)));
+    },
+  },
   {
     method: "GET",
     pattern: "/applications",
@@ -128,5 +182,66 @@ export const applicationRoutes: Route[] = [
 
       return json(201, { id: application.id, slug: application.slug });
     },
+  },
+  {
+    method: "PATCH",
+    pattern: "/applications/:applicationId",
+    handler: ({ params, body }) => {
+      const application = store.applications.get(params.applicationId);
+      if (application === undefined) {
+        return notFound("application.not_found", "Aplicação não encontrada.");
+      }
+
+      const input = (body ?? {}) as Record<string, unknown>;
+      const draft: StubApplication = { ...application };
+      const errors: Record<string, string> = {};
+
+      if ("name" in input) {
+        const name = typeof input.name === "string" ? input.name.trim() : "";
+        if (name === "" || name.length > 120) {
+          errors.name = "Nome é obrigatório";
+        } else {
+          draft.name = name;
+        }
+      }
+
+      for (const field of ["quietPeriodDays", "retentionDays", "openTextRetentionDays"] as const) {
+        const error = patchDays(draft, field, input);
+        if (error !== undefined) {
+          errors[field] = error;
+        }
+      }
+
+      if (Object.keys(errors).length > 0) {
+        return validation("request.invalid", "Requisição inválida.", errors);
+      }
+
+      if (
+        draft.retentionDays !== undefined &&
+        draft.openTextRetentionDays !== undefined &&
+        draft.openTextRetentionDays > draft.retentionDays
+      ) {
+        return problem(
+          422,
+          "application.open_text_retention_invalid",
+          "Prazo de retenção de texto livre não pode ser maior que o prazo geral",
+        );
+      }
+
+      draft.updatedAt = nowIso();
+      store.applications.set(application.id, draft);
+
+      return json(200, toDetail(draft));
+    },
+  },
+  {
+    method: "POST",
+    pattern: "/applications/:applicationId/deactivate",
+    handler: transition("inactive"),
+  },
+  {
+    method: "POST",
+    pattern: "/applications/:applicationId/activate",
+    handler: transition("active"),
   },
 ];

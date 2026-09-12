@@ -64,22 +64,13 @@ export async function createSurvey(
   return { id, name, applicationId };
 }
 
-/**
- * Coleta: dados que **nenhuma tela cria**.
- *
- * Exibição, resposta e respondente nascem do SDK, não do painel — que é somente leitura. O
- * simulador expõe uma rota de semeadura fora do contrato (`/stub/collect`) para que cada teste
- * de coleta crie os próprios dados, sem inventar uma tela de escrita que não existe (R9 de 002).
- */
-
 const STUB_API_URL = `http://localhost:${process.env.STUB_API_PORT ?? "4010"}/api`;
 
-/** A suíte de coleta depende do simulador: com `E2E_API=real` ele não sobe. */
 export const usingStubApi = process.env.E2E_API !== "real";
 
 export type SeedAnswer = {
   questionKey: string;
-  status: "ANSWERED" | "SKIPPED" | "EXPIRED";
+  status: "ANSWERED" | "SKIPPED" | "NOT_APPLICABLE" | "EXPIRED";
   text?: string;
   number?: number;
   options?: string[];
@@ -122,11 +113,24 @@ export async function seedCollect(
   return response.json() as Promise<{ respondentIds: string[]; displayIds: string[] }>;
 }
 
-/**
- * As chaves de pergunta são geradas pelo backend e nenhum texto de tela as mostra — mas a
- * própria lista de perguntas as carrega em `data-question-key`. O teste as lê dali, pela
- * interface, para semear respostas que casem com a versão exibida.
- */
+export type SeedObservedEvents = {
+  applicationId: string;
+  events: Array<{ name: string; firstSeenAt?: string; lastSeenAt?: string }>;
+};
+
+export async function seedObservedEvents(
+  request: APIRequestContext,
+  seed: SeedObservedEvents,
+): Promise<void> {
+  const response = await request.post(`${STUB_API_URL}/stub/observed-events`, { data: seed });
+
+  if (!response.ok()) {
+    throw new Error(
+      `A semeadura de eventos observados falhou: ${response.status()} ${await response.text()}`,
+    );
+  }
+}
+
 export async function questionKeysOf(page: Page, base: string): Promise<string[]> {
   await page.goto(base);
   await expect(page.getByTestId("questions-list")).toBeVisible();
@@ -142,7 +146,6 @@ export async function questionKeysOf(page: Page, base: string): Promise<string[]
   return keys;
 }
 
-/** Uma pergunta pelo formulário de montagem. */
 export async function addQuestion(
   page: Page,
   base: string,
@@ -158,7 +161,6 @@ export async function addQuestion(
   await expect(page.getByTestId("questions-list")).toContainText(statement);
 }
 
-/** Disparo mínimo e publicação da versão 1 — o que faz a pesquisa poder ser exibida. */
 export async function publishFirstVersion(page: Page, base: string): Promise<void> {
   await page.goto(`${base}/disparo`);
   await page.getByTestId("event-name-input").fill("checkout.completed");
@@ -174,4 +176,101 @@ export async function publishFirstVersion(page: Page, base: string): Promise<voi
   await expect(page.getByTestId("version-row").filter({ hasText: "v1" })).toContainText(
     "Publicada",
   );
+}
+
+export type SeedObservedAttributes = {
+  applicationId: string;
+  attributes: Array<{ name: string; values?: string[]; lastSeenAt?: string }>;
+};
+
+export async function seedObservedAttributes(
+  request: APIRequestContext,
+  seed: SeedObservedAttributes,
+): Promise<void> {
+  const response = await request.post(`${STUB_API_URL}/stub/observed-attributes`, { data: seed });
+
+  if (!response.ok()) {
+    throw new Error(
+      `A semeadura de atributos observados falhou: ${response.status()} ${await response.text()}`,
+    );
+  }
+}
+
+async function seed(request: APIRequestContext, path: string, data: unknown, what: string) {
+  const response = await request.post(`${STUB_API_URL}${path}`, { data });
+
+  if (!response.ok()) {
+    throw new Error(`A semeadura de ${what} falhou: ${response.status()} ${await response.text()}`);
+  }
+}
+
+export type SeedSdkVersions = {
+  applicationId: string;
+  versions: Array<{
+    version: string;
+    requestCount?: number;
+    recentRequestCount?: number;
+    firstSeenAt?: string;
+    lastSeenAt?: string;
+  }>;
+};
+
+export function seedSdkVersions(request: APIRequestContext, data: SeedSdkVersions) {
+  return seed(request, "/stub/sdk-versions", data, "versões do SDK");
+}
+
+export type SeedSdkErrors = {
+  applicationId: string;
+  errors: Array<{
+    kind?: string;
+    message?: string;
+    sdkVersion?: string;
+    context?: Record<string, unknown>;
+    occurredAt?: string;
+  }>;
+};
+
+export function seedSdkErrors(request: APIRequestContext, data: SeedSdkErrors) {
+  return seed(request, "/stub/sdk-errors", data, "erros do SDK");
+}
+
+export type SeedSuppressions = {
+  applicationId: string;
+  surveyId: string;
+  count: number;
+  reason?: "unknown_question_type" | "unsupported_feature";
+  sdkVersion?: string;
+};
+
+export function seedSuppressions(request: APIRequestContext, data: SeedSuppressions) {
+  return seed(request, "/stub/suppressions", data, "supressões");
+}
+
+export type SeedRetentionSnapshot = { surveyId: string; discardedBefore: string };
+
+/** O agregado congelado pela retenção; no backend real, só o job de retenção o cria. */
+export async function seedRetentionSnapshot(
+  request: APIRequestContext,
+  seed: SeedRetentionSnapshot,
+): Promise<void> {
+  const response = await request.post(`${STUB_API_URL}/stub/retention-snapshots`, { data: seed });
+
+  if (!response.ok()) {
+    throw new Error(`A semeadura de retenção falhou: ${response.status()} ${await response.text()}`);
+  }
+}
+
+/** Prazos da aplicação direto pelo contrato do PATCH, sem passar pelo diálogo de edição. */
+export async function setApplicationRetention(
+  request: APIRequestContext,
+  applicationId: string,
+  retention: { retentionDays?: number | null; openTextRetentionDays?: number | null },
+): Promise<void> {
+  const response = await request.patch(`${STUB_API_URL}/applications/${applicationId}`, {
+    data: retention,
+  });
+
+  if (!response.ok()) {
+    throw new Error(`A edição de retenção falhou: ${response.status()} ${await response.text()}`);
+  }
 }

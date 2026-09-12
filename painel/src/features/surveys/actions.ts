@@ -12,13 +12,27 @@ import {
 import { describeFailure, type Result } from "@/shared/api";
 
 import { movedOrder, addQuestion, removeQuestion, reorderQuestions, updateQuestion } from "./api/questions";
-import { createSurvey, discardSurvey, renameSurvey } from "./api/surveys";
+import {
+  createSurvey,
+  discardSurvey,
+  duplicateSurvey,
+  renameSurvey,
+  updateFreeTextNotice,
+  updateSurveyExposure,
+} from "./api/surveys";
 import { endSurvey, pauseSurvey, resumeSurvey } from "./api/lifecycle";
 import { publishSurvey } from "./api/publication";
 import { addSegmentationRule, defineTrigger, removeSegmentationRule } from "./api/trigger";
 import { discardDraftVersion, openDraftVersion } from "./api/versions";
+import { exposureFormSchema } from "./schemas/exposure";
+import { freeTextNoticeFormSchema } from "./schemas/notice";
 import { questionFormSchema } from "./schemas/question";
-import { surveyNameFormSchema, type Survey } from "./schemas/survey";
+import {
+  duplicateSurveyFormSchema,
+  surveyCreateFormSchema,
+  surveyNameFormSchema,
+  type Survey,
+} from "./schemas/survey";
 import { publishSurveyFormSchema } from "./schemas/publication";
 import { segmentationRuleFormSchema, triggerFormSchema } from "./schemas/trigger";
 
@@ -45,19 +59,50 @@ export async function createSurveyAction(
   formData: FormData,
 ): Promise<FormState> {
   const values = readFormValues(formData);
-  const parsed = surveyNameFormSchema.safeParse(values);
+  const parsed = surveyCreateFormSchema.safeParse(values);
 
   if (!parsed.success) {
     return invalidFormState(parsed.error, values);
   }
 
-  const result = await createSurvey(applicationId, parsed.data.name);
+  const { name, template } = parsed.data;
+  const result =
+    template === undefined
+      ? await createSurvey(applicationId, name)
+      : await createSurvey(applicationId, name, template);
 
   if (!result.ok) {
     return failureFormState(result, values);
   }
 
   redirect(assemblyPath(applicationId, result.data.id));
+}
+
+/**
+ * A cópia nasce em rascunho e pode ir para outra aplicação: a tela seguinte é a montagem dela,
+ * sob a aplicação de destino.
+ */
+export async function duplicateSurveyAction(
+  applicationId: string,
+  surveyId: string,
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const values = readFormValues(formData);
+  const parsed = duplicateSurveyFormSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return invalidFormState(parsed.error, values);
+  }
+
+  const result = await duplicateSurvey(applicationId, surveyId, parsed.data);
+
+  if (!result.ok) {
+    return failureFormState(result, values);
+  }
+
+  revalidatePath(surveysListPath(result.data.applicationId));
+  redirect(assemblyPath(result.data.applicationId, result.data.id));
 }
 
 export async function renameSurveyAction(
@@ -81,6 +126,57 @@ export async function renameSurveyAction(
 
   // O nome aparece na listagem e no cabeçalho: revalidar o segmento cobre as duas.
   revalidatePath(surveysListPath(applicationId));
+  return { status: "success", data: undefined };
+}
+
+/**
+ * Exposição muda com a pesquisa no ar sem abrir versão. A lista de pesquisas não mostra
+ * prioridade nem cota, então basta realinhar a tela atual.
+ */
+export async function updateExposureAction(
+  applicationId: string,
+  surveyId: string,
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const values = readFormValues(formData);
+  const parsed = exposureFormSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return invalidFormState(parsed.error, values);
+  }
+
+  const result = await updateSurveyExposure(applicationId, surveyId, parsed.data);
+
+  if (!result.ok) {
+    return failureFormState(result, values);
+  }
+
+  refresh();
+  return { status: "success", data: undefined };
+}
+
+/** O aviso é da pesquisa, como a exposição: muda no ar, sem versão, e só a tela atual muda. */
+export async function updateFreeTextNoticeAction(
+  applicationId: string,
+  surveyId: string,
+  _previous: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const values = readFormValues(formData);
+  const parsed = freeTextNoticeFormSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return invalidFormState(parsed.error, values);
+  }
+
+  const result = await updateFreeTextNotice(applicationId, surveyId, parsed.data);
+
+  if (!result.ok) {
+    return failureFormState(result, values);
+  }
+
+  refresh();
   return { status: "success", data: undefined };
 }
 
@@ -187,6 +283,22 @@ export async function moveQuestionAction(
   return { status: "success", data: undefined };
 }
 
+/** Arrastar já produz a permutação completa; aqui ela só é enviada e a tela realinhada. */
+export async function reorderQuestionsAction(
+  applicationId: string,
+  surveyId: string,
+  questionIds: string[],
+): Promise<FormState> {
+  const result = await reorderQuestions(applicationId, surveyId, questionIds);
+
+  if (!result.ok) {
+    return { status: "error", message: describeFailure(result), fieldErrors: {}, values: {} };
+  }
+
+  refresh();
+  return { status: "success", data: undefined };
+}
+
 /** As opções chegam como campos repetidos; `getAll` preserva a ordem em que foram digitadas. */
 function readQuestionInput(formData: FormData) {
   return {
@@ -197,6 +309,13 @@ function readQuestionInput(formData: FormData) {
     optionValues: formData.getAll("optionValues").map(String),
     rangeMin: formData.get("rangeMin"),
     rangeMax: formData.get("rangeMax"),
+    rangeMinLabel: formData.get("rangeMinLabel"),
+    rangeMaxLabel: formData.get("rangeMaxLabel"),
+    conditionSourceKey: formData.get("conditionSourceKey"),
+    conditionOperator: formData.get("conditionOperator"),
+    conditionValues: formData.getAll("conditionValues").map(String),
+    conditionMin: formData.get("conditionMin"),
+    conditionMax: formData.get("conditionMax"),
   };
 }
 

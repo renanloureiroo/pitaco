@@ -54,7 +54,21 @@ public record AddQuestionRequestDTO(
     @Valid @Schema(description = "Alternativas, apenas nos tipos de escolha")
         List<QuestionOptionDTO> options,
     @Valid @Schema(description = "Faixa numérica, apenas nos tipos que a exigem", nullable = true)
-        ScaleRangeDTO range) {
+        ScaleRangeDTO range,
+    @Valid
+        @Schema(
+            description = "Condição de exibição; ausente ou nula, a pergunta aparece para todos",
+            nullable = true)
+        ConditionDTO condition) {
+
+  public AddQuestionRequestDTO(
+      String statement,
+      String type,
+      Boolean required,
+      List<QuestionOptionDTO> options,
+      ScaleRangeDTO range) {
+    this(statement, type, required, options, range, null);
+  }
 
   public AddQuestionUseCase.Input toInput(String applicationId, String surveyId) {
     return new AddQuestionUseCase.Input(applicationId, surveyId, toDraft());
@@ -71,6 +85,13 @@ public record AddQuestionRequestDTO(
                 .map(option -> new QuestionDrafts.OptionInput(option.label(), option.value()))
                 .toList(),
         Optional.ofNullable(range)
-            .map(value -> new QuestionDrafts.RangeInput(value.min(), value.max())));
+            .map(
+                value ->
+                    new QuestionDrafts.RangeInput(
+                        value.min(),
+                        value.max(),
+                        Optional.ofNullable(value.minLabel()),
+                        Optional.ofNullable(value.maxLabel()))),
+        Optional.ofNullable(condition).map(ConditionDTO::toInput));
   }
 }

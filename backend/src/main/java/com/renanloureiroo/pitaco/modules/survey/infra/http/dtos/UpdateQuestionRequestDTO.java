@@ -49,7 +49,23 @@ public record UpdateQuestionRequestDTO(
     @Valid @Schema(description = "Alternativas, apenas nos tipos de escolha")
         List<QuestionOptionDTO> options,
     @Valid @Schema(description = "Faixa numérica, apenas nos tipos que a exigem", nullable = true)
-        ScaleRangeDTO range) {
+        ScaleRangeDTO range,
+    @Valid
+        @Schema(
+            description =
+                "Condição de exibição. Como o PUT substitui o conteúdo inteiro, ausente ou nula "
+                    + "remove a condição que existia",
+            nullable = true)
+        ConditionDTO condition) {
+
+  public UpdateQuestionRequestDTO(
+      String statement,
+      String type,
+      Boolean required,
+      List<QuestionOptionDTO> options,
+      ScaleRangeDTO range) {
+    this(statement, type, required, options, range, null);
+  }
 
   public UpdateQuestionUseCase.Input toInput(
       String applicationId, String surveyId, String questionId) {
@@ -57,6 +73,6 @@ public record UpdateQuestionRequestDTO(
         applicationId,
         surveyId,
         questionId,
-        new AddQuestionRequestDTO(statement, type, required, options, range).toDraft());
+        new AddQuestionRequestDTO(statement, type, required, options, range, condition).toDraft());
   }
 }

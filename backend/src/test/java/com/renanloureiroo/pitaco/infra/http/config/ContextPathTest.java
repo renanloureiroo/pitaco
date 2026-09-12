@@ -1,54 +1,46 @@
 package com.renanloureiroo.pitaco.infra.http.config;
 
-import com.renanloureiroo.pitaco.testsupport.annotations.E2E;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.web.servlet.client.RestTestClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * O {@code context-path} move tudo que a aplicação expõe para baixo de {@code /api} — inclusive
- * ferramental. É o comportamento desejado, e este teste existe para que uma mudança nele seja
- * deliberada.
- */
+import com.renanloureiroo.pitaco.testsupport.annotations.E2E;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
+
+// Requisição crua na porta do servidor, e não pelo RestTestClient, cuja base já inclui o /api:
+// só assim a ausência do prefixo também fica provada. Sem controller de teste — um @Import aqui
+// abriria um segundo contexto, com outra pilha de containers, só para este arquivo.
 @E2E
-@Import(ContextPathTest.PingControllerConfig.class)
+@DisplayName("context-path /api")
 class ContextPathTest {
 
-  @Autowired RestTestClient client;
+  @Value("${local.server.port}")
+  int port;
 
-  @TestConfiguration(proxyBeanMethods = false)
-  static class PingControllerConfig {
-
-    @RestController
-    static class PingController {
-
-      @GetMapping("/ping")
-      String ping() {
-        return "pong";
-      }
+  private int statusOf(String path) throws Exception {
+    var request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path)).build();
+    try (var http = HttpClient.newHttpClient()) {
+      return http.send(request, HttpResponse.BodyHandlers.discarding()).statusCode();
     }
   }
 
   @Test
-  void serve_a_rota_do_controller_sob_o_context_path() {
-    client
-        .get()
-        .uri("/ping")
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectBody(String.class)
-        .isEqualTo("pong");
+  @DisplayName("Serve as rotas da API sob /api, e nada fora dele")
+  void serve_as_rotas_sob_o_context_path() throws Exception {
+    assertThat(statusOf("/api/applications")).isEqualTo(200);
+    assertThat(statusOf("/applications")).isEqualTo(404);
   }
 
   @Test
-  void serve_o_ferramental_sob_o_mesmo_context_path() {
-    client.get().uri("/v3/api-docs").exchange().expectStatus().isOk();
-    client.get().uri("/swagger-ui/index.html").exchange().expectStatus().isOk();
-    client.get().uri("/actuator/health").exchange().expectStatus().isOk();
+  @DisplayName("Serve o ferramental sob o mesmo prefixo")
+  void serve_o_ferramental_sob_o_mesmo_context_path() throws Exception {
+    assertThat(statusOf("/api/v3/api-docs")).isEqualTo(200);
+    assertThat(statusOf("/api/swagger-ui/index.html")).isEqualTo(200);
+    assertThat(statusOf("/api/actuator/health")).isEqualTo(200);
+    assertThat(statusOf("/actuator/health")).isEqualTo(404);
   }
 }

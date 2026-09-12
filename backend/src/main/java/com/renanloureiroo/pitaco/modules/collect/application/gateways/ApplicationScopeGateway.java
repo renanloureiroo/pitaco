@@ -13,4 +13,8 @@ public interface ApplicationScopeGateway {
   // existe. Ausente significa sem expiração (D-07). Fora de stateOf, que é caminho quente
   // da elegibilidade (D-08).
   Optional<Integer> effectiveOpenTextRetentionDaysOf(ApplicationId applicationId);
+
+  // Intervalo de descanso da aplicação, em dias; ausente quando não há. Também fora de stateOf:
+  // só é consultado quando há respondente conhecido e candidato que ele possa barrar.
+  Optional<Integer> quietPeriodDaysOf(ApplicationId applicationId);
 }

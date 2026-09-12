@@ -8,7 +8,12 @@
  * sempre que o simulador e o backend divergirem.
  */
 
-export type StubResponse = { status: number; body?: unknown };
+export type StubResponse = {
+  status: number;
+  body?: unknown;
+  /** Corpo não JSON (o CSV do export), enviado como está com os cabeçalhos informados. */
+  raw?: { contentType: string; headers?: Record<string, string>; text: string };
+};
 
 export type RouteContext = {
   params: Record<string, string>;

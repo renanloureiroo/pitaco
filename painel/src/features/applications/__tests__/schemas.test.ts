@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { applicationSchema, applicationSummarySchema } from "../schemas/application";
-import { applicationListParamsSchema, createApplicationFormSchema } from "../schemas/forms";
+import {
+  applicationListParamsSchema,
+  createApplicationFormSchema,
+  updateApplicationFormSchema,
+} from "../schemas/forms";
 
 function parseForm(input: Record<string, string>) {
   return createApplicationFormSchema.safeParse(input);
@@ -143,5 +147,35 @@ describe("ausência vinda da API (regressão)", () => {
 
     expect(parsed.quietPeriodDays).toBeUndefined();
     expect(parsed.retentionDays).toBe(0);
+  });
+});
+
+describe("updateApplicationFormSchema", () => {
+  it("não aceita slug: o campo é imutável e é descartado se vier", () => {
+    const result = updateApplicationFormSchema.safeParse({ name: "Acme", slug: "outro" });
+
+    expect(result.success).toBe(true);
+    expect(result.success && "slug" in result.data).toBe(false);
+  });
+
+  it("prazo em branco vira ausência, que a API traduz em remoção", () => {
+    const result = updateApplicationFormSchema.safeParse({
+      name: "Acme",
+      quietPeriodDays: "",
+      retentionDays: "30",
+    });
+
+    expect(result.success && result.data).toEqual({
+      name: "Acme",
+      quietPeriodDays: undefined,
+      retentionDays: 30,
+      openTextRetentionDays: undefined,
+    });
+  });
+
+  it("exige o nome", () => {
+    const result = updateApplicationFormSchema.safeParse({ name: " " });
+
+    expect(result.success).toBe(false);
   });
 });

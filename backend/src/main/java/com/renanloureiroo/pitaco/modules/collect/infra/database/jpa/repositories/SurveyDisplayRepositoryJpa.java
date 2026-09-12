@@ -64,6 +64,21 @@ public class SurveyDisplayRepositoryJpa implements SurveyDisplayRepository {
   }
 
   @Override
+  public Optional<Instant> lastOpenedAt(RespondentId respondentId) {
+    return repository.findLastOpenedAt(respondentId.value());
+  }
+
+  @Override
+  public long countCompleted(SurveyId surveyId) {
+    return repository.countCompleted(surveyId.value());
+  }
+
+  @Override
+  public long countOpenedBetween(SurveyId surveyId, Instant from, Instant to) {
+    return repository.countOpenedBetween(surveyId.value(), from, to);
+  }
+
+  @Override
   public Page<DisplaySummary> findPage(ListDisplaysQuery query) {
     var page =
         repository.findSummaryPage(

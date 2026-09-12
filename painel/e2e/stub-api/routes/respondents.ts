@@ -40,8 +40,6 @@ export const respondentRoutes: Route[] = [
         return notFound("respondent.not_found", "Respondente não encontrado.");
       }
 
-      // Não aceita versão: o histórico atravessa pesquisas, e número de versão só significa
-      // algo dentro de uma pesquisa (FR-022).
       const filter = readDisplayFilter(query, { acceptsVersion: false });
       if ("status" in filter) {
         return filter;

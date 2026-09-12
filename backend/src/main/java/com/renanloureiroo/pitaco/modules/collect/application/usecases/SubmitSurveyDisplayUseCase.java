@@ -2,6 +2,7 @@ package com.renanloureiroo.pitaco.modules.collect.application.usecases;
 
 import com.renanloureiroo.pitaco.core.catalog.QuestionKey;
 import com.renanloureiroo.pitaco.core.identity.ApplicationId;
+import com.renanloureiroo.pitaco.core.identity.SurveyId;
 import com.renanloureiroo.pitaco.core.transaction.Transactional;
 import com.renanloureiroo.pitaco.core.usecase.UseCaseWithoutOutput;
 import com.renanloureiroo.pitaco.modules.collect.application.errors.ApplicationIsInactive;
@@ -13,6 +14,7 @@ import com.renanloureiroo.pitaco.modules.collect.application.gateways.Applicatio
 import com.renanloureiroo.pitaco.modules.collect.application.gateways.ApplicationScopeState;
 import com.renanloureiroo.pitaco.modules.collect.application.gateways.PublishedSurveyCatalog;
 import com.renanloureiroo.pitaco.modules.collect.application.gateways.PublishedSurveyCatalog.DeliverableQuestion;
+import com.renanloureiroo.pitaco.modules.collect.application.gateways.SurveyQuotaGateway;
 import com.renanloureiroo.pitaco.modules.collect.application.repositories.AnswerRepository;
 import com.renanloureiroo.pitaco.modules.collect.application.repositories.SurveyDisplayRepository;
 import com.renanloureiroo.pitaco.modules.collect.domain.collection.AnswerDraft;
@@ -37,16 +39,19 @@ public class SubmitSurveyDisplayUseCase
   private final PublishedSurveyCatalog catalog;
   private final SurveyDisplayRepository displays;
   private final AnswerRepository answers;
+  private final SurveyQuotaGateway quotas;
 
   public SubmitSurveyDisplayUseCase(
       ApplicationScopeGateway applications,
       PublishedSurveyCatalog catalog,
       SurveyDisplayRepository displays,
-      AnswerRepository answers) {
+      AnswerRepository answers,
+      SurveyQuotaGateway quotas) {
     this.applications = applications;
     this.catalog = catalog;
     this.displays = displays;
     this.answers = answers;
+    this.quotas = quotas;
   }
 
   public record Input(
@@ -96,12 +101,32 @@ public class SubmitSurveyDisplayUseCase
     }
     displays.update(display);
 
+    if (display.getOutcome() == DisplayOutcome.COMPLETED) {
+      closeOnQuota(applicationId, display.getSurveyId());
+    }
+
     // Contagem e desfecho, jamais o conteúdo das respostas (FR-039, SC-013).
     log.info(
         "Exibição encerrada [{}] desfecho={} respostas={}",
         display.id().value(),
         display.getOutcome(),
         input.answers().size());
+  }
+
+  // A conclusão que atinge a cota encerra a pesquisa na mesma transação que a grava. Quem já
+  // estava com ela aberta conclui depois normalmente — a validação acima usa a versão exibida,
+  // não o estado —, e por isso o total pode passar um pouco da cota, de propósito.
+  // A leitura sem trava filtra o caso comum, sem cota, sem serializar nada. Com cota, a releitura
+  // travada põe as conclusões da mesma pesquisa em fila: a contagem de uma já inclui a da outra.
+  private void closeOnQuota(ApplicationId applicationId, SurveyId surveyId) {
+    if (quotas.responseQuotaOf(surveyId).isEmpty()) {
+      return;
+    }
+
+    quotas
+        .lockedResponseQuotaOf(surveyId)
+        .filter(quota -> displays.countCompleted(surveyId) >= quota)
+        .ifPresent(quota -> quotas.endByQuota(applicationId, surveyId));
   }
 
   // A primeira gravação vence: o mesmo pacote de novo é reconhecido e nada é reescrito; desfecho

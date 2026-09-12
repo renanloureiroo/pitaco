@@ -9,17 +9,8 @@
 
 export const NOT_CONFIGURED = "não configurado";
 
-/**
- * Fuso de referência do painel (R3 de 002).
- *
- * As telas são Server Components: o fuso de quem lê não existe no servidor, e obtê-lo exigiria
- * `"use client"` em toda célula de data. O painel formata num fuso fixo e **diz qual é** — é o
- * que preserva a intenção de FR-027, que nenhum instante apareça sem que se saiba em que fuso
- * ele está. O filtro de período interpreta o que a pessoa digita neste mesmo fuso.
- */
 export const REFERENCE_TIME_ZONE = "America/Sao_Paulo";
 
-/** Exibido uma vez por tela de coleta, junto das colunas de instante. */
 export const TIMEZONE_NOTE = "Horários em Brasília (UTC−3)";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
@@ -65,4 +56,66 @@ export function formatSamplingRate(value: number | undefined | null): string {
   }
 
   return `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(value * 100)}%`;
+}
+
+const LOCAL_DATE_TIME = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(:\d{2})?$/;
+
+function naiveMillis(value: string): number | undefined {
+  const match = LOCAL_DATE_TIME.exec(value);
+  if (match === null) {
+    return undefined;
+  }
+
+  const [year, month, day, hour, minute] = match.slice(1, 6).map(Number);
+  const millis = Date.UTC(year, month - 1, day, hour, minute);
+  const rebuilt = new Date(millis);
+
+  const sameDate =
+    rebuilt.getUTCFullYear() === year &&
+    rebuilt.getUTCMonth() === month - 1 &&
+    rebuilt.getUTCDate() === day &&
+    rebuilt.getUTCHours() === hour &&
+    rebuilt.getUTCMinutes() === minute;
+
+  return sameDate ? millis : undefined;
+}
+
+function offsetAt(millis: number): number {
+  const name = new Intl.DateTimeFormat("en-US", {
+    timeZone: REFERENCE_TIME_ZONE,
+    timeZoneName: "longOffset",
+  })
+    .formatToParts(new Date(millis))
+    .find((part) => part.type === "timeZoneName")?.value;
+
+  const match = /GMT([+-])(\d{2}):(\d{2})/.exec(name ?? "");
+  if (match === null) {
+    return 0;
+  }
+
+  const minutes = Number.parseInt(match[2], 10) * 60 + Number.parseInt(match[3], 10);
+  return (match[1] === "-" ? -1 : 1) * minutes * 60_000;
+}
+
+export function toUtcInstant(local: string | undefined): string | undefined {
+  const asIfUtc = local === undefined ? undefined : naiveMillis(local);
+  if (asIfUtc === undefined) {
+    return undefined;
+  }
+
+  const guess = asIfUtc - offsetAt(asIfUtc);
+  return new Date(asIfUtc - offsetAt(guess)).toISOString();
+}
+
+export function toLocalInput(iso: string | undefined): string | undefined {
+  if (iso === undefined) {
+    return undefined;
+  }
+
+  const millis = Date.parse(iso);
+  if (Number.isNaN(millis)) {
+    return undefined;
+  }
+
+  return new Date(millis + offsetAt(millis)).toISOString().slice(0, 16);
 }

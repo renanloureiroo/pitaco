@@ -1,28 +1,18 @@
 import { formatDateTime } from "@/shared/lib";
 
 import { SURVEY_STATE_LABELS } from "../../lib/survey-labels";
-import type { SurveyState } from "../../schemas/survey";
 import {
   TRANSITION_REASON_LABELS,
-  registeredTransitions,
   type SurveyStateTransition,
 } from "../../schemas/transition";
 
-/**
- * Histórico do que já aconteceu com a pesquisa.
- *
- * A mesma leitura serve a dois propósitos no contrato: autorizar ações e registrar histórico.
- * Aqui só o registro importa — as entradas que partem do estado atual são ações ainda
- * possíveis, não fatos, e por isso ficam de fora.
- */
+/** Histórico do que já aconteceu com a pesquisa, na ordem em que aconteceu. */
 export function TransitionsHistory({
   transitions,
-  currentState,
 }: {
   transitions: SurveyStateTransition[];
-  currentState: SurveyState;
 }) {
-  const registered = registeredTransitions(transitions, currentState);
+  const registered = transitions;
 
   if (registered.length === 0) {
     return null;

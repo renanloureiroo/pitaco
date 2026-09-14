@@ -2,10 +2,10 @@ import { z } from "zod";
 const data = require("../survey_output.json");
 // The easiest way is to use zod in a small script that mimics the schemas from the painel.
 
-function absent(schema) {
+function absent<T extends z.ZodTypeAny>(schema: T) {
   return schema
     .nullish()
-    .transform((value) => value ?? undefined)
+    .transform((value: unknown) => value ?? undefined)
     .optional();
 }
 

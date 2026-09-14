@@ -1,1 +1,211 @@
-{}
+[
+  {
+    "title": "Todos os tipos",
+    "triggerEvent": "checkout.completed",
+    "surveyId": "5e6ed6a2-a1c8-4dd9-be3e-dcb67fd0d724",
+    "schema": {
+      "surveyId": "5e6ed6a2-a1c8-4dd9-be3e-dcb67fd0d724",
+      "versionId": "e782a1f7-83fa-401a-82dd-8c4a62794441",
+      "versionNumber": 1,
+      "questions": [
+        {
+          "key": "c0cc3592-b3f1-4d77-8efb-2cbbe5f17878",
+          "position": 1,
+          "statement": "De 0 a 10, o quanto você recomendaria este app a um amigo ou colega?",
+          "type": "NPS",
+          "required": true,
+          "options": [],
+          "range": {
+            "min": 0,
+            "max": 10,
+            "minLabel": "Nada provável",
+            "maxLabel": "Extremamente provável"
+          }
+        },
+        {
+          "key": "9c035803-1fdb-4f2b-94fd-099ead9202a1",
+          "position": 2,
+          "statement": "O quanto você está satisfeito com o app no geral?",
+          "type": "SCALE",
+          "required": false,
+          "options": [],
+          "range": {
+            "min": 1,
+            "max": 5,
+            "minLabel": "Nada satisfeito",
+            "maxLabel": "Muito satisfeito"
+          }
+        },
+        {
+          "key": "c84aca80-982e-4430-a23e-784d5264cf22",
+          "position": 3,
+          "statement": "Como você avalia o suporte ao cliente?",
+          "type": "RATING",
+          "required": true,
+          "options": [],
+          "range": {
+            "min": 1,
+            "max": 5
+          }
+        },
+        {
+          "key": "441379ba-bdea-445a-bba3-7727ccd38591",
+          "position": 4,
+          "statement": "O que mais pesou na sua nota?",
+          "type": "SINGLE_CHOICE",
+          "required": false,
+          "options": [
+            {
+              "label": "Preço",
+              "value": "preco",
+              "position": 1
+            },
+            {
+              "label": "Atendimento",
+              "value": "atendimento",
+              "position": 2
+            },
+            {
+              "label": "Estabilidade",
+              "value": "estabilidade",
+              "position": 3
+            }
+          ],
+          "condition": {
+            "sourceKey": "c0cc3592-b3f1-4d77-8efb-2cbbe5f17878",
+            "operator": "between",
+            "values": [],
+            "min": 0,
+            "max": 6
+          }
+        },
+        {
+          "key": "94d25d7f-d19e-4406-bcd6-4f4f0fcc33fc",
+          "position": 5,
+          "statement": "Quais recursos você mais usa?",
+          "type": "MULTIPLE_CHOICE",
+          "required": false,
+          "options": [
+            {
+              "label": "Busca",
+              "value": "busca",
+              "position": 1
+            },
+            {
+              "label": "Notificações",
+              "value": "notificacoes",
+              "position": 2
+            },
+            {
+              "label": "Relatórios",
+              "value": "relatorios",
+              "position": 3
+            }
+          ]
+        },
+        {
+          "key": "310223d5-fa2c-4aaf-8647-0d45037ef67a",
+          "position": 6,
+          "statement": "Tem algum comentário ou sugestão para nós?",
+          "type": "FREE_TEXT",
+          "required": false,
+          "options": []
+        }
+      ],
+      "freeTextNotice": {
+        "enabled": true,
+        "text": "Evite escrever dados pessoais, como nome, telefone ou e-mail."
+      }
+    }
+  },
+  {
+    "title": "NPS",
+    "triggerEvent": "order.delivered",
+    "surveyId": "02981247-91cc-4e12-a8a7-568223c4aa87",
+    "schema": {
+      "surveyId": "02981247-91cc-4e12-a8a7-568223c4aa87",
+      "versionId": "d2e738b7-a56e-4ab1-b99b-d47dbddefb5b",
+      "versionNumber": 1,
+      "questions": [
+        {
+          "key": "e2359dab-1af5-4dc0-86af-360dfdb9af23",
+          "position": 1,
+          "statement": "Em uma escala de 0 a 10, o quanto você recomendaria este app a um amigo ou colega?",
+          "type": "NPS",
+          "required": true,
+          "options": [],
+          "range": {
+            "min": 0,
+            "max": 10,
+            "minLabel": "Nada provável",
+            "maxLabel": "Extremamente provável"
+          }
+        }
+      ],
+      "freeTextNotice": {
+        "enabled": true,
+        "text": "Evite escrever dados pessoais, como nome, telefone ou e-mail."
+      }
+    }
+  },
+  {
+    "title": "CSAT",
+    "triggerEvent": "support.ticket_closed",
+    "surveyId": "81cf1857-fc52-4421-a7cf-859b1f20c5f5",
+    "schema": {
+      "surveyId": "81cf1857-fc52-4421-a7cf-859b1f20c5f5",
+      "versionId": "7b5b3cbf-d428-4179-aab5-438b6f90b5f0",
+      "versionNumber": 1,
+      "questions": [
+        {
+          "key": "55aaeed3-1f4a-4902-b4d2-c4f4b0e5d750",
+          "position": 1,
+          "statement": "O quanto você está satisfeito com este app?",
+          "type": "RATING",
+          "required": true,
+          "options": [],
+          "range": {
+            "min": 1,
+            "max": 5,
+            "minLabel": "Muito insatisfeito",
+            "maxLabel": "Muito satisfeito"
+          }
+        }
+      ],
+      "freeTextNotice": {
+        "enabled": true,
+        "text": "Evite escrever dados pessoais, como nome, telefone ou e-mail."
+      }
+    }
+  },
+  {
+    "title": "CES",
+    "triggerEvent": "onboarding.completed",
+    "surveyId": "3929c730-82d4-419b-af46-fcf3c44324fc",
+    "schema": {
+      "surveyId": "3929c730-82d4-419b-af46-fcf3c44324fc",
+      "versionId": "d770343c-d732-4b69-abf0-32437c016c07",
+      "versionNumber": 1,
+      "questions": [
+        {
+          "key": "c9e64dd5-cde2-42f3-b2d7-acdfec3a3434",
+          "position": 1,
+          "statement": "Este app facilitou resolver o que eu precisava.",
+          "type": "SCALE",
+          "required": true,
+          "options": [],
+          "range": {
+            "min": 1,
+            "max": 7,
+            "minLabel": "Discordo totalmente",
+            "maxLabel": "Concordo totalmente"
+          }
+        }
+      ],
+      "freeTextNotice": {
+        "enabled": true,
+        "text": "Evite escrever dados pessoais, como nome, telefone ou e-mail."
+      }
+    }
+  }
+]

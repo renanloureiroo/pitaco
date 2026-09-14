@@ -131,6 +131,7 @@ function makeClient(baseUrl: string) {
 type Client = ReturnType<typeof makeClient>;
 
 // --- Formas mínimas das respostas administrativas usadas aqui -------------------------------
+// O backend omite do JSON o campo nulo: o que pode faltar é opcional, nunca `| null`.
 
 interface PageResponse<T> {
   readonly items: readonly T[];
@@ -147,8 +148,8 @@ interface SurveySummary {
   readonly id: string;
   readonly name: string;
   readonly state: string;
-  readonly draftVersionNumber: number | null;
-  readonly publishedVersionNumber: number | null;
+  readonly draftVersionNumber?: number;
+  readonly publishedVersionNumber?: number;
 }
 interface ApiKeySummary {
   readonly id: string;
@@ -160,11 +161,11 @@ interface IssuedApiKey extends ApiKeySummary {
   readonly secret: string;
 }
 interface SurveyDetail extends SurveySummary {
-  readonly content: {
+  readonly content?: {
     readonly source: 'draft' | 'published';
     readonly questions: readonly { readonly key: string; readonly type: string }[];
-    readonly trigger?: { readonly eventName: string } | null;
-  } | null;
+    readonly trigger?: { readonly eventName: string };
+  };
 }
 
 async function findAllPages<T>(client: Client, path: string): Promise<T[]> {
@@ -266,7 +267,7 @@ async function ensureSurvey(client: Client, applicationId: string, spec: SeedSpe
   const base = `/applications/${applicationId}/surveys/${survey.id}`;
   let detail = await client.get<SurveyDetail>(base);
 
-  if (detail.publishedVersionNumber === null) {
+  if (detail.publishedVersionNumber === undefined) {
     if (spec.template === null && (detail.content?.questions.length ?? 0) === 0) {
       await seedAllQuestionTypes(client, base);
     }
@@ -375,8 +376,8 @@ async function fetchDeliverableSchema(
   if (!response.ok) {
     throw new Error(`Elegibilidade falhou ao gerar o schema de ${triggerEvent}: ${response.status}`);
   }
-  const body = (await response.json()) as { survey: { surveyId: string } | null };
-  if (body.survey === null) {
+  const body = (await response.json()) as { survey?: { surveyId: string } };
+  if (body.survey === undefined) {
     throw new Error(
       `Elegibilidade devolveu "survey: null" para ${triggerEvent} logo após publicar — confira sampling/janela/descanso.`,
     );

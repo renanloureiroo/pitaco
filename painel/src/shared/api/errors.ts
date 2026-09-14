@@ -37,6 +37,8 @@ export type ApiFailure =
       traceId?: string;
       /** campo que causou a recusa de regra, quando o backend o aponta (ex.: `condition.values`) */
       field?: string;
+      /** falhas do zod no parse da resposta (ex.: formato diferente do contrato) */
+      issues?: unknown[];
     }
   | { ok: false; kind: "unreachable" };
 

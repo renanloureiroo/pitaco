@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // SSR false é necessário pois usa react-native-web
 const PitacoPreview = dynamic(
-  () => import("@pitaco/react-native").then((mod) => mod.PitacoPreview),
+  () => import("@pitaco/react-native/preview").then((mod) => mod.PitacoPreview),
   { ssr: false }
 );
 

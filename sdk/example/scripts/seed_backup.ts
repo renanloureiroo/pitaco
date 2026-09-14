@@ -229,20 +229,15 @@ async function ensureApiKey(
   return { secret: issued.secret, reused: false };
 }
 
-async function ensureSurvey(
-  client: Client,
-  applicationId: string,
-  options: { name: string; template?: string; seedQuestions?: boolean; publish?: boolean; eventName?: string }
-): Promise<SurveyDetail> {
+async function ensureSurvey(client: Client, applicationId: string): Promise<SurveyDetail> {
   const surveys = await findAllPages<SurveySummary>(client, `/applications/${applicationId}/surveys`);
-  let survey = surveys.find((item) => item.name === options.name) ?? null;
+  let survey = surveys.find((item) => item.name === SURVEY_NAME) ?? null;
 
   if (survey === null) {
     const created = await client.post<SurveySummary>(`/applications/${applicationId}/surveys`, {
-      name: options.name,
-      ...(options.template ? { template: options.template } : {}),
+      name: SURVEY_NAME,
     });
-    console.log(`Pesquisa criada em rascunho: "${options.name}" (${created.id})`);
+    console.log(`Pesquisa criada em rascunho: "${SURVEY_NAME}" (${created.id})`);
     survey = created;
   } else {
     console.log(`Pesquisa reaproveitada: "${survey.name}" (${survey.id})`);
@@ -251,11 +246,12 @@ async function ensureSurvey(
   let detail = await client.get<SurveyDetail>(`/applications/${applicationId}/surveys/${survey.id}`);
   const isFreshDraft = detail.content === null || (detail.content.source === 'draft' && detail.content.questions.length === 0);
 
-  if (isFreshDraft && options.seedQuestions) {
-    await seedQuestionsTriggerAndPublish(client, applicationId, survey.id, options.publish, options.eventName);
+  if (isFreshDraft) {
+    await seedQuestionsTriggerAndPublish(client, applicationId, survey.id);
     detail = await client.get<SurveyDetail>(`/applications/${applicationId}/surveys/${survey.id}`);
-  } else if (!isFreshDraft) {
+  } else {
     console.log('Pesquisa já tinha conteúdo — pergunta, condição, disparo e publicação não repetidos.');
+    // Idempotente e seguro repetir mesmo com conteúdo pronto: não abre versão nova.
     await client.patch(`/applications/${applicationId}/surveys/${survey.id}`, {
       ignoresQuietPeriod: true,
       responseQuota: null,
@@ -264,7 +260,7 @@ async function ensureSurvey(
   return detail;
 }
 
-async function seedQuestionsTriggerAndPublish(client: Client, applicationId: string, surveyId: string, publish = true, eventName = TRIGGER_EVENT): Promise<void> {
+async function seedQuestionsTriggerAndPublish(client: Client, applicationId: string, surveyId: string): Promise<void> {
   const base = `/applications/${applicationId}/surveys/${surveyId}`;
 
   const nps = await client.post<{ key: string }>(`${base}/questions`, {
@@ -325,20 +321,18 @@ async function seedQuestionsTriggerAndPublish(client: Client, applicationId: str
 
   const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().replace(/\.\d+Z$/, 'Z');
   await client.put(`${base}/trigger`, {
-    eventName,
+    eventName: TRIGGER_EVENT,
     windowStart,
     // Sem windowEnd: janela indeterminada. samplingRate 1.0: amostragem de 100%.
     samplingRate: 1.0,
   });
 
-  if (publish) {
-    const impediments = await client.get<{ impediments: readonly unknown[] }>(`${base}/publication-impediments`);
-    if (impediments.impediments.length > 0) {
-      throw new Error(`Pesquisa com impedimentos de publicação: ${JSON.stringify(impediments.impediments)}`);
-    }
-    await client.post(`${base}/publication`, {});
-    console.log('Pesquisa publicada (versão 1): seis tipos de pergunta, uma condição, disparo e amostragem de 100%.');
+  const impediments = await client.get<{ impediments: readonly unknown[] }>(`${base}/publication-impediments`);
+  if (impediments.impediments.length > 0) {
+    throw new Error(`Pesquisa com impedimentos de publicação: ${JSON.stringify(impediments.impediments)}`);
   }
+  await client.post(`${base}/publication`, {});
+  console.log('Pesquisa publicada (versão 1): seis tipos de pergunta, uma condição, disparo e amostragem de 100%.');
 }
 
 async function fetchDeliverableSchema(
@@ -403,38 +397,8 @@ async function main(): Promise<void> {
   const envHasKey = /^EXPO_PUBLIC_PITACO_API_KEY=.+$/m.test(envBefore);
   const { secret, reused } = await ensureApiKey(client, application.id, state, envHasKey);
 
-  // 1. A pesquisa principal, completa, publicada (usada pelo app de exemplo para o preview principal)
-  const surveyDetail = await ensureSurvey(client, application.id, {
-    name: SURVEY_NAME,
-    seedQuestions: true,
-    publish: true,
-    eventName: TRIGGER_EVENT
-  });
+  const surveyDetail = await ensureSurvey(client, application.id);
   const triggerEvent = surveyDetail.content?.trigger?.eventName ?? TRIGGER_EVENT;
-
-  // 2. Pesquisa NPS
-  await ensureSurvey(client, application.id, {
-    name: 'Avaliação NPS',
-    template: 'nps',
-    seedQuestions: false,
-    publish: false,
-  });
-
-  // 3. Pesquisa CSAT (Rascunho)
-  await ensureSurvey(client, application.id, {
-    name: 'Satisfação de Atendimento (CSAT)',
-    template: 'csat',
-    seedQuestions: false,
-    publish: false,
-  });
-
-  // 4. Pesquisa CES
-  await ensureSurvey(client, application.id, {
-    name: 'Facilidade de Uso (CES)',
-    template: 'ces',
-    seedQuestions: false,
-    publish: false,
-  });
 
   // Precisamos do segredo para consultar a elegibilidade e gerar o schema do preview. Se a chave
   // foi reaproveitada (segredo não devolvido de novo por natureza), lemos o valor que já está no
@@ -481,8 +445,7 @@ async function main(): Promise<void> {
   console.log('');
   console.log('Resumo:');
   console.log(`  Aplicação: ${application.name} (${application.id})`);
-  console.log(`  Pesquisa Principal: ${SURVEY_NAME} (${surveyId})`);
-  console.log(`  + 3 Pesquisas extras criadas para simulação.`);
+  console.log(`  Pesquisa: ${SURVEY_NAME} (${surveyId})`);
   console.log(`  Disparo: ${triggerEvent}`);
   console.log(`  .env atualizado em ${ENV_PATH}`);
   console.log(`  Schema do preview em ${SEED_SURVEY_PATH}`);

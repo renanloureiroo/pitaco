@@ -73,7 +73,7 @@ final class BehaviorSql {
           select lv.question_key, count(*)
             from last_viewed lv
             join scoped s on s.id = lv.display_id
-           where s.outcome = 'DISMISSED'
+           where (s.outcome = 'DISMISSED' and exists (select 1 from survey_answers x where x.display_id = s.id and x.status = 'ANSWERED'))
               or (s.outcome = 'STARTED' and s.opened_at < cast(:abandonedBefore as timestamptz))
            group by lv.question_key
           """;

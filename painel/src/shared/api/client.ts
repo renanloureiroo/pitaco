@@ -104,6 +104,7 @@ export async function request<T>(
       kind: "unknown",
       code: RESPONSE_INVALID_CODE,
       detail: "A resposta da API não corresponde ao contrato esperado pelo painel.",
+      issues: parsed.error.issues,
     };
   }
 

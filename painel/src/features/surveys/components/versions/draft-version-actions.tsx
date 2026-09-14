@@ -1,6 +1,7 @@
 "use client";
 
 import { FilePlus2Icon, Trash2Icon } from "lucide-react";
+import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -50,19 +51,26 @@ export function DraftVersionActions({
         ) : null}
 
         {hasDraft ? (
-          <ConfirmDialog
-            trigger={
-              <Button variant="destructive" size="sm" data-testid="discard-draft-version-button">
-                <Trash2Icon aria-hidden />
-                Descartar rascunho de versão
-              </Button>
-            }
-            title="Descartar o rascunho de versão?"
-            description="Tudo que foi editado neste rascunho é perdido. A versão publicada continua no ar."
-            confirmLabel="Descartar"
-            pending={pending}
-            onConfirm={() => run(() => discardDraftVersionAction(applicationId, surveyId))}
-          />
+          <>
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/aplicacoes/${applicationId}/pesquisas/${surveyId}`}>
+                Editar rascunho
+              </Link>
+            </Button>
+            <ConfirmDialog
+              trigger={
+                <Button variant="destructive" size="sm" data-testid="discard-draft-version-button">
+                  <Trash2Icon aria-hidden />
+                  Descartar
+                </Button>
+              }
+              title="Descartar o rascunho de versão?"
+              description="Tudo que foi editado neste rascunho é perdido. A versão publicada continua no ar."
+              confirmLabel="Descartar"
+              pending={pending}
+              onConfirm={() => run(() => discardDraftVersionAction(applicationId, surveyId))}
+            />
+          </>
         ) : null}
       </div>
 

@@ -1,0 +1,130 @@
+{
+  "id": "2e40f887-e1ba-412b-8a7c-69f8c905ee35",
+  "applicationId": "ba93e7bc-9e0f-46fe-bebf-ac68022b7a61",
+  "name": "Pesquisa de exemplo",
+  "state": "active",
+  "publishedVersionNumber": 1,
+  "priority": 0,
+  "ignoresQuietPeriod": true,
+  "freeTextNotice": {
+    "enabled": true,
+    "text": "Evite escrever dados pessoais, como nome, telefone ou e-mail.",
+    "defaultText": "Evite escrever dados pessoais, como nome, telefone ou e-mail."
+  },
+  "createdAt": "2026-09-14T20:52:56.480980Z",
+  "content": {
+    "source": "published",
+    "versionNumber": 1,
+    "questions": [
+      {
+        "id": "835e6cbf-fd00-4e11-8431-7bafb150372b",
+        "key": "94cc9518-5086-41ca-9512-9289fc507061",
+        "statement": "De 0 a 10, o quanto você recomendaria este app a um amigo ou colega?",
+        "type": "nps",
+        "position": 1,
+        "required": true,
+        "options": [],
+        "range": {
+          "min": 0,
+          "max": 10,
+          "minLabel": "Nada provável",
+          "maxLabel": "Extremamente provável"
+        }
+      },
+      {
+        "id": "7bf0a896-95d4-410f-95c0-7d0efc808930",
+        "key": "c8582f49-631e-4de6-a688-64691a5c40e6",
+        "statement": "O quanto você está satisfeito com o app no geral?",
+        "type": "scale",
+        "position": 2,
+        "required": false,
+        "options": [],
+        "range": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "Nada satisfeito",
+          "maxLabel": "Muito satisfeito"
+        }
+      },
+      {
+        "id": "02cebf58-faea-4f3f-85f1-c4c8c7eee4d0",
+        "key": "5059c717-1244-4ce9-b0ea-98c8edb14fb9",
+        "statement": "Como você avalia o suporte ao cliente?",
+        "type": "rating",
+        "position": 3,
+        "required": true,
+        "options": [],
+        "range": {
+          "min": 1,
+          "max": 5
+        }
+      },
+      {
+        "id": "a9c52fcc-c9bf-4e7e-b945-da9cb063d2d5",
+        "key": "82cf63fc-70cd-4251-b6d1-53ad9245a0eb",
+        "statement": "O que mais pesou na sua nota?",
+        "type": "single_choice",
+        "position": 4,
+        "required": false,
+        "options": [
+          {
+            "label": "Preço",
+            "value": "preco"
+          },
+          {
+            "label": "Atendimento",
+            "value": "atendimento"
+          },
+          {
+            "label": "Estabilidade",
+            "value": "estabilidade"
+          }
+        ],
+        "condition": {
+          "sourceKey": "94cc9518-5086-41ca-9512-9289fc507061",
+          "operator": "between",
+          "values": [],
+          "min": 0,
+          "max": 6
+        }
+      },
+      {
+        "id": "3d2e657b-e3cf-475b-be0b-37051a6d8e4b",
+        "key": "dd877fac-945d-4090-8310-3801767ed576",
+        "statement": "Quais recursos você mais usa?",
+        "type": "multiple_choice",
+        "position": 5,
+        "required": false,
+        "options": [
+          {
+            "label": "Busca",
+            "value": "busca"
+          },
+          {
+            "label": "Notificações",
+            "value": "notificacoes"
+          },
+          {
+            "label": "Relatórios",
+            "value": "relatorios"
+          }
+        ]
+      },
+      {
+        "id": "af322886-1db5-4288-9213-ddee8985a7a8",
+        "key": "83fde77a-a0ff-47cc-81f4-7fdb906061e3",
+        "statement": "Tem algum comentário ou sugestão para nós?",
+        "type": "free_text",
+        "position": 6,
+        "required": false,
+        "options": []
+      }
+    ],
+    "trigger": {
+      "eventName": "pitaco.example.trigger",
+      "windowStart": "2026-09-13T20:52:57Z",
+      "samplingRate": 1,
+      "rules": []
+    }
+  }
+}

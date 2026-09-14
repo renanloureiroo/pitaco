@@ -147,6 +147,7 @@ class SurveyBehaviorE2ETest extends ResultsE2ESupport {
         .sendTo(d1);
 
     var d2 = display(DisplayOutcome.DISMISSED, laterOpening, Map.of("plano", "free"));
+    number(d2, nps, 3);
     new Script()
         .presented()
         .viewed(nps, 1, 1, "start")
@@ -204,7 +205,7 @@ class SurveyBehaviorE2ETest extends ResultsE2ESupport {
     assertThat(npsResult.viewed()).isEqualTo(4);
     assertThat(npsResult.answered()).isEqualTo(2);
     assertThat(npsResult.skipped()).isZero();
-    assertThat(npsResult.abandoned()).isEqualTo(2);
+    assertThat(npsResult.abandoned()).isOne();
     assertThat(npsResult.revisited()).isOne();
     assertThat(npsResult.revisitRate()).isCloseTo(0.25, within(0.0001));
     assertThat(npsResult.selected()).isEqualTo(2);

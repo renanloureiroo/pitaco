@@ -49,7 +49,12 @@ export function VersionsTable({
                   v{version.number}
                 </Link>
               ) : (
-                <span className="font-medium">v{version.number}</span>
+                <Link
+                  href={`/aplicacoes/${applicationId}/pesquisas/${surveyId}`}
+                  className="font-medium underline-offset-4 hover:underline"
+                >
+                  v{version.number}
+                </Link>
               )}
             </TableCell>
             <TableCell>

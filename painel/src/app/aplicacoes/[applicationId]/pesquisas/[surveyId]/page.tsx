@@ -13,6 +13,7 @@ export default async function SurveyAssemblyPage({
     if (result.kind === "not_found") {
       notFound();
     }
+    console.error("SURVEY FETCH ERROR:", JSON.stringify(result, null, 2));
     throw new ApiUnavailableError(result);
   }
 

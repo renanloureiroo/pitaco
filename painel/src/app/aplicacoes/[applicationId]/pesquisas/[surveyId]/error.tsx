@@ -19,7 +19,7 @@ export default function SurveyError({
     <div className="py-10">
       <ErrorState
         title="Não foi possível carregar esta pesquisa"
-        description="A API do Pitaco não respondeu como esperado."
+        description={error.message || "A API do Pitaco não respondeu como esperado."}
         retry={retry}
       />
     </div>

@@ -35,9 +35,13 @@ final class ResultsSql {
       """
       select count(distinct d.id),
              count(distinct case when d.outcome = 'COMPLETED' then d.id end),
-             count(distinct case when d.outcome = 'DISMISSED' then d.id end),
-             count(distinct case when d.outcome = 'STARTED'
-                                  and d.opened_at < cast(:abandonedBefore as timestamptz) then d.id end),
+             count(distinct case when d.outcome = 'DISMISSED'
+                                  and not exists (select 1 from survey_answers x
+                                                   where x.display_id = d.id and x.status = 'ANSWERED') then d.id end),
+             count(distinct case when (d.outcome = 'STARTED' and d.opened_at < cast(:abandonedBefore as timestamptz))
+                                   or (d.outcome = 'DISMISSED'
+                                       and exists (select 1 from survey_answers x
+                                                    where x.display_id = d.id and x.status = 'ANSWERED')) then d.id end),
              count(distinct case when d.outcome = 'STARTED'
                                   and d.opened_at >= cast(:abandonedBefore as timestamptz) then d.id end),
              count(distinct case when a.status = 'ANSWERED' then d.id end)

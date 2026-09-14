@@ -401,7 +401,7 @@ export async function openDraftVersionAction(
   }
 
   revalidatePath(assemblyPath(applicationId, surveyId), "layout");
-  return { status: "success", data: undefined };
+  redirect(assemblyPath(applicationId, surveyId));
 }
 
 export async function discardDraftVersionAction(

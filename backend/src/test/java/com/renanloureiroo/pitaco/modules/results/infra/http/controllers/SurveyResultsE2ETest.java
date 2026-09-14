@@ -67,7 +67,10 @@ class SurveyResultsE2ETest extends ResultsE2ESupport {
     text(detractor, text, "Achei confuso", DAY_TWO.plusSeconds(20));
 
     var dismissed = display(DisplayOutcome.DISMISSED, DAY_TWO, Map.of());
-    number(dismissed, nps, 7);
+    // no answers for true dismissed
+
+    var abandonedWhileAnswering = display(DisplayOutcome.DISMISSED, DAY_TWO, Map.of());
+    number(abandonedWhileAnswering, nps, 7);
 
     display(DisplayOutcome.STARTED, DAY_ONE, Map.of());
     display(DisplayOutcome.STARTED, Instant.now(), Map.of());
@@ -81,18 +84,18 @@ class SurveyResultsE2ETest extends ResultsE2ESupport {
     var body = results("");
 
     var rate = body.responseRate();
-    assertThat(rate.displayed()).isEqualTo(5);
+    assertThat(rate.displayed()).isEqualTo(6);
     assertThat(rate.completed()).isEqualTo(2);
     assertThat(rate.dismissed()).isEqualTo(1);
-    assertThat(rate.abandoned()).isEqualTo(1);
+    assertThat(rate.abandoned()).isEqualTo(2);
     assertThat(rate.inProgress()).isEqualTo(1);
-    assertThat(rate.rate()).isCloseTo(0.4, within(0.0001));
+    assertThat(rate.rate()).isCloseTo(0.3333, within(0.0001));
     assertThat(rate.definition()).contains("concluídas ÷ exibidas");
     assertThat(rate.timeline())
         .anySatisfy(
             point -> {
               assertThat(point.day()).isEqualTo(LocalDate.of(2026, 9, 2));
-              assertThat(point.displayed()).isEqualTo(2);
+              assertThat(point.displayed()).isEqualTo(3);
               assertThat(point.completed()).isEqualTo(1);
             });
 
@@ -159,7 +162,7 @@ class SurveyResultsE2ETest extends ResultsE2ESupport {
     seedResponses();
 
     var dayTwo = results("?from=" + DAY_TWO + "&to=" + DAY_TWO.plusSeconds(3600));
-    assertThat(dayTwo.responseRate().displayed()).isEqualTo(2);
+    assertThat(dayTwo.responseRate().displayed()).isEqualTo(3);
     assertThat(question(dayTwo, nps.value()).answered()).isEqualTo(2);
     assertThat(dayTwo.filter().from()).isEqualTo(DAY_TWO);
 
@@ -169,8 +172,9 @@ class SurveyResultsE2ETest extends ResultsE2ESupport {
     assertThat(pro.filter().attributeAbsent()).isFalse();
 
     var absent = results("?attribute=plano");
-    assertThat(absent.responseRate().displayed()).isEqualTo(3);
+    assertThat(absent.responseRate().displayed()).isEqualTo(4);
     assertThat(absent.responseRate().dismissed()).isEqualTo(1);
+    assertThat(absent.responseRate().abandoned()).isEqualTo(2);
     assertThat(absent.filter().attributeAbsent()).isTrue();
     assertThat(absent.smallSample()).isTrue();
   }
@@ -184,7 +188,7 @@ class SurveyResultsE2ETest extends ResultsE2ESupport {
     number(onSecond, second.getQuestions().get(0).getKey(), 10);
 
     var consolidated = results("");
-    assertThat(consolidated.responseRate().displayed()).isEqualTo(6);
+    assertThat(consolidated.responseRate().displayed()).isEqualTo(7);
     assertThat(consolidated.questions()).hasSize(5);
 
     var v2 = results("?version=2");
@@ -289,7 +293,7 @@ class SurveyResultsE2ETest extends ResultsE2ESupport {
     results("?attribute=plano");
     client.get().uri(base + "?version=0").exchange().expectStatus().isBadRequest();
 
-    assertThat(jdbc.sql("select count(*) from survey_displays").query(Long.class).single()).isEqualTo(5);
+    assertThat(jdbc.sql("select count(*) from survey_displays").query(Long.class).single()).isEqualTo(6);
     assertThat(jdbc.sql("select count(*) from survey_answers").query(Long.class).single()).isEqualTo(7);
   }
 }

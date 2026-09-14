@@ -142,7 +142,15 @@ export function QuestionForm({
             maxLabel: (data.get("rangeMaxLabel") as string) || undefined,
           }
         : undefined,
-      condition: condition,
+      condition: condition
+        ? {
+            sourceKey: condition.sourceKey,
+            operator: condition.operator,
+            values: condition.values,
+            min: condition.min !== "" && condition.min !== undefined ? Number(condition.min) : undefined,
+            max: condition.max !== "" && condition.max !== undefined ? Number(condition.max) : undefined,
+          }
+        : undefined,
     };
     onLiveUpdate(draft);
   }

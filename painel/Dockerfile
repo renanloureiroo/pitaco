@@ -8,7 +8,9 @@ RUN npm install && npm run build
 
 WORKDIR /app/painel
 COPY painel/package.json painel/package-lock.json ./
-RUN npm install
+# Run npm install with --install-links to copy the SDK into node_modules instead of symlinking,
+# so Next.js/Turbopack doesn't block it for being outside the project root!
+RUN npm install --install-links
 
 COPY painel ./
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -22,7 +24,8 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0
 RUN addgroup -S app && adduser -S app -G app
 
-COPY --from=build /app/painel/.next/standalone/painel ./
+# Since we built directly inside /app/painel without a root workspace, standalone output is flat.
+COPY --from=build /app/painel/.next/standalone ./
 COPY --from=build /app/painel/.next/static ./.next/static
 COPY --from=build /app/painel/public ./public
 USER app

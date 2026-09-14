@@ -30,17 +30,22 @@ const API_KEY_LABEL = 'sdk-example';
 // O catálogo do exemplo. O nome da pesquisa diz o que ela contém; o evento segue a convenção de
 // domínio do backend (`<contexto>.<ação>`), como um app real dispararia. A primeira é a que os
 // cenários de pesquisa única usam.
+type SeedContent =
+  | { readonly template: 'nps' | 'csat' | 'ces' }
+  | { readonly questions: (client: Client, base: string) => Promise<void> };
+
 interface SeedSpec {
   readonly name: string;
   readonly triggerEvent: string;
-  readonly template: 'nps' | 'csat' | 'ces' | null;
+  readonly content: SeedContent;
 }
 
 const SURVEYS: readonly SeedSpec[] = [
-  { name: 'Todos os tipos', triggerEvent: 'checkout.completed', template: null },
-  { name: 'NPS', triggerEvent: 'order.delivered', template: 'nps' },
-  { name: 'CSAT', triggerEvent: 'support.ticket_closed', template: 'csat' },
-  { name: 'CES', triggerEvent: 'onboarding.completed', template: 'ces' },
+  { name: 'Todos os tipos', triggerEvent: 'checkout.completed', content: { questions: seedAllQuestionTypes } },
+  { name: 'NPS', triggerEvent: 'order.delivered', content: { template: 'nps' } },
+  { name: 'CSAT', triggerEvent: 'support.ticket_closed', content: { template: 'csat' } },
+  { name: 'CES', triggerEvent: 'onboarding.completed', content: { template: 'ces' } },
+  { name: 'Próxima feature', triggerEvent: 'changelog.viewed', content: { questions: seedNextFeature } },
 ];
 
 interface Args {
@@ -256,7 +261,7 @@ async function ensureSurvey(client: Client, applicationId: string, spec: SeedSpe
   if (survey === null) {
     const created = await client.post<SurveySummary>(`/applications/${applicationId}/surveys`, {
       name: spec.name,
-      ...(spec.template === null ? {} : { template: spec.template }),
+      ...('template' in spec.content ? { template: spec.content.template } : {}),
     });
     console.log(`Pesquisa criada em rascunho: "${spec.name}" (${created.id})`);
     survey = created;
@@ -268,8 +273,8 @@ async function ensureSurvey(client: Client, applicationId: string, spec: SeedSpe
   let detail = await client.get<SurveyDetail>(base);
 
   if (detail.publishedVersionNumber === undefined) {
-    if (spec.template === null && (detail.content?.questions.length ?? 0) === 0) {
-      await seedAllQuestionTypes(client, base);
+    if ('questions' in spec.content && (detail.content?.questions.length ?? 0) === 0) {
+      await spec.content.questions(client, base);
     }
     await triggerAndPublish(client, base, spec.triggerEvent);
     detail = await client.get<SurveyDetail>(base);
@@ -330,6 +335,26 @@ async function seedAllQuestionTypes(client: Client, base: string): Promise<void>
 
   await client.post(`${base}/questions`, {
     statement: 'Tem algum comentário ou sugestão para nós?',
+    type: 'free_text',
+    required: false,
+  });
+}
+
+async function seedNextFeature(client: Client, base: string): Promise<void> {
+  await client.post(`${base}/questions`, {
+    statement: 'Qual destes recursos você quer ver primeiro no app?',
+    type: 'single_choice',
+    required: true,
+    options: [
+      { label: 'Modo escuro', value: 'modo_escuro' },
+      { label: 'Exportar relatórios em PDF', value: 'exportar_pdf' },
+      { label: 'Integração com o calendário', value: 'integracao_calendario' },
+      { label: 'Widget na tela inicial', value: 'widget' },
+    ],
+  });
+
+  await client.post(`${base}/questions`, {
+    statement: 'Por que esse recurso é o mais importante para você?',
     type: 'free_text',
     required: false,
   });

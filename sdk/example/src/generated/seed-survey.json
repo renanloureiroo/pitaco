@@ -207,5 +207,58 @@
         "text": "Evite escrever dados pessoais, como nome, telefone ou e-mail."
       }
     }
+  },
+  {
+    "title": "Próxima feature",
+    "triggerEvent": "changelog.viewed",
+    "surveyId": "69099b9a-31c0-4ed0-b29f-f0b0a767b630",
+    "schema": {
+      "surveyId": "69099b9a-31c0-4ed0-b29f-f0b0a767b630",
+      "versionId": "9b3f71b5-691d-4601-a1bd-87915657ea5c",
+      "versionNumber": 1,
+      "questions": [
+        {
+          "key": "55501815-c2d9-4622-815e-25f7e2d4eaed",
+          "position": 1,
+          "statement": "Qual destes recursos você quer ver primeiro no app?",
+          "type": "SINGLE_CHOICE",
+          "required": true,
+          "options": [
+            {
+              "label": "Modo escuro",
+              "value": "modo_escuro",
+              "position": 1
+            },
+            {
+              "label": "Exportar relatórios em PDF",
+              "value": "exportar_pdf",
+              "position": 2
+            },
+            {
+              "label": "Integração com o calendário",
+              "value": "integracao_calendario",
+              "position": 3
+            },
+            {
+              "label": "Widget na tela inicial",
+              "value": "widget",
+              "position": 4
+            }
+          ]
+        },
+        {
+          "key": "3990d3c2-d9db-4e72-af37-6ca1a58b75f8",
+          "position": 2,
+          "statement": "Por que esse recurso é o mais importante para você?",
+          "type": "FREE_TEXT",
+          "required": false,
+          "options": []
+        }
+      ],
+      "freeTextNotice": {
+        "enabled": true,
+        "text": "Evite escrever dados pessoais, como nome, telefone ou e-mail."
+      }
+    }
   }
 ]

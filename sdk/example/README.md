@@ -115,6 +115,7 @@ publicar as pesquisas abaixo, cada uma com o seu evento de disparo:
 | NPS | Template NPS | `order.delivered` |
 | CSAT | Template CSAT | `support.ticket_closed` |
 | CES | Template CES | `onboarding.completed` |
+| Próxima feature | Escolha única entre quatro recursos candidatos e um "por quê?" opcional em texto livre | `changelog.viewed` |
 
 Os eventos seguem a convenção de domínio do backend, `<contexto>.<ação>`. O seed escreve o `.env`
 (preservando as outras linhas) e `src/generated/seed-survey.json`, os schemas que o cenário 4

@@ -1,13 +1,13 @@
 {
   "triggerEvent": "pitaco.example.trigger",
-  "surveyId": "d50db159-a181-43df-8140-0dccd47a6c5f",
+  "surveyId": "2e40f887-e1ba-412b-8a7c-69f8c905ee35",
   "schema": {
-    "surveyId": "d50db159-a181-43df-8140-0dccd47a6c5f",
-    "versionId": "aa0bfed8-7cee-47e3-a9c4-60d5608939e8",
+    "surveyId": "2e40f887-e1ba-412b-8a7c-69f8c905ee35",
+    "versionId": "799bddd5-65f4-4435-8996-fc609af1ab79",
     "versionNumber": 1,
     "questions": [
       {
-        "key": "39e85794-103e-4a64-8858-a97bebdadafe",
+        "key": "94cc9518-5086-41ca-9512-9289fc507061",
         "position": 1,
         "statement": "De 0 a 10, o quanto você recomendaria este app a um amigo ou colega?",
         "type": "NPS",
@@ -21,7 +21,7 @@
         }
       },
       {
-        "key": "24080e6d-bab8-4b9c-8105-73fbce529a80",
+        "key": "c8582f49-631e-4de6-a688-64691a5c40e6",
         "position": 2,
         "statement": "O quanto você está satisfeito com o app no geral?",
         "type": "SCALE",
@@ -35,7 +35,7 @@
         }
       },
       {
-        "key": "c15f0f16-9368-48b1-bb62-dd5d6ef87a18",
+        "key": "5059c717-1244-4ce9-b0ea-98c8edb14fb9",
         "position": 3,
         "statement": "Como você avalia o suporte ao cliente?",
         "type": "RATING",
@@ -47,7 +47,7 @@
         }
       },
       {
-        "key": "7bfe21ad-0875-42ae-a1c4-626535af4955",
+        "key": "82cf63fc-70cd-4251-b6d1-53ad9245a0eb",
         "position": 4,
         "statement": "O que mais pesou na sua nota?",
         "type": "SINGLE_CHOICE",
@@ -70,7 +70,7 @@
           }
         ],
         "condition": {
-          "sourceKey": "39e85794-103e-4a64-8858-a97bebdadafe",
+          "sourceKey": "94cc9518-5086-41ca-9512-9289fc507061",
           "operator": "between",
           "values": [],
           "min": 0,
@@ -78,7 +78,7 @@
         }
       },
       {
-        "key": "e71715cd-6978-40b9-9beb-87022eebf367",
+        "key": "dd877fac-945d-4090-8310-3801767ed576",
         "position": 5,
         "statement": "Quais recursos você mais usa?",
         "type": "MULTIPLE_CHOICE",
@@ -102,7 +102,7 @@
         ]
       },
       {
-        "key": "ab9ace08-941d-48fd-818b-7674b6bce42d",
+        "key": "83fde77a-a0ff-47cc-81f4-7fdb906061e3",
         "position": 6,
         "statement": "Tem algum comentário ou sugestão para nós?",
         "type": "FREE_TEXT",

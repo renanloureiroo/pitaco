@@ -10,6 +10,7 @@ export default function ScenariosLayout() {
       {SCENARIOS.map((scenario) => (
         <Stack.Screen key={scenario.id} name={scenario.id} options={{ title: scenario.title }} />
       ))}
+      <Stack.Screen name="04-comparar-tela" options={{ title: 'Pesquisa como tela' }} />
     </Stack>
   );
 }

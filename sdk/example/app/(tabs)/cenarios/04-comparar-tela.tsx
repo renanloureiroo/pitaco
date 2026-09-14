@@ -14,14 +14,15 @@ import { useLeavingRef } from '../../../src/scenarios/shared/useLeavingRef';
 export default function CompareScreenForm() {
   useScenario('04-comparar');
   const router = useRouter();
-  const { tema, surveyIndex } = useLocalSearchParams<{ tema?: string; surveyIndex?: string }>();
+  const params = useLocalSearchParams<{ tema?: string; surveyIndex?: string }>();
+  const tema = params.tema;
   const choice = parseThemeChoice(tema);
   const leavingRef = useLeavingRef();
   const publish = usePublishEvent('04-comparar');
   const onEvent = useCallback((event: InteractionEvent) => publish(event, { form: 'tela' }), [publish]);
 
-  const idx = surveyIndex ? parseInt(surveyIndex, 10) : 0;
-  const selectedSurvey = seedSurveys.length > idx ? seedSurveys[idx] : null;
+  const selectedSurveyIndex = typeof params.surveyIndex === 'string' ? parseInt(params.surveyIndex, 10) : 0;
+  const selectedSurvey = seedSurveys.length > 0 ? (seedSurveys[selectedSurveyIndex] ?? null) : null;
 
   return (
     <ScrollView

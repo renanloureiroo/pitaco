@@ -35,10 +35,18 @@ export function QuestionsPanel({
 }) {
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string>();
+  const [liveDraft, setLiveDraft] = useState<Question>();
 
   const ordered = [...questions].sort((a, b) => a.position - b.position);
   const questionIds = ordered.map((question) => question.id);
   const editing = ordered.find((question) => question.id === editingId);
+
+  // Compute preview questions applying the live draft
+  const previewQuestions = liveDraft
+    ? adding
+      ? [...ordered, liveDraft]
+      : ordered.map((q) => (q.id === liveDraft.id ? liveDraft : q))
+    : ordered;
 
   if (ordered.length === 0 && !adding) {
     return (
@@ -95,51 +103,58 @@ export function QuestionsPanel({
       <div className="flex flex-col gap-4">
         {readOnly ? (
           <QuestionsList questions={ordered} />
-        ) : (
-          <SortableQuestionsList
-            applicationId={applicationId}
-            surveyId={surveyId}
-            questions={ordered}
-            actionsFor={actionsFor}
-          />
-        )}
-
-        {readOnly ? null : editing !== undefined ? (
+        ) : editing !== undefined ? (
           <Card>
-            <CardContent>
+            <CardContent className="pt-6">
               <QuestionForm
                 key={editing.id}
                 applicationId={applicationId}
                 surveyId={surveyId}
                 questions={ordered}
                 question={editing}
-                onFinished={() => setEditingId(undefined)}
+                onFinished={() => {
+                  setEditingId(undefined);
+                  setLiveDraft(undefined);
+                }}
+                onLiveUpdate={setLiveDraft}
               />
             </CardContent>
           </Card>
         ) : adding ? (
           <Card>
-            <CardContent>
+            <CardContent className="pt-6">
               <QuestionForm
                 applicationId={applicationId}
                 surveyId={surveyId}
                 questions={ordered}
-                onFinished={() => setAdding(false)}
+                onFinished={() => {
+                  setAdding(false);
+                  setLiveDraft(undefined);
+                }}
+                onLiveUpdate={setLiveDraft}
               />
             </CardContent>
           </Card>
         ) : (
-          <div>
-            <Button data-testid="add-question-button" onClick={() => setAdding(true)}>
-              <PlusIcon aria-hidden />
-              Adicionar pergunta
-            </Button>
-          </div>
+          <>
+            <SortableQuestionsList
+              applicationId={applicationId}
+              surveyId={surveyId}
+              questions={ordered}
+              actionsFor={actionsFor}
+            />
+            <div>
+              <Button data-testid="add-question-button" onClick={() => setAdding(true)}>
+                <PlusIcon aria-hidden />
+                Adicionar pergunta
+              </Button>
+            </div>
+          </>
         )}
       </div>
 
       <div className="sticky top-4">
-        <SurveyPreview questions={ordered} />
+        <SurveyPreview questions={previewQuestions} />
       </div>
     </div>
   );

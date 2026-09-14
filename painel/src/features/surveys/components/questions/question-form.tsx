@@ -59,16 +59,17 @@ function draftOf(question: Question | undefined): ConditionDraft | undefined {
 export function QuestionForm({
   applicationId,
   surveyId,
+  questions,
   question,
-  questions = [],
   onFinished,
+  onLiveUpdate,
 }: {
   applicationId: string;
   surveyId: string;
+  questions: Question[];
   question?: Question;
-  /** As perguntas da versão, de onde saem as origens possíveis da condição. */
-  questions?: Question[];
   onFinished?: () => void;
+  onLiveUpdate?: (draft: Question) => void;
 }) {
   const action =
     question === undefined
@@ -119,9 +120,45 @@ export function QuestionForm({
     );
   }
 
+  function triggerLiveUpdate(form: HTMLFormElement) {
+    if (!onLiveUpdate) return;
+    const data = new FormData(form);
+    const draftType = (data.get("type") as QuestionType | null) || type;
+    const draft: Question = {
+      id: question?.id ?? "draft-id",
+      key: question?.key ?? "draft_key",
+      statement: (data.get("statement") as string) || "Enunciado da pergunta",
+      type: draftType,
+      position: question?.position ?? questions.length + 1,
+      required: data.get("required") === "on",
+      options: requiresOptions(draftType)
+        ? options.map(o => ({ label: o.label || "Opção", value: o.value || "opcao" }))
+        : undefined,
+      range: acceptsRange(draftType)
+        ? {
+            min: Number(data.get("rangeMin") || 0),
+            max: Number(data.get("rangeMax") || 5),
+            minLabel: (data.get("rangeMinLabel") as string) || undefined,
+            maxLabel: (data.get("rangeMaxLabel") as string) || undefined,
+          }
+        : undefined,
+      condition: condition,
+    };
+    onLiveUpdate(draft);
+  }
+
+  // Effect to trigger live update when controlled state (type, options, condition) changes
+  useEffect(() => {
+    const form = document.getElementById("question-form-element") as HTMLFormElement | null;
+    if (form) triggerLiveUpdate(form);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, options, condition]);
+
   return (
     <form
+      id="question-form-element"
       action={formAction}
+      onChange={(e) => triggerLiveUpdate(e.currentTarget)}
       onSubmit={() => {
         submitted.current = condition;
       }}

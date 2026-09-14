@@ -158,8 +158,6 @@ export default function CompareScenario() {
               label="Tela"
               disabled={open !== null}
               onPress={() => {
-                // Pass the selected index so the next screen knows which one to use.
-                // Wait, 04-comparar-tela uses seedSurvey from seed.ts currently. We might need to pass it as a param.
                 router.push({
                   pathname: "/cenarios/04-comparar-tela",
                   params: { tema: choice, surveyIndex: selectedSurveyIndex },

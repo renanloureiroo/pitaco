@@ -84,7 +84,7 @@ export function App() {
 
 function Checkout() {
   const { track } = usePitaco();
-  return <Button title="Concluir compra" onPress={() => void track('pitaco.example.trigger')} />;
+  return <Button title="Concluir compra" onPress={() => void track('checkout.completed')} />;
 }
 ```
 
@@ -106,13 +106,23 @@ npm run seed -- --target android-emu                    # emulador Android
 npm run seed -- --target device --lan-ip 192.168.0.10   # aparelho físico na mesma rede
 ```
 
-O seed usa a API administrativa local para criar a aplicação "Pitaco Example App", emitir uma
-chave, criar a "Pesquisa de exemplo" com os seis tipos de pergunta (NPS, escala, nota, escolha
-única, múltipla escolha e texto livre), rótulos nas escalas, uma condição (o motivo só aparece para
-nota de 0 a 6), aviso de texto livre, disparo no evento `pitaco.example.trigger` e publicar. Ele
-escreve o `.env` (preservando as outras linhas) e `src/generated/seed-survey.json`, o schema que o
-cenário 4 usa no `<PitacoPreview />`. Rodar de novo não duplica nada: reaproveita a aplicação, a
-pesquisa e a chave.
+O seed usa a API administrativa para criar a aplicação "demo", emitir uma chave e criar e
+publicar as pesquisas abaixo, cada uma com o seu evento de disparo:
+
+| Pesquisa | Conteúdo | Evento |
+| --- | --- | --- |
+| Todos os tipos | Os seis tipos de pergunta (NPS, escala, nota, escolha única, múltipla escolha e texto livre), rótulos nas escalas, uma condição (o motivo só aparece para nota de 0 a 6) e aviso de texto livre | `checkout.completed` |
+| NPS | Template NPS | `order.delivered` |
+| CSAT | Template CSAT | `support.ticket_closed` |
+| CES | Template CES | `onboarding.completed` |
+
+Os eventos seguem a convenção de domínio do backend, `<contexto>.<ação>`. O seed escreve o `.env`
+(preservando as outras linhas) e `src/generated/seed-survey.json`, os schemas que o cenário 4
+oferece no `<PitacoPreview />`. Rodar de novo não duplica nada: reaproveita a aplicação, as
+pesquisas e a chave.
+
+Contra um backend fora da máquina, passe o endereço: `npm run seed -- --base-url
+https://pitaco.renanloureiro.me/api`. Nesse caso o mesmo endereço vai para o perfil direto do `.env`.
 
 A pesquisa fica o mais reexibível possível: amostragem de 100%, sem descanso, sem cota, janela
 aberta. O servidor ainda não mostra de novo uma pesquisa já respondida ou dispensada pelo mesmo

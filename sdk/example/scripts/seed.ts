@@ -1,14 +1,15 @@
 /// <reference types="node" />
-// Semeia o backend local para o exemplo: cria (ou reaproveita) a aplicação, emite (ou reaproveita)
-// a chave, cria (ou reaproveita) a pesquisa com os seis tipos de pergunta, uma condição e o aviso
-// de texto livre, define o disparo, publica, e escreve `.env` + `src/generated/seed-survey.json`.
+// Semeia o backend para o exemplo: cria (ou reaproveita) a aplicação, emite (ou reaproveita) a
+// chave, cria (ou reaproveita) as pesquisas do catálogo abaixo, define o disparo de cada uma,
+// publica, e escreve `.env` + `src/generated/seed-survey.json`.
 //
 // Roda direto com `node scripts/seed.ts` (Node 25 remove os tipos sozinho, sem dependência nova).
-// Idempotente: rodar de novo localiza aplicação/pesquisa por nome e não duplica nada; a chave só é
+// Idempotente: rodar de novo localiza aplicação/pesquisas por nome e não duplica nada; a chave só é
 // reemitida se a rastreada em `.seed-state.json` não existir mais ou não estiver no `.env`.
 //
 // Flags:
-//   --base-url <url>     Endereço administrativo do backend (padrão http://localhost:8080/api)
+//   --base-url <url>     Endereço administrativo do backend (padrão http://localhost:8080/api).
+//                        Fora de localhost, o mesmo endereço vai para o perfil direto do `.env`.
 //   --target ios-sim|android-emu|device   Para quem o app vai rodar (padrão ios-sim)
 //   --lan-ip <ip>         Obrigatório com --target device: IP do backend na rede local
 //   --proxy-port <porta>  Porta do proxy local (padrão 8787)
@@ -24,9 +25,23 @@ const STATE_PATH = join(HERE, '.seed-state.json');
 const SEED_SURVEY_PATH = join(EXAMPLE_ROOT, 'src', 'generated', 'seed-survey.json');
 
 const APPLICATION_NAME = 'demo';
-const SURVEY_NAME = 'Pesquisa de exemplo';
 const API_KEY_LABEL = 'sdk-example';
-const TRIGGER_EVENT = 'pitaco.example.trigger';
+
+// O catálogo do exemplo. O nome da pesquisa diz o que ela contém; o evento segue a convenção de
+// domínio do backend (`<contexto>.<ação>`), como um app real dispararia. A primeira é a que os
+// cenários de pesquisa única usam.
+interface SeedSpec {
+  readonly name: string;
+  readonly triggerEvent: string;
+  readonly template: 'nps' | 'csat' | 'ces' | null;
+}
+
+const SURVEYS: readonly SeedSpec[] = [
+  { name: 'Todos os tipos', triggerEvent: 'checkout.completed', template: null },
+  { name: 'NPS', triggerEvent: 'order.delivered', template: 'nps' },
+  { name: 'CSAT', triggerEvent: 'support.ticket_closed', template: 'csat' },
+  { name: 'CES', triggerEvent: 'onboarding.completed', template: 'ces' },
+];
 
 interface Args {
   readonly baseUrl: string;
@@ -68,6 +83,11 @@ function targetHost(args: Args): string {
   if (args.target === 'ios-sim') return 'localhost';
   if (args.target === 'android-emu') return '10.0.2.2';
   return args.lanIp as string;
+}
+
+function isLocalBackend(baseUrl: string): boolean {
+  const { hostname } = new URL(baseUrl);
+  return hostname === 'localhost' || hostname === '127.0.0.1';
 }
 
 // --- Cliente HTTP mínimo contra a API administrativa ---------------------------------------
@@ -186,7 +206,6 @@ interface SeedState {
   applicationId?: string;
   apiKeyId?: string;
   apiKeyPrefix?: string;
-  surveyId?: string;
 }
 
 function readState(): SeedState {
@@ -229,40 +248,39 @@ async function ensureApiKey(
   return { secret: issued.secret, reused: false };
 }
 
-async function ensureSurvey(client: Client, applicationId: string): Promise<SurveyDetail> {
+async function ensureSurvey(client: Client, applicationId: string, spec: SeedSpec): Promise<SurveyDetail> {
   const surveys = await findAllPages<SurveySummary>(client, `/applications/${applicationId}/surveys`);
-  let survey = surveys.find((item) => item.name === SURVEY_NAME) ?? null;
+  let survey = surveys.find((item) => item.name === spec.name) ?? null;
 
   if (survey === null) {
     const created = await client.post<SurveySummary>(`/applications/${applicationId}/surveys`, {
-      name: SURVEY_NAME,
+      name: spec.name,
+      ...(spec.template === null ? {} : { template: spec.template }),
     });
-    console.log(`Pesquisa criada em rascunho: "${SURVEY_NAME}" (${created.id})`);
+    console.log(`Pesquisa criada em rascunho: "${spec.name}" (${created.id})`);
     survey = created;
   } else {
     console.log(`Pesquisa reaproveitada: "${survey.name}" (${survey.id})`);
   }
 
-  let detail = await client.get<SurveyDetail>(`/applications/${applicationId}/surveys/${survey.id}`);
-  const isFreshDraft = detail.content === null || (detail.content.source === 'draft' && detail.content.questions.length === 0);
+  const base = `/applications/${applicationId}/surveys/${survey.id}`;
+  let detail = await client.get<SurveyDetail>(base);
 
-  if (isFreshDraft) {
-    await seedQuestionsTriggerAndPublish(client, applicationId, survey.id);
-    detail = await client.get<SurveyDetail>(`/applications/${applicationId}/surveys/${survey.id}`);
+  if (detail.publishedVersionNumber === null) {
+    if (spec.template === null && (detail.content?.questions.length ?? 0) === 0) {
+      await seedAllQuestionTypes(client, base);
+    }
+    await triggerAndPublish(client, base, spec.triggerEvent);
+    detail = await client.get<SurveyDetail>(base);
   } else {
-    console.log('Pesquisa já tinha conteúdo — pergunta, condição, disparo e publicação não repetidos.');
+    console.log('  já publicada — perguntas, disparo e publicação não repetidos.');
     // Idempotente e seguro repetir mesmo com conteúdo pronto: não abre versão nova.
-    await client.patch(`/applications/${applicationId}/surveys/${survey.id}`, {
-      ignoresQuietPeriod: true,
-      responseQuota: null,
-    });
+    await client.patch(base, { ignoresQuietPeriod: true, responseQuota: null });
   }
   return detail;
 }
 
-async function seedQuestionsTriggerAndPublish(client: Client, applicationId: string, surveyId: string): Promise<void> {
-  const base = `/applications/${applicationId}/surveys/${surveyId}`;
-
+async function seedAllQuestionTypes(client: Client, base: string): Promise<void> {
   const nps = await client.post<{ key: string }>(`${base}/questions`, {
     statement: 'De 0 a 10, o quanto você recomendaria este app a um amigo ou colega?',
     type: 'nps',
@@ -314,14 +332,16 @@ async function seedQuestionsTriggerAndPublish(client: Client, applicationId: str
     type: 'free_text',
     required: false,
   });
+}
 
+async function triggerAndPublish(client: Client, base: string, triggerEvent: string): Promise<void> {
   // Aviso de texto livre (ligado por padrão, mas explícito aqui) e sem descanso desta pesquisa
   // em particular — o máximo de reexibição que o servidor permite configurar.
   await client.patch(base, { freeTextNoticeEnabled: true, ignoresQuietPeriod: true });
 
   const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().replace(/\.\d+Z$/, 'Z');
   await client.put(`${base}/trigger`, {
-    eventName: TRIGGER_EVENT,
+    eventName: triggerEvent,
     windowStart,
     // Sem windowEnd: janela indeterminada. samplingRate 1.0: amostragem de 100%.
     samplingRate: 1.0,
@@ -332,7 +352,7 @@ async function seedQuestionsTriggerAndPublish(client: Client, applicationId: str
     throw new Error(`Pesquisa com impedimentos de publicação: ${JSON.stringify(impediments.impediments)}`);
   }
   await client.post(`${base}/publication`, {});
-  console.log('Pesquisa publicada (versão 1): seis tipos de pergunta, uma condição, disparo e amostragem de 100%.');
+  console.log(`  publicada, disparo em ${triggerEvent}.`);
 }
 
 async function fetchDeliverableSchema(
@@ -340,8 +360,8 @@ async function fetchDeliverableSchema(
   apiKeySecret: string,
   triggerEvent: string,
 ): Promise<{ surveyId: string; schema: unknown }> {
-  // Um deviceId novo a cada seed evita que o sorteio "já respondida" (que o servidor sempre
-  // aplica, mesmo com amostragem de 100% e sem descanso) esconda a pesquisa nesta consulta.
+  // Um deviceId novo a cada consulta evita que o sorteio "já respondida" (que o servidor sempre
+  // aplica, mesmo com amostragem de 100% e sem descanso) esconda a pesquisa.
   const deviceId = crypto.randomUUID();
   const response = await fetch(`${baseUrl}/collect/eligibility`, {
     method: 'POST',
@@ -353,12 +373,12 @@ async function fetchDeliverableSchema(
     body: JSON.stringify({ event: triggerEvent, respondent: { deviceId } }),
   });
   if (!response.ok) {
-    throw new Error(`Elegibilidade falhou ao gerar o schema do exemplo: ${response.status}`);
+    throw new Error(`Elegibilidade falhou ao gerar o schema de ${triggerEvent}: ${response.status}`);
   }
   const body = (await response.json()) as { survey: { surveyId: string } | null };
   if (body.survey === null) {
     throw new Error(
-      'Elegibilidade devolveu "survey: null" logo após publicar — confira sampling/janela/descanso da pesquisa semeada.',
+      `Elegibilidade devolveu "survey: null" para ${triggerEvent} logo após publicar — confira sampling/janela/descanso.`,
     );
   }
   return { surveyId: body.survey.surveyId, schema: body.survey };
@@ -397,9 +417,6 @@ async function main(): Promise<void> {
   const envHasKey = /^EXPO_PUBLIC_PITACO_API_KEY=.+$/m.test(envBefore);
   const { secret, reused } = await ensureApiKey(client, application.id, state, envHasKey);
 
-  const surveyDetail = await ensureSurvey(client, application.id);
-  const triggerEvent = surveyDetail.content?.trigger?.eventName ?? TRIGGER_EVENT;
-
   // Precisamos do segredo para consultar a elegibilidade e gerar o schema do preview. Se a chave
   // foi reaproveitada (segredo não devolvido de novo por natureza), lemos o valor que já está no
   // `.env` — é exatamente o mesmo segredo que a chave ativa rastreada representa.
@@ -412,10 +429,16 @@ async function main(): Promise<void> {
     throw new Error('Sem segredo de API disponível (nem emitido agora, nem no .env) — apague .seed-state.json e rode de novo.');
   }
 
-  const { surveyId, schema } = await fetchDeliverableSchema(args.baseUrl, apiKeySecret, triggerEvent);
+  const seeded = [];
+  for (const spec of SURVEYS) {
+    const detail = await ensureSurvey(client, application.id, spec);
+    const triggerEvent = detail.content?.trigger?.eventName ?? spec.triggerEvent;
+    const { surveyId, schema } = await fetchDeliverableSchema(args.baseUrl, apiKeySecret, triggerEvent);
+    seeded.push({ title: spec.name, triggerEvent, surveyId, schema });
+  }
 
   const host = targetHost(args);
-  const directBaseUrl = `http://${host}:8080/api`;
+  const directBaseUrl = isLocalBackend(args.baseUrl) ? `http://${host}:8080/api` : args.baseUrl;
   const proxyBaseUrl = `http://${host}:${args.proxyPort}/pitaco`;
 
   const envUpdates: Record<string, string> = {
@@ -428,7 +451,7 @@ async function main(): Promise<void> {
   upsertEnvFile(ENV_PATH, envUpdates);
 
   mkdirSync(dirname(SEED_SURVEY_PATH), { recursive: true });
-  writeFileSync(SEED_SURVEY_PATH, `${JSON.stringify({ triggerEvent, surveyId, schema }, null, 2)}\n`);
+  writeFileSync(SEED_SURVEY_PATH, `${JSON.stringify(seeded, null, 2)}\n`);
 
   let apiKeyId = state.apiKeyId;
   let apiKeyPrefix = state.apiKeyPrefix;
@@ -440,15 +463,16 @@ async function main(): Promise<void> {
     apiKeyId = issuedKey?.id;
     apiKeyPrefix = issuedKey?.prefix;
   }
-  writeState({ applicationId: application.id, apiKeyId, apiKeyPrefix, surveyId });
+  writeState({ applicationId: application.id, apiKeyId, apiKeyPrefix });
 
   console.log('');
   console.log('Resumo:');
   console.log(`  Aplicação: ${application.name} (${application.id})`);
-  console.log(`  Pesquisa: ${SURVEY_NAME} (${surveyId})`);
-  console.log(`  Disparo: ${triggerEvent}`);
+  for (const survey of seeded) {
+    console.log(`  Pesquisa: ${survey.title} (${survey.surveyId}) — disparo ${survey.triggerEvent}`);
+  }
   console.log(`  .env atualizado em ${ENV_PATH}`);
-  console.log(`  Schema do preview em ${SEED_SURVEY_PATH}`);
+  console.log(`  Schemas do preview em ${SEED_SURVEY_PATH}`);
   console.log('');
   console.log('Reexibição: amostragem de 100%, sem descanso, sem cota de respostas, janela aberta.');
   console.log('O que o servidor ainda impõe (não configurável pela API administrativa):');

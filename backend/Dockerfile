@@ -6,9 +6,10 @@ RUN --mount=type=cache,target=/root/.m2 mvn -B dependency:go-offline
 COPY src ./src
 RUN --mount=type=cache,target=/root/.m2 mvn -B clean package -DskipTests
 
-FROM eclipse-temurin:21-jre-alpine
+# Sem alpine: a JVM do temurin-alpine dá segfault na subida no kernel 7 do homelab.
+FROM eclipse-temurin:21-jre
 WORKDIR /app
-RUN addgroup -S app && adduser -S app -G app
+RUN groupadd --system app && useradd --system --gid app --no-create-home app
 COPY --from=build /app/target/pitaco-*.jar app.jar
 USER app
 EXPOSE 8080

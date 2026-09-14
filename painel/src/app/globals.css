@@ -31,7 +31,7 @@
   --color-ink: #181a20;
   --color-body-dark: #eaecef;
   --color-body-light: #181a20;
-  --color-muted: #707a8a;
+  --color-text-muted: #707a8a;
   --color-muted-strong: #929aa5;
   --color-on-primary: #181a20;
   --color-on-dark: #ffffff;
@@ -82,7 +82,7 @@
   --secondary: var(--color-surface-soft-light);
   --secondary-foreground: var(--color-ink);
   --muted: var(--color-surface-strong-light);
-  --muted-foreground: var(--color-muted);
+  --muted-foreground: var(--color-text-muted);
   --accent: var(--color-surface-strong-light);
   --accent-foreground: var(--color-ink);
   --destructive: var(--color-trading-down);
@@ -103,7 +103,7 @@
   --secondary: var(--color-surface-elevated-dark);
   --secondary-foreground: var(--color-on-dark);
   --muted: var(--color-surface-elevated-dark);
-  --muted-foreground: var(--color-muted);
+  --muted-foreground: var(--color-text-muted);
   --accent: var(--color-surface-elevated-dark);
   --accent-foreground: var(--color-on-dark);
 }

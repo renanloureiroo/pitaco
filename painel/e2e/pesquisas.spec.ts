@@ -36,6 +36,7 @@ test.describe("US3 — criar e montar o rascunho de uma pesquisa", () => {
     await expect(page.getByTestId("survey-header")).toContainText(survey.name);
     await expect(page.getByTestId("survey-state")).toHaveText("Rascunho");
     await expect(page.getByTestId("empty-state")).toBeVisible();
+    await expect(page.getByTestId("survey-preview-section")).toBeVisible();
 
     await page.goto(`/aplicacoes/${application.id}/pesquisas`);
     await expect(page.getByTestId("survey-row").filter({ hasText: survey.name })).toHaveCount(1);

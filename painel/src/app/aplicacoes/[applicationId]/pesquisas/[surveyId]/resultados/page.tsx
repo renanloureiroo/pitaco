@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   ActiveFilters,
+  BehaviorCard,
   ExportButton,
   NEVER_PUBLISHED_DESCRIPTION,
   NEVER_PUBLISHED_TITLE,
@@ -21,6 +22,7 @@ import {
   RetentionNote,
   ResultsFiltersForm,
   exportHref,
+  getSurveyBehavior,
   getSurveyResults,
   hasAnyFilter,
   listOpenAnswers,
@@ -53,7 +55,7 @@ export default async function SurveyResultsPage({
   const { page, size } = parsePaginationParams(query);
   const backendQuery = toResultsQuery(filters);
 
-  const [resultsResult, answersResult, comparabilityResult, healthResult] = await Promise.all([
+  const [resultsResult, answersResult, comparabilityResult, healthResult, behaviorResult] = await Promise.all([
     getSurveyResults(applicationId, surveyId, backendQuery),
     listOpenAnswers(applicationId, surveyId, {
       page,
@@ -63,6 +65,7 @@ export default async function SurveyResultsPage({
     }),
     getVersionComparability(applicationId, surveyId),
     getSurveyHealth(applicationId, surveyId),
+    getSurveyBehavior(applicationId, surveyId, backendQuery),
   ]);
 
   if (!resultsResult.ok) {
@@ -70,6 +73,12 @@ export default async function SurveyResultsPage({
       notFound();
     }
     throw new ApiUnavailableError(resultsResult);
+  }
+  if (!behaviorResult.ok) {
+    if (behaviorResult.kind === "not_found") {
+      notFound();
+    }
+    throw new ApiUnavailableError(behaviorResult);
   }
   if (!answersResult.ok) {
     if (answersResult.kind === "not_found") {
@@ -133,6 +142,7 @@ export default async function SurveyResultsPage({
         <>
           {results.nps !== undefined ? <NpsSummaryCard nps={results.nps} /> : null}
           <ResponseRateCard responseRate={results.responseRate} smallSample={results.smallSample} />
+          <BehaviorCard behavior={behaviorResult.data} />
           {results.retention !== undefined ? <RetentionNote retention={results.retention} /> : null}
 
           <div data-testid="question-results" className="flex flex-col gap-4">

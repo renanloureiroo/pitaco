@@ -1,0 +1,105 @@
+# Cenário 2 — Com gorhom: a pesquisa num BottomSheetModal do app. Arrastar para fechar vira
+# survey_dismissed com via swipe; tocar no fundo, via backdrop; no texto livre o sheet sobe para
+# 92% e o campo fica acima do teclado; concluir fecha o sheet sozinho com survey_completed.
+appId: host.exp.Exponent
+name: "02 · Com gorhom"
+---
+- runFlow:
+    file: _comum/abrir-cenario.yaml
+    env:
+      ROTA: 02-gorhom
+
+# 1) Arrastar para fechar: puxar o conteúdo para baixo com a rolagem no topo arrasta o sheet
+# inteiro no gorhom.
+- tapOn:
+    id: "cenario-02-disparar"
+- extendedWaitUntil:
+    visible: "Pergunta 1 de 6"
+    timeout: 20000
+- assertVisible:
+    id: "cenario-02-sheet"
+- swipe:
+    from:
+      text: "Pergunta 1 de 6"
+    direction: DOWN
+    duration: 400
+- extendedWaitUntil:
+    notVisible:
+      id: "cenario-02-sheet"
+    timeout: 5000
+- tapOn:
+    id: "tab-depuracao"
+- assertVisible: ".*survey_presented.*"
+- assertVisible: ".*survey_dismissed · via swipe.*"
+
+# 2) Tocar no fundo escurecido, com identidade nova.
+- tapOn:
+    id: "debug-limpar-storage"
+- tapOn:
+    id: "tab-cenarios"
+- tapOn:
+    id: "cenario-02-disparar"
+- extendedWaitUntil:
+    visible: "Pergunta 1 de 6"
+    timeout: 20000
+- tapOn:
+    point: "50%,15%"
+- extendedWaitUntil:
+    notVisible:
+      id: "cenario-02-sheet"
+    timeout: 5000
+- tapOn:
+    id: "tab-depuracao"
+- assertVisible: ".*survey_dismissed · via backdrop.*"
+
+# 3) Percorrer até o fim, com o teclado no texto livre.
+- tapOn:
+    id: "debug-limpar-storage"
+- tapOn:
+    id: "tab-cenarios"
+- tapOn:
+    id: "cenario-02-disparar"
+- extendedWaitUntil:
+    visible: "Pergunta 1 de 6"
+    timeout: 20000
+- tapOn: "9"
+- tapOn: "Próxima"
+- assertVisible: "Pergunta 2 de 5"
+- tapOn: "4"
+- tapOn: "Próxima"
+- assertVisible: "Pergunta 3 de 5"
+- tapOn: "4 de 5"
+- tapOn: "Próxima"
+- assertVisible: "Pergunta 4 de 5"
+- tapOn: "Próxima"
+- assertVisible: "Pergunta 5 de 5"
+# O placeholder do TextInput não aparece como texto para o Maestro: toca no campo pela posição (a
+# folha está em 60% e o campo fica no meio dela).
+- tapOn:
+    point: "50%,67%"
+- runFlow:
+    file: _comum/fechar-tutorial-teclado.yaml
+- inputText: "Tudo certo"
+# Com o teclado aberto, o sheet sobe para 92% e o botão de envio continua à vista.
+- assertVisible: "Enviar"
+# O contador tem rótulo de acessibilidade próprio ("10 de 2000 caracteres"), que o Maestro lê.
+- assertVisible: "10 de 2000 caracteres"
+# Envia com o teclado ainda aberto: o botão está à vista (o hideKeyboard do Maestro no iOS falha).
+- tapOn: "Enviar"
+# O agradecimento dura pouco e o sheet fecha sozinho; a prova do desfecho é o survey_completed.
+- extendedWaitUntil:
+    visible: "Obrigado!"
+    timeout: 3000
+    optional: true
+- extendedWaitUntil:
+    notVisible:
+      id: "cenario-02-sheet"
+    timeout: 10000
+- tapOn:
+    id: "tab-depuracao"
+# A sequência completa passa de uma tela: rola até o fim.
+- scrollUntilVisible:
+    element: ".*survey_completed.*"
+    direction: DOWN
+    timeout: 15000
+- assertNotVisible: ".*survey_dismissed.*"

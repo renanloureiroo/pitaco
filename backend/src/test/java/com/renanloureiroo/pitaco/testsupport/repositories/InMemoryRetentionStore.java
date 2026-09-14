@@ -22,7 +22,10 @@ public class InMemoryRetentionStore implements RetentionStore {
   public record StoredAnswer(
       ApplicationId applicationId, ExpiringAnswer answer, Instant answeredAt, Optional<String> text) {}
 
+  public record StoredEvent(ApplicationId applicationId, String id, Instant receivedAt) {}
+
   private final List<StoredAnswer> answers = new ArrayList<>();
+  private final List<StoredEvent> events = new ArrayList<>();
   private final List<Integer> deleteBatches = new ArrayList<>();
 
   public ExpiringAnswer withAnswer(
@@ -41,6 +44,29 @@ public class InMemoryRetentionStore implements RetentionStore {
             UUID.randomUUID().toString(), surveyId, versionId, displayId, key, status, number, options);
     answers.add(new StoredAnswer(applicationId, answer, answeredAt, text));
     return answer;
+  }
+
+  public StoredEvent withInteractionEvent(ApplicationId applicationId, Instant receivedAt) {
+    var event = new StoredEvent(applicationId, UUID.randomUUID().toString(), receivedAt);
+    events.add(event);
+    return event;
+  }
+
+  public List<StoredEvent> interactionEvents() {
+    return List.copyOf(events);
+  }
+
+  @Override
+  public int deleteInteractionEvents(ApplicationId applicationId, Instant before, int limit) {
+    var targets =
+        events.stream()
+            .filter(event -> event.applicationId().equals(applicationId))
+            .filter(event -> event.receivedAt().isBefore(before))
+            .sorted(Comparator.comparing(StoredEvent::receivedAt).thenComparing(StoredEvent::id))
+            .limit(limit)
+            .toList();
+    events.removeAll(targets);
+    return targets.size();
   }
 
   public List<StoredAnswer> findAll() {

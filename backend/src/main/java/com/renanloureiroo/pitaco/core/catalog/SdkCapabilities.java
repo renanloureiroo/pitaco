@@ -17,7 +17,8 @@ public final class SdkCapabilities {
 
   public static SdkVersion minimumFor(SdkFeature feature) {
     return switch (feature) {
-      case CONDITIONAL_DISPLAY, SCALE_LABELS, FREE_TEXT_NOTICE -> SdkVersion.BASELINE;
+      case CONDITIONAL_DISPLAY, SCALE_LABELS, FREE_TEXT_NOTICE, INTERACTION_EVENTS ->
+          SdkVersion.BASELINE;
     };
   }
 

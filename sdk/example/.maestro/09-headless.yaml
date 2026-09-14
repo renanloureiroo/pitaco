@@ -1,0 +1,94 @@
+# Cenário 9 — Headless: UI inteiramente própria sobre usePitacoSurvey(). Validação, voltar, pular,
+# texto livre e concluir, com o tracking completo conferido no painel de depuração.
+appId: host.exp.Exponent
+name: "09 · Headless"
+---
+- runFlow:
+    file: _comum/abrir-cenario.yaml
+    env:
+      ROTA: 09-headless
+
+- tapOn:
+    id: "cenario-09-modo-real"
+- tapOn:
+    id: "cenario-09-disparar"
+- extendedWaitUntil:
+    visible:
+      id: "cenario-09-pesquisa"
+    timeout: 20000
+
+# NPS obrigatória: avançar sem responder bloqueia.
+- tapOn:
+    id: "cenario-09-avancar"
+- assertVisible:
+    id: "cenario-09-erro"
+- tapOn:
+    id: "cenario-09-opcao-9"
+- tapOn:
+    id: "cenario-09-avancar"
+# Escala.
+- tapOn:
+    id: "cenario-09-opcao-4"
+- tapOn:
+    id: "cenario-09-avancar"
+# Avaliação; volta uma e segue de novo (a resposta fica guardada).
+- tapOn:
+    id: "cenario-09-opcao-5"
+- tapOn:
+    id: "cenario-09-voltar"
+- assertVisible:
+    id: "cenario-09-opcao-4"
+- tapOn:
+    id: "cenario-09-avancar"
+- tapOn:
+    id: "cenario-09-avancar"
+# Com NPS 9 o core pula a condicional; múltipla escolha opcional em branco: pular.
+- tapOn:
+    id: "cenario-09-pular"
+# Texto livre, a última.
+- tapOn:
+    id: "cenario-09-texto"
+- runFlow:
+    file: _comum/fechar-tutorial-teclado.yaml
+- inputText: "Tudo certo"
+# No iOS o teclado sai com hideKeyboard. No Android o hideKeyboard do Maestro recorre ao voltar do
+# sistema, que sai da tela do cenário (e dispensa a pesquisa com via navigation): lá o botão é
+# alcançado rolando, com o teclado aberto.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: "cenario-09-concluir"
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: "cenario-09-concluir"
+- extendedWaitUntil:
+    visible:
+      id: "cenario-09-obrigado"
+    timeout: 5000
+- tapOn:
+    id: "cenario-09-fechar"
+- assertNotVisible:
+    id: "cenario-09-pesquisa"
+
+# O painel lista cerca de 30 eventos: rola até o fim da sequência.
+- tapOn:
+    id: "tab-depuracao"
+- assertVisible: ".*validation_blocked.*"
+- scrollUntilVisible:
+    element: ".*navigated_back.*"
+    direction: DOWN
+    timeout: 10000
+- scrollUntilVisible:
+    element: ".*question_skipped.*"
+    direction: DOWN
+    timeout: 10000
+- scrollUntilVisible:
+    element: ".*survey_completed.*"
+    direction: DOWN
+    timeout: 15000
+- assertNotVisible: ".*survey_dismissed.*"

@@ -2,8 +2,10 @@ package com.renanloureiroo.pitaco.modules.results.infra.config;
 
 import com.renanloureiroo.pitaco.modules.collect.infra.config.CollectProperties;
 import com.renanloureiroo.pitaco.modules.results.application.gateways.SurveyScopeGateway;
+import com.renanloureiroo.pitaco.modules.results.application.readmodels.SurveyBehaviorReadModel;
 import com.renanloureiroo.pitaco.modules.results.application.readmodels.SurveyResultsReadModel;
 import com.renanloureiroo.pitaco.modules.results.application.usecases.ExportSurveyResultsUseCase;
+import com.renanloureiroo.pitaco.modules.results.application.usecases.GetSurveyBehaviorUseCase;
 import com.renanloureiroo.pitaco.modules.results.application.usecases.GetSurveyResultsUseCase;
 import com.renanloureiroo.pitaco.modules.results.application.usecases.ListOpenAnswersUseCase;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +24,15 @@ public class UseCasesConfiguration {
       ResultsProperties properties) {
     return new GetSurveyResultsUseCase(
         surveys, results, collect.displayTimeout(), properties.smallSampleThreshold());
+  }
+
+  @Bean
+  GetSurveyBehaviorUseCase getSurveyBehaviorUseCase(
+      SurveyScopeGateway surveys,
+      SurveyResultsReadModel results,
+      SurveyBehaviorReadModel behavior,
+      CollectProperties collect) {
+    return new GetSurveyBehaviorUseCase(surveys, results, behavior, collect.displayTimeout());
   }
 
   @Bean

@@ -1,0 +1,18 @@
+# Subfluxo comum: fecha o Expo Go de verdade (processo novo na próxima abertura).
+#
+# O `appId` dos fluxos é `host.exp.Exponent`, o identificador do Expo Go no iOS. No Android o pacote
+# é `host.exp.exponent`, em minúsculas, e o nome do pacote diferencia maiúsculas: o `stopApp` sem
+# argumento não fecha nada lá, e o estado do app (pilha de navegação, pesquisa em andamento, limite
+# da sessão) vazava de um fluxo para o outro.
+appId: host.exp.Exponent
+---
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - stopApp
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - stopApp: host.exp.exponent

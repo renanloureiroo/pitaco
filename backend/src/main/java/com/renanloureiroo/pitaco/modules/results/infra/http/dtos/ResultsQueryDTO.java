@@ -1,6 +1,7 @@
 package com.renanloureiroo.pitaco.modules.results.infra.http.dtos;
 
 import com.renanloureiroo.pitaco.modules.results.application.usecases.ExportSurveyResultsUseCase;
+import com.renanloureiroo.pitaco.modules.results.application.usecases.GetSurveyBehaviorUseCase;
 import com.renanloureiroo.pitaco.modules.results.application.usecases.GetSurveyResultsUseCase;
 import com.renanloureiroo.pitaco.modules.results.application.usecases.ResultsSelection;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -67,6 +68,10 @@ public record ResultsQueryDTO(
 
   public GetSurveyResultsUseCase.Input toInput(String applicationId, String surveyId) {
     return new GetSurveyResultsUseCase.Input(applicationId, surveyId, toSelection());
+  }
+
+  public GetSurveyBehaviorUseCase.Input toBehaviorInput(String applicationId, String surveyId) {
+    return new GetSurveyBehaviorUseCase.Input(applicationId, surveyId, toSelection());
   }
 
   public ExportSurveyResultsUseCase.Input toExportInput(String applicationId, String surveyId) {

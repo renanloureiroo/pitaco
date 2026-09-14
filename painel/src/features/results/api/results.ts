@@ -41,6 +41,20 @@ export function listOpenAnswers(
   });
 }
 
+import { surveyBehaviorSchema, type SurveyBehavior } from "../schemas/behavior";
+import { behaviorPath } from "./paths";
+
+export function getSurveyBehavior(
+  applicationId: string,
+  surveyId: string,
+  query: ResultsQuery,
+): Promise<Result<SurveyBehavior>> {
+  return request(surveyBehaviorSchema, {
+    path: behaviorPath(applicationId, surveyId),
+    query: toQuery(query),
+  });
+}
+
 /** URL completa do export no backend, para a rota do painel repassar. */
 export function backendExportUrl(applicationId: string, surveyId: string, query: ResultsQuery): string {
   return buildUrl(exportPath(applicationId, surveyId), toQuery(query));

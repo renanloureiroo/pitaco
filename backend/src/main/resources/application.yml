@@ -63,6 +63,14 @@ pitaco:
     display-timeout: 30m
     # Abandonos no mesmo grupo de comparabilidade antes de parar de entregar a pesquisa.
     max-attempts: 3
+    # Eventos de interação do SDK (POST /collect/displays/{id}/events).
+    interaction-events:
+      # Teto de eventos aceitos por exibição. Uma pesquisa de cinco perguntas bem percorrida fica
+      # abaixo de cem; o teto existe para uma chave extraída do bundle não encher a tabela.
+      max-per-display: 500
+      # Por quanto tempo depois da abertura da exibição o servidor ainda aceita eventos dela. Cobre
+      # a fila local do SDK reenviando depois de dias sem rede; passou disso, o lote é descartado.
+      acceptance-window: 7d
     # Janela fixa em memória na superfície pública, contada por chave e por origem. Estouro
     # responde 429 com Retry-After. A chave atende um app inteiro e por isso aguenta mais que
     # uma origem, que é um endereço só.

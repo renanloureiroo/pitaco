@@ -554,4 +554,60 @@ export const resultRoutes: Route[] = [
       };
     },
   },
+  {
+    method: "GET",
+    pattern: "/applications/:applicationId/surveys/:surveyId/results/behavior",
+    handler: ({ params, query }) => {
+      const survey = surveyOf(params.applicationId, params.surveyId);
+      if (survey === undefined) {
+        return notFound("survey.not_found", "Pesquisa não encontrada.");
+      }
+
+      return json(200, {
+          everPublished: survey.versions.some((v: { status: string }) => v.status === "published"),
+          displayed: 120,
+          instrumented: 96,
+          questions: [
+            {
+              key: "q1",
+              statement: "O que achou do Pitaco?",
+              type: "nps",
+              position: 1,
+              viewed: 96,
+              answered: 90,
+              skipped: 2,
+              abandoned: 4,
+              activeTime: { samples: 96, medianMs: 1500, p90Ms: 3000 },
+              revisited: 10,
+              revisitRate: 0.1,
+              selected: 92,
+              changed: 5,
+              changeRate: 0.05,
+              validationFailures: 0,
+              failureRate: 0
+            }
+          ],
+          dismissals: {
+            total: 10,
+            byVia: [
+              { via: "swipe", count: 5, share: 0.5 },
+              { via: "close_button", count: 3, share: 0.3 },
+              { via: "hardware_back", count: 2, share: 0.2 }
+            ],
+            unspecified: 0
+          },
+          filter: { attributeAbsent: false },
+          definitions: [
+            { metric: "viewed", definition: "Vezes que a pergunta apareceu." },
+            { metric: "answered", definition: "Vezes respondida." },
+            { metric: "skipped", definition: "Vezes pulada." },
+            { metric: "abandoned", definition: "Vezes abandonada." },
+            { metric: "activeMsP50", definition: "Mediana do tempo ativo na pergunta." },
+            { metric: "revisitRate", definition: "Taxa de retorno." },
+            { metric: "changeRate", definition: "Taxa de troca de resposta." },
+            { metric: "dismissals", definition: "Dispensas." }
+          ]
+        });
+    },
+  },
 ];

@@ -1,0 +1,76 @@
+# Cenário 1 — Sheet do SDK: arrastar para fechar (via swipe) e, numa instalação nova, tocar no
+# fundo (via backdrop); no Android, também o voltar do sistema (via hardware_back). O painel de
+# depuração mostra a via de cada survey_dismissed.
+appId: host.exp.Exponent
+name: "01 · Sheet do SDK"
+---
+- runFlow:
+    file: _comum/abrir-cenario.yaml
+    env:
+      ROTA: 01-sheet
+
+# Arrastar para fechar.
+- tapOn:
+    id: "cenario-01-disparar"
+- extendedWaitUntil:
+    visible: "Pergunta 1 de 6"
+    timeout: 20000
+- assertVisible:
+    id: "pitaco-bottom-sheet"
+- swipe:
+    from:
+      id: "pitaco-bottom-sheet-handle"
+    direction: DOWN
+- extendedWaitUntil:
+    notVisible: "Pergunta 1 de 6"
+    timeout: 5000
+- tapOn:
+    id: "tab-depuracao"
+- assertVisible: ".*survey_presented.*"
+- assertVisible: ".*survey_dismissed · via swipe.*"
+
+# Tocar no fundo, com identidade nova.
+- tapOn:
+    id: "debug-limpar-storage"
+- tapOn:
+    id: "tab-cenarios"
+- tapOn:
+    id: "cenario-01-disparar"
+- extendedWaitUntil:
+    visible: "Pergunta 1 de 6"
+    timeout: 20000
+# O fundo escurecido cobre a tela acima da folha. Ele não aparece na árvore de acessibilidade do
+# iOS (a folha tem accessibilityViewIsModal, que esconde o que está ao lado), então o toque é por
+# ponto, e a prova é a via no painel.
+- tapOn:
+    point: "50%,15%"
+- extendedWaitUntil:
+    notVisible: "Pergunta 1 de 6"
+    timeout: 5000
+- tapOn:
+    id: "tab-depuracao"
+- assertVisible: ".*survey_dismissed · via backdrop.*"
+
+# Android: o voltar do sistema fecha a folha (via hardware_back) e não sai da tela do cenário.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: "debug-limpar-storage"
+      - tapOn:
+          id: "tab-cenarios"
+      - tapOn:
+          id: "cenario-01-disparar"
+      - extendedWaitUntil:
+          visible: "Pergunta 1 de 6"
+          timeout: 20000
+      - back
+      - extendedWaitUntil:
+          notVisible: "Pergunta 1 de 6"
+          timeout: 5000
+      - assertVisible:
+          id: "cenario-01-disparar"
+      - tapOn:
+          id: "tab-depuracao"
+      - assertVisible: ".*survey_dismissed · via hardware_back.*"

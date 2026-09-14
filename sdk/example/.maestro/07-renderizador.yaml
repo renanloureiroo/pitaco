@@ -1,0 +1,61 @@
+# Cenário 7 — Renderizador substituído: o NPS desenhado pelo app convive com os tipos padrão, e o
+# renderizador de avaliação que lança erro cai nas estrelas padrão sem travar a pesquisa. O SDK manda
+# o relatório de erro (POST /collect/sdk-errors, kind render_error), visível na aba Rede do painel.
+appId: host.exp.Exponent
+name: "07 · Renderizador substituído"
+---
+- runFlow:
+    file: _comum/abrir-cenario.yaml
+    env:
+      ROTA: 07-renderizador
+
+- tapOn:
+    id: "cenario-07-modo-real"
+- tapOn:
+    id: "cenario-07-disparar"
+# Pergunta 1: o NPS do app.
+- extendedWaitUntil:
+    visible:
+      id: "cenario-07-nps"
+    timeout: 20000
+- tapOn:
+    id: "cenario-07-nps-9"
+- tapOn: "Próxima"
+# Pergunta 2: a escala padrão.
+- assertVisible: "Pergunta 2 de 5"
+- tapOn: "4"
+- tapOn: "Próxima"
+# Pergunta 3: o renderizador do app lança; as estrelas padrão aparecem no lugar.
+- assertVisible: "Pergunta 3 de 5"
+- assertVisible: "4 de 5"
+- tapOn: "4 de 5"
+- tapOn: "Próxima"
+# Com NPS 9 a condicional não se aplica e o total passa a 5.
+- assertVisible: "Pergunta 4 de 5"
+- tapOn: "Próxima"
+- assertVisible: "Pergunta 5 de 5"
+- tapOn: "Enviar"
+# O agradecimento dura pouco e o sheet fecha sozinho; a prova do desfecho é o survey_completed.
+- extendedWaitUntil:
+    visible: "Obrigado!"
+    timeout: 3000
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "cenario-07-disparar"
+    timeout: 10000
+- assertNotVisible: "Pergunta 5 de 5"
+
+- tapOn:
+    id: "tab-depuracao"
+# A sequência completa passa de uma tela: rola até o fim.
+- scrollUntilVisible:
+    element: ".*survey_completed.*"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: "secao-rede"
+- assertVisible: ".*/collect/sdk-errors.*"
+- tapOn: ".*/collect/sdk-errors.*"
+# O corpo enviado aparece como veio (JSON compacto): confere o kind sem depender de espaçamento.
+- assertVisible: "[\\s\\S]*render_error[\\s\\S]*"

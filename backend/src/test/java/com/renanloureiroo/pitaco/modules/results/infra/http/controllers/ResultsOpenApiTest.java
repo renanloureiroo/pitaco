@@ -23,7 +23,8 @@ class ResultsOpenApiTest {
       Map.of(
           RESULTS, List.of("200", "400", "403", "404"),
           RESULTS + "/open-answers", List.of("200", "400", "403", "404"),
-          RESULTS + "/export", List.of("200", "400", "403", "404"));
+          RESULTS + "/export", List.of("200", "400", "403", "404"),
+          RESULTS + "/behavior", List.of("200", "400", "403", "404"));
 
   @Autowired RestTestClient client;
 

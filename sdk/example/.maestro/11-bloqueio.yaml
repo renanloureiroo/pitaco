@@ -1,0 +1,49 @@
+# Cenário 11 — Bloqueio: na tela de pagamento, com <PitacoBlock />, o evento dispara e nada aparece
+# (placement_blocked ao montar, placement_survey_held ao chegar a pesquisa). Ao sair do pagamento o
+# bloqueio desmonta e a pesquisa retida abre na tela de entrada.
+appId: host.exp.Exponent
+name: "11 · Bloqueio"
+---
+- runFlow:
+    file: _comum/abrir-cenario.yaml
+    env:
+      ROTA: 11-bloqueio
+
+- tapOn:
+    id: "cenario-11-ir-pagamento"
+- extendedWaitUntil:
+    visible:
+      id: "tela-11-bloqueio-pagamento"
+    timeout: 10000
+- extendedWaitUntil:
+    visible: ".*placement_blocked.*"
+    timeout: 5000
+
+# Pagar dispara o evento: a pesquisa chega e fica retida, sem nada na tela.
+- tapOn:
+    id: "cenario-11-pagar"
+- extendedWaitUntil:
+    visible: ".*placement_survey_held.*"
+    timeout: 10000
+- assertVisible:
+    id: "cenario-11-pagamento-status"
+    text: "Pesquisa: nenhuma na tela"
+- assertNotVisible: "Pergunta 1 de 6"
+
+# Sair do pagamento (bem antes do prazo de 60 s): a retida abre na tela de entrada.
+- tapOn:
+    id: "cenario-11-sair"
+- extendedWaitUntil:
+    visible: "Pergunta 1 de 6"
+    timeout: 10000
+# Fecha pelo fundo: o rótulo "Fechar pesquisa" também está na alça da folha, e o Maestro tocaria nela.
+- tapOn:
+    point: "50%,15%"
+- extendedWaitUntil:
+    notVisible: "Pergunta 1 de 6"
+    timeout: 5000
+- assertVisible: ".*placement_available.*"
+- tapOn:
+    id: "tab-depuracao"
+- assertVisible: ".*placement_survey_held.*"
+- assertVisible: ".*survey_dismissed · via backdrop.*"

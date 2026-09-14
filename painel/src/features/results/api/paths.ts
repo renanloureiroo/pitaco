@@ -14,3 +14,7 @@ export function exportPath(applicationId: string, surveyId: string): string {
 export function exportRoutePath(applicationId: string, surveyId: string): string {
   return `/api/aplicacoes/${encodeURIComponent(applicationId)}/pesquisas/${encodeURIComponent(surveyId)}/resultados/export`;
 }
+
+export function behaviorPath(applicationId: string, surveyId: string): string {
+  return `${surveyResultsPath(applicationId, surveyId)}/behavior`;
+}

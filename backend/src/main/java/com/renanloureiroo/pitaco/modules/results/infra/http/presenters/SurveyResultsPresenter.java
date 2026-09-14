@@ -133,7 +133,7 @@ public final class SurveyResultsPresenter {
         .toList();
   }
 
-  private static ResultsFilterDTO present(ResultsFilterOutput filter) {
+  static ResultsFilterDTO present(ResultsFilterOutput filter) {
     return new ResultsFilterDTO(
         filter.from().orElse(null),
         filter.to().orElse(null),

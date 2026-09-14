@@ -5,5 +5,8 @@ package com.renanloureiroo.pitaco.core.catalog;
 public enum SdkFeature {
   CONDITIONAL_DISPLAY,
   SCALE_LABELS,
-  FREE_TEXT_NOTICE
+  FREE_TEXT_NOTICE,
+  // Capacidade do SDK, não exigência da pesquisa: nenhuma versão publicada depende dela para ser
+  // desenhada, e por isso RequiredSdk nunca a acrescenta.
+  INTERACTION_EVENTS
 }

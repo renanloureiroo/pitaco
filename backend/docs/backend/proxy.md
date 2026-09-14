@@ -29,6 +29,7 @@ Só a superfície pública. Todas são `POST`, com corpo JSON:
 | `{prefixo}/collect/eligibility` | `/api/collect/eligibility` |
 | `{prefixo}/collect/displays` | `/api/collect/displays` |
 | `{prefixo}/collect/displays/{displayId}/submission` | `/api/collect/displays/{displayId}/submission` |
+| `{prefixo}/collect/displays/{displayId}/events` | `/api/collect/displays/{displayId}/events` |
 | `{prefixo}/collect/suppressions` | `/api/collect/suppressions` |
 | `{prefixo}/collect/sdk-errors` | `/api/collect/sdk-errors` |
 
@@ -100,7 +101,8 @@ O limite por chave vale nas duas situações e é o que contém uma chave extra�
   abaixo de 64 KB.
 - **A chave.** Nunca trocada por outra chave "do servidor".
 - **A identidade do respondente**, em `respondent`, `respondentReference` e `deviceId`.
-- **O `displayId` no caminho da submissão.** É a chave de idempotência gerada no dispositivo.
+- **O `displayId` no caminho da submissão e dos eventos.** É a chave de idempotência gerada no
+  dispositivo.
 
 ## Respostas
 
@@ -111,7 +113,7 @@ Repassar **intactas**, com status, corpo e cabeçalhos:
 | 200 | elegibilidade | Com pesquisa ou com `survey: null`. Nunca vire isto em `204`. |
 | 200, 201 | abertura | Abertura repetida ou nova. |
 | 204 | submissão | Gravado, ou reenvio idêntico. |
-| 202 | supressões, relatórios de erro | Recebido. |
+| 202 | supressões, relatórios de erro, eventos de interação | Recebido. |
 | 400, 401, 404, 409, 422 | todas | `application/problem+json` com `code`. O SDK decide por eles. |
 | 429 | todas | Com `Retry-After`. **Não descarte o cabeçalho.** |
 

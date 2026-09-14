@@ -51,6 +51,7 @@ class CascadeDeletionE2ETest {
           "api_keys", "surveys", "survey_versions", "questions", "question_options",
           "segmentation_rules", "survey_state_transitions", "respondents", "survey_displays",
           "survey_display_attributes", "survey_answers", "survey_answer_options",
+          "survey_display_events",
           "application_events", "application_attributes", "application_attribute_values",
           "sdk_version_usage", "sdk_version_daily_usage", "suppression_events",
           "sdk_error_reports", "deletion_audits", "aggregate_snapshots",
@@ -114,6 +115,11 @@ class CascadeDeletionE2ETest {
             .id();
     var option = version.getQuestions().getFirst().getOptions().getFirst().value();
     AnswerFactory.anAnswer().forDisplay(display).forQuestion(choice).withOptions(option).buildSavedIn(answers);
+    insert(
+        "insert into survey_display_events (id, display_id, seq, catalog_version, type,"
+            + " occurred_at, elapsed_ms, received_at) values (?, ?, 1, 1, 'survey_presented',"
+            + " now(), 0, now())",
+        id(), display.value());
 
     insert(
         "insert into suppression_events (id, application_id, survey_id, version_id, respondent_id,"
@@ -189,6 +195,7 @@ class CascadeDeletionE2ETest {
     assertThat(count("survey_answers")).isZero();
     assertThat(count("survey_answer_options")).isZero();
     assertThat(count("survey_display_attributes")).isZero();
+    assertThat(count("survey_display_events")).isZero();
     assertThat(count("suppression_events")).isZero();
     assertThat(count("surveys")).isOne();
     assertThat(count("aggregate_snapshots")).isOne();
@@ -204,6 +211,7 @@ class CascadeDeletionE2ETest {
     assertThat(count("question_options")).isZero();
     assertThat(count("survey_displays")).isZero();
     assertThat(count("survey_answers")).isZero();
+    assertThat(count("survey_display_events")).isZero();
     assertThat(count("suppression_events")).isZero();
     assertThat(count("aggregate_snapshots")).isZero();
     assertThat(count("aggregate_snapshot_counts")).isZero();

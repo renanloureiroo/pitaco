@@ -13,6 +13,7 @@ import { QuestionForm } from "./question-form";
 import { QuestionsList } from "./questions-list";
 import { RemoveQuestionButton } from "./remove-question-button";
 import { SortableQuestionsList } from "./sortable-questions-list";
+import { SurveyPreview } from "./survey-preview";
 
 /**
  * Montagem das perguntas.
@@ -90,50 +91,56 @@ export function QuestionsPanel({
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      {readOnly ? (
-        <QuestionsList questions={ordered} />
-      ) : (
-        <SortableQuestionsList
-          applicationId={applicationId}
-          surveyId={surveyId}
-          questions={ordered}
-          actionsFor={actionsFor}
-        />
-      )}
+    <div className="grid lg:grid-cols-2 gap-8 items-start">
+      <div className="flex flex-col gap-4">
+        {readOnly ? (
+          <QuestionsList questions={ordered} />
+        ) : (
+          <SortableQuestionsList
+            applicationId={applicationId}
+            surveyId={surveyId}
+            questions={ordered}
+            actionsFor={actionsFor}
+          />
+        )}
 
-      {readOnly ? null : editing !== undefined ? (
-        <Card>
-          <CardContent>
-            <QuestionForm
-              key={editing.id}
-              applicationId={applicationId}
-              surveyId={surveyId}
-              questions={ordered}
-              question={editing}
-              onFinished={() => setEditingId(undefined)}
-            />
-          </CardContent>
-        </Card>
-      ) : adding ? (
-        <Card>
-          <CardContent>
-            <QuestionForm
-              applicationId={applicationId}
-              surveyId={surveyId}
-              questions={ordered}
-              onFinished={() => setAdding(false)}
-            />
-          </CardContent>
-        </Card>
-      ) : (
-        <div>
-          <Button data-testid="add-question-button" onClick={() => setAdding(true)}>
-            <PlusIcon aria-hidden />
-            Adicionar pergunta
-          </Button>
-        </div>
-      )}
+        {readOnly ? null : editing !== undefined ? (
+          <Card>
+            <CardContent>
+              <QuestionForm
+                key={editing.id}
+                applicationId={applicationId}
+                surveyId={surveyId}
+                questions={ordered}
+                question={editing}
+                onFinished={() => setEditingId(undefined)}
+              />
+            </CardContent>
+          </Card>
+        ) : adding ? (
+          <Card>
+            <CardContent>
+              <QuestionForm
+                applicationId={applicationId}
+                surveyId={surveyId}
+                questions={ordered}
+                onFinished={() => setAdding(false)}
+              />
+            </CardContent>
+          </Card>
+        ) : (
+          <div>
+            <Button data-testid="add-question-button" onClick={() => setAdding(true)}>
+              <PlusIcon aria-hidden />
+              Adicionar pergunta
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <div className="sticky top-4">
+        <SurveyPreview questions={ordered} />
+      </div>
     </div>
   );
 }

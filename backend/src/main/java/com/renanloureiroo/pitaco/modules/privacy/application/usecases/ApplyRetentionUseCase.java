@@ -55,19 +55,26 @@ public class ApplyRetentionUseCase
     for (var policy : applications.configuredPolicies()) {
       var answersDeleted = policy.answersBefore(now).map(cutoff -> discard(policy, cutoff, now)).orElse(0);
       var textsCleared = policy.textsBefore(now).map(cutoff -> clear(policy, cutoff)).orElse(0);
+      var eventsDeleted =
+          policy.answersBefore(now).map(cutoff -> discardEvents(policy, cutoff)).orElse(0);
 
+      if (answersDeleted + textsCleared + eventsDeleted > 0) {
+        log.info(
+            "Retenção aplicada application={} respostas={} textos={} eventos={}",
+            policy.applicationId().value(),
+            answersDeleted,
+            textsCleared,
+            eventsDeleted);
+      }
+
+      // A execução registrada responde "já houve descarte de respostas?" no aviso do painel; os
+      // eventos vencem junto, mas não são resposta.
       if (answersDeleted + textsCleared == 0) {
         continue;
       }
 
       transactor.runInTransaction(
           () -> runs.create(RetentionRun.record(policy.applicationId(), answersDeleted, textsCleared, now)));
-
-      log.info(
-          "Retenção aplicada application={} respostas={} textos={}",
-          policy.applicationId().value(),
-          answersDeleted,
-          textsCleared);
 
       done.add(
           new RetentionRunOutput(policy.applicationId().value(), answersDeleted, textsCleared));
@@ -92,6 +99,21 @@ public class ApplyRetentionUseCase
                 store.deleteAnswers(batch.stream().map(ExpiringAnswer::answerId).toList());
                 return batch.size();
               });
+
+      total += deleted;
+      if (deleted < batchSize) {
+        return total;
+      }
+    }
+  }
+
+  private int discardEvents(RetentionPolicy policy, Instant cutoff) {
+    var total = 0;
+
+    while (true) {
+      int deleted =
+          transactor.inTransaction(
+              () -> store.deleteInteractionEvents(policy.applicationId(), cutoff, batchSize));
 
       total += deleted;
       if (deleted < batchSize) {

@@ -1,0 +1,31 @@
+# Subfluxo comum: abre o exemplo no Expo Go direto na tela do cenário (deep link do Expo Router),
+# fecha o menu de desenvolvedor do Expo Go se ele aparecer e simula uma instalação nova pelo
+# painel (storage e identidade limpos, log limpo), para o servidor entregar a pesquisa de novo.
+#
+# Uso: runFlow: { file: _comum/abrir-cenario.yaml, env: { ROTA: 01-sheet } }
+appId: host.exp.Exponent
+---
+# Processo novo: zera o limite de uma pesquisa por sessão e qualquer estado em memória (o pacote do
+# Expo Go muda de nome no Android; ver fechar-app.yaml).
+- runFlow:
+    file: fechar-app.yaml
+# Abre a rota e espera a tela dela (endereço por plataforma, menu de desenvolvedor e nova tentativa
+# da abertura em abrir-link.yaml).
+- runFlow:
+    file: abrir-link.yaml
+    env:
+      ROTA: ${ROTA}
+- tapOn:
+    id: "tab-depuracao"
+- tapOn:
+    id: "debug-limpar-storage"
+- tapOn:
+    id: "secao-estado"
+- tapOn:
+    id: "secao-eventos"
+- tapOn:
+    id: "tab-cenarios"
+- extendedWaitUntil:
+    visible:
+      id: "tela-${ROTA}"
+    timeout: 10000

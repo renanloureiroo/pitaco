@@ -1,6 +1,6 @@
 /** Fronteira pública da feature de resultados (Princípio I). */
 
-export { getSurveyResults, listOpenAnswers, backendExportUrl, exportHref } from "./api/results";
+export { getSurveyResults, listOpenAnswers, backendExportUrl, exportHref, getSurveyBehavior } from "./api/results";
 
 export {
   ABSENT_PARAM,
@@ -35,6 +35,8 @@ export {
   type SurveyResults,
 } from "./schemas/results";
 
+export { type SurveyBehavior, type MetricDefinition } from "./schemas/behavior";
+
 export {
   EXPORT_NOTICE,
   NEVER_PUBLISHED_DESCRIPTION,
@@ -61,3 +63,4 @@ export { OpenAnswersSearch } from "./components/open-answers-search";
 export { RefreshControl } from "./components/refresh-control";
 export { ExportButton } from "./components/export-button";
 export { RetentionNote } from "./components/retention-note";
+export { BehaviorCard } from "./components/behavior-card";

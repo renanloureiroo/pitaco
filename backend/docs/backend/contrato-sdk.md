@@ -1,6 +1,6 @@
 # Contrato público do SDK
 
-A superfície que o SDK `@pitaco/react-native` consome: as cinco rotas sob `/collect`, os
+A superfície que o SDK `@pitaco/react-native` consome: as seis rotas sob `/collect`, os
 cabeçalhos, as formas de requisição e resposta, e o que cada código significa. É derivado do
 código atual (DTOs em `modules/collect/infra/http/dtos`, Swagger em
 `modules/collect/infra/http/controllers/*Swagger.java`) e é a base para construir o SDK.
@@ -69,7 +69,7 @@ Janela fixa de um minuto, em memória, por instância da API. Os padrões de pro
 | Balde | Capacidade | Vale para |
 | --- | --- | --- |
 | Por origem (IP) | 120 por minuto | todas as rotas `/collect` |
-| Por chave | 1200 por minuto | todas as rotas `/collect`, menos `/collect/sdk-errors` |
+| Por chave | 1200 por minuto | todas as rotas `/collect`, menos `/collect/sdk-errors` (os eventos de interação entram aqui) |
 | Relatórios de erro, por chave | 30 por minuto | só `/collect/sdk-errors` |
 
 O `429` traz `Retry-After`. O SDK respeita o valor antes de tentar de novo.
@@ -380,6 +380,168 @@ novo relatório.
 
 ---
 
+## 6. `POST /collect/displays/{displayId}/events`
+
+Um lote de eventos de interação de uma exibição, no catálogo fechado do Pitaco (seção seguinte).
+Os eventos são emitidos pelo core do SDK como consequência das transições da pesquisa, nunca pela
+UI, e por isso qualquer UI produz o mesmo fluxo.
+
+**Envie só depois de a abertura da exibição ter recebido `201` ou `200`.** Evento de exibição que
+o servidor não conhece é descartado com `202`, sem volta.
+
+### Requisição
+
+```json
+{
+  "events": [
+    {
+      "catalogVersion": 1,
+      "type": "question_left",
+      "displayId": "3b1f0a2c-6c9a-4a1e-9d0b-2c1f7a3e5d90",
+      "seq": 7,
+      "occurredAt": "2026-09-12T13:45:03.120Z",
+      "elapsedMs": 8120,
+      "questionKey": "5f0c2b1e-9a4d-4c3e-8b7a-1d2e3f4a5b6c",
+      "data": { "visit": 1, "to": "next", "durationMs": 4200, "activeMs": 4200, "answered": true }
+    }
+  ]
+}
+```
+
+| Regra | O que acontece |
+| --- | --- |
+| Lote | De 1 a 100 eventos. Vazio, ausente ou com mais de 100 é `400`. |
+| Campo do envelope com tipo JSON errado | `seq` como texto, `occurredAt` fora de ISO 8601: corpo malformado, `400`. |
+| Tipo fora do catálogo | O evento é descartado e contado (`unknownType`). Nunca `400`. |
+| Envelope incompleto | Sem `catalogVersion`, `seq`, `occurredAt` ou `elapsedMs`, `seq` menor que 1, `elapsedMs` negativo, `displayId` diferente do caminho, ou evento de pergunta sem `questionKey`: descartado (`invalidEnvelope`). `displayId` ausente vale o do caminho. |
+| Pergunta fora da versão exibida | Descartado (`unknownQuestion`). |
+| Escolha em texto livre | `answer_selected`, `answer_changed` e `answer_deselected` numa pergunta `FREE_TEXT` são descartados (`invalidEnvelope`): o valor seria o texto digitado. |
+| Campo extra | Ignorado, no envelope e no `data`. |
+| Campo do `data` fora da forma | Some, e o evento fica sem ele. Em evento de texto só `length` sobrevive. |
+| Teto por exibição | `pitaco.collect.interaction-events.max-per-display`, padrão 500. Conta o que já está gravado e corta pela ordem de `seq`; o resto é `overLimit`. |
+| Janela de aceitação | `pitaco.collect.interaction-events.acceptance-window`, padrão 7 dias contados da abertura no servidor. Depois dela o lote inteiro é `outsideWindow`. A idade máxima da fila local do SDK deve caber nela. |
+
+### Resposta
+
+**Sempre `202`** quando o corpo é legível, com a contagem do que aconteceu. Exibição inexistente,
+de outra aplicação ou de aplicação inativa descarta o lote inteiro como `displayUnavailable`, sem
+revelar qual dos três é o caso.
+
+```json
+{
+  "accepted": 12,
+  "duplicated": 0,
+  "discarded": {
+    "displayUnavailable": 0,
+    "outsideWindow": 0,
+    "unknownType": 1,
+    "invalidEnvelope": 0,
+    "unknownQuestion": 0,
+    "overLimit": 0
+  }
+}
+```
+
+A contagem serve à depuração. A fila local remove o lote em qualquer `202`. `400`, `401` e `429`
+seguem a regra geral.
+
+### Idempotência
+
+O par (`displayId`, `seq`) é a chave, garantida por `unique (display_id, seq)` no banco. Reenviar
+o mesmo lote não grava nada de novo e volta como `duplicated`. Dois eventos com o mesmo `seq` no
+mesmo lote: o primeiro vence. Lotes simultâneos da mesma exibição passam um de cada vez pela
+contagem do teto.
+
+---
+
+## Catálogo de eventos de interação, versão 1
+
+Fixo e igual para toda aplicação. O app hospedeiro pode ouvir os eventos, nunca criar tipo nem
+alterar payload. Nenhum evento carrega conteúdo de texto livre.
+
+### Onde o catálogo mora
+
+- **No backend:** `core/catalog/InteractionEventType`, um enum com os 18 tipos, o `data` fechado
+  de cada um (`InteractionField`) e `CATALOG_VERSION`. É a única fonte.
+- **No OpenAPI** (`/api/v3/api-docs`), gerado desse enum por
+  `modules/collect/infra/http/config/InteractionCatalogSchemas`:
+  - `InteractionEventType`: o enum com os 18 nomes, com a extensão `x-pitaco-catalog-version`.
+  - `InteractionEvent`: a união discriminada por `type`, uma variante `<Tipo>Event` por tipo.
+  - `<Tipo>Data`: o payload fechado de cada tipo, com `additionalProperties: false`.
+- **O teste de contrato** compara a lista do módulo tipado do SDK com
+  `components.schemas.InteractionEventType.enum` e a versão com `x-pitaco-catalog-version`.
+  Falha se um tipo existir de um lado e não do outro.
+
+### Envelope
+
+| Campo | Regra |
+| --- | --- |
+| `catalogVersion` | Inteiro, a partir de 1. A versão em que o SDK emitiu. |
+| `type` | Um dos 18 nomes abaixo, exatamente como escrito. |
+| `displayId` | O UUID da exibição, o mesmo do caminho. |
+| `seq` | Monotônico por exibição, começa em 1. Chave de idempotência. |
+| `occurredAt` | ISO 8601, relógio do dispositivo. |
+| `elapsedMs` | Relógio monotônico desde `survey_presented`, imune a ajuste de hora. |
+| `questionKey` | Chave estável da pergunta. Obrigatória nos eventos de pergunta, ignorada nos demais. |
+| `data` | Payload fechado por tipo. |
+
+### Tipos
+
+| Tipo | De pergunta | `data` |
+| --- | --- | --- |
+| `survey_presented` | não | `presentation`: `bottom-sheet` \| `modal` \| `inline`; `questionCount`, `renderableCount`: inteiro ≥ 0; `triggerEvent`: nome de evento |
+| `question_viewed` | sim | `position`, `visit`: inteiro ≥ 1 (1 na primeira vez, 2 ao voltar…); `from`: `start` \| `next` \| `back` |
+| `answer_selected` | sim | `value` |
+| `answer_changed` | sim | `from`, `to`: valor de resposta |
+| `answer_deselected` | sim | `value` |
+| `text_focused` | sim | — |
+| `text_edited` | sim | `length`: inteiro ≥ 0. Com debounce de 1 s no SDK |
+| `text_blurred` | sim | `length` |
+| `validation_blocked` | sim | `reason`: `required_missing` |
+| `question_skipped` | sim | — |
+| `question_not_applicable` | sim | `sourceKey`: chave da pergunta de origem |
+| `navigated_next` | sim | `toKey`: chave da pergunta de destino |
+| `navigated_back` | sim | `toKey` |
+| `question_left` | sim | `visit`: inteiro ≥ 1; `to`: `next` \| `back` \| `dismiss` \| `complete`; `durationMs`, `activeMs`: inteiro ≥ 0; `answered`: booleano |
+| `survey_backgrounded` | não | — |
+| `survey_foregrounded` | não | `backgroundMs`: inteiro ≥ 0 |
+| `survey_dismissed` | não | `via`: `close_button` \| `swipe` \| `backdrop` \| `hardware_back` \| `navigation` \| `programmatic`; `position`: inteiro ≥ 1; `answeredCount`: inteiro ≥ 0 |
+| `survey_completed` | não | `answeredCount`, `skippedCount`, `notApplicableCount`, `activeMs`: inteiro ≥ 0 |
+
+Formas: inteiro aceita o double inteiro do JavaScript (`12.0`), nunca fração. **Valor de
+resposta** é o `value` da opção (texto de 1 a 120 caracteres) ou o número escolhido, nunca o
+rótulo. Chave de pergunta é UUID. Nome de evento segue a regra do disparo.
+
+### Regras de tempo
+
+- `durationMs` é o tempo de relógio monotônico entre `question_viewed` e `question_left` da mesma
+  visita. `activeMs` desconta o tempo em segundo plano (`AppState`).
+- Cada visita a uma pergunta tem os próprios tempos. Quem soma as visitas é a leitura.
+- `occurredAt` é informativo: o servidor não o usa para ordenar nem para a janela de aceitação,
+  que conta do `opened_at` da exibição no relógio do servidor.
+
+### Versionamento
+
+- Tipo novo, campo novo ou valor novo numa lista fechada é mudança de contrato: exige
+  `CATALOG_VERSION` nova.
+- O servidor aceita versões anteriores. Evento com `catalogVersion` mais nova que a do servidor é
+  aceito se o tipo for conhecido, com os campos que o servidor conhece; tipo desconhecido é
+  descartado e contado.
+- Eventos anteriores à exibição (bloqueio, adiamento, descarte do adiamento) não fazem parte do
+  catálogo enviado. Vão só para o `onEvent` do app, com tipos `placement_`, documentados no SDK.
+
+### Privacidade e retenção
+
+- Evento de texto guarda só o tamanho. Nenhum campo do catálogo carrega texto livre, e o que
+  chegar fora dele é descartado antes de gravar.
+- Os eventos ficam em `survey_display_events`, com `on delete cascade` a partir da exibição: a
+  exclusão do respondente e a da pesquisa levam os eventos junto.
+- A retenção de respostas da aplicação também descarta os eventos recebidos antes do prazo, em
+  lotes. Não há agregado congelado de comportamento: depois do descarte, a leitura de
+  comportamento conta só o que ficou.
+
+---
+
 ## Fila local e idempotência
 
 O desenho que o servidor espera do SDK:
@@ -390,6 +552,8 @@ O desenho que o servidor espera do SDK:
    abertura nunca chegou volta para trás da abertura.
 4. Repetir a mesma abertura devolve `200`; repetir o mesmo envio devolve `204`. Reenvio nunca
    duplica.
+5. Os eventos de interação vão na mesma fila, em lotes de até 100, sempre depois da abertura.
+   Repetir um lote devolve `202` com os eventos em `duplicated`.
 
 | Resultado | O que o SDK faz com o item |
 | --- | --- |
@@ -403,9 +567,36 @@ A fila tem limite de tamanho e de idade, e descarta o que passa do limite.
 ## Compatibilidade
 
 O servidor guarda, em `core/catalog/SdkCapabilities`, a versão mínima do SDK para cada tipo de
-pergunta e cada recurso. Hoje tudo exige `1.0.0`. Quando um tipo ou recurso novo entrar, ele
+pergunta e cada recurso. Hoje tudo exige `1.0.0`, inclusive `INTERACTION_EVENTS`, o recurso de eventos de interação.
+Ele é capacidade do SDK e não exigência da pesquisa: nenhuma versão publicada depende dele para
+ser desenhada, e por isso nunca entra na versão mínima de uma pesquisa. Quando um tipo ou recurso
+novo entrar, ele
 nasce com a versão que o suporta, e a supressão passa a informar a partir de qual versão a
 pesquisa funcionaria.
 
 Mudança neste contrato é aditiva: campo novo não quebra SDK antigo, e remoção só acontece depois
 de os consumidores migrarem, em release separado.
+
+---
+
+## Leitura de comportamento (painel)
+
+`GET /applications/{applicationId}/surveys/{surveyId}/results/behavior` é superfície
+administrativa, não do SDK. Registrada aqui porque cada número dela é definido sobre o catálogo
+acima. Aceita os mesmos recortes dos resultados (`from`, `to`, `attribute`, `attributeValue`,
+`version`), responde `200`, `400`, `403` e `404` como eles, e devolve cada definição em
+`definitions` para a tela mostrar junto dos números.
+
+| Métrica | Definição |
+| --- | --- |
+| `instrumented` | Exibições do recorte com ao menos um evento aceito. É a base de toda a leitura: exibição de SDK que não envia eventos não entra na conta. `displayed` traz o total do recorte, com ou sem eventos. |
+| `viewed` | Exibições em que a pergunta passou a ser a atual ao menos uma vez (`question_viewed`). |
+| `answered` | Exibições em que a última saída da pergunta (`question_left` de maior `seq`) tem `answered: true`. |
+| `skipped` | Exibições em que a última saída da pergunta tem `answered: false` e `to` igual a `next` ou `complete`. |
+| `abandoned` | Exibições dispensadas, ou sem desfecho depois do prazo de abandono (30 minutos, o mesmo dos resultados), cuja última pergunta vista (`question_viewed` de maior `seq`) é esta. |
+| `activeTime` | Por exibição, a soma do `activeMs` de todas as visitas à pergunta (`question_left`). Mediana (`medianMs`) e percentil 90 (`p90Ms`) entre as exibições que saíram da pergunta ao menos uma vez, em milissegundos, por interpolação linear (`percentile_cont`), arredondados. `samples` é o número dessas exibições. |
+| `revisitRate` | Exibições com `question_viewed` de `visit` ≥ 2 na pergunta ÷ `viewed`. Ausente quando `viewed` é zero. |
+| `answerChangeRate` | Exibições com `answer_changed` ou `answer_deselected` na pergunta ÷ exibições com `answer_selected` nela. Ausente sem escolha. |
+| `validationBlocks` | Eventos `validation_blocked` na pergunta (`validationBlocks`) e exibições com ao menos um (`validationBlockedDisplays`). |
+| `dismissalVia` | Exibições instrumentadas com `survey_dismissed`, pela `via` da última dispensa de cada uma. As seis vias sempre aparecem, com a fração sobre o total; via ausente ou fora do catálogo conta em `unspecified`. |
+

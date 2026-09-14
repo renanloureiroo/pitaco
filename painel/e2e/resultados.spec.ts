@@ -93,6 +93,10 @@ test.describe("US5 — ler o resultado de uma pesquisa", () => {
     await expect(page.getByTestId("response-rate-definition")).toContainText("concluídas ÷ exibidas");
     await expect(page.getByTestId("small-sample-badge")).toBeVisible();
 
+    // Verificando a nova seção "Comportamento" e a presença da definição da métrica
+    await expect(page.getByTestId("behavior-card")).toBeVisible();
+    await expect(page.getByTestId("behavior-card")).toContainText("Taxa de troca de resposta");
+
     const nps = page.getByTestId("question-result").filter({ hasText: NPS });
     await expect(nps.getByTestId("nps-promoters")).toHaveText("1");
     await expect(nps.getByTestId("nps-detractors")).toHaveText("1");

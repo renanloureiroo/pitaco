@@ -1,0 +1,82 @@
+# Cenário 3 — Como tela: a pesquisa empilhada como rota do Expo Router. Voltar pela seta do
+# cabeçalho e pelo gesto de borda do iOS vira survey_dismissed com via navigation (um só); concluir
+# volta sozinho para a tela anterior, com survey_completed e nenhuma dispensa.
+appId: host.exp.Exponent
+name: "03 · Como tela"
+---
+- runFlow:
+    file: _comum/abrir-cenario.yaml
+    env:
+      ROTA: 03-tela
+
+# 1) Sair pela navegação com a pesquisa aberta. No iOS, a seta do cabeçalho (o rótulo é o título
+# da tela anterior, ou "Back" quando não cabe); no Android, o voltar do sistema.
+- tapOn:
+    id: "cenario-03-disparar"
+- extendedWaitUntil:
+    visible:
+      id: "tela-03-tela-pesquisa"
+    timeout: 20000
+- assertVisible: "Pergunta 1 de 6"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          text: "Back|3\\. Como tela"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    visible:
+      id: "cenario-03-disparar"
+    timeout: 5000
+- assertNotVisible:
+    id: "tela-03-tela-pesquisa"
+- tapOn:
+    id: "tab-depuracao"
+- assertVisible: ".*survey_dismissed · via navigation.*"
+
+# 2) O gesto de voltar da borda do iOS não entra aqui: nem o swipe sintético do Maestro nem um
+# arrasto com o mouse no Simulator acionaram o reconhecedor de borda da pilha nativa (a tela não se
+# move). A seta do cabeçalho acima passa pelo mesmo desmonte da rota; o gesto fica para um aparelho
+# físico (ver o README).
+
+# 3) Concluir: volta sozinho, sem dispensa.
+- tapOn:
+    id: "debug-limpar-storage"
+- tapOn:
+    id: "tab-cenarios"
+- tapOn:
+    id: "cenario-03-disparar"
+- extendedWaitUntil:
+    visible:
+      id: "tela-03-tela-pesquisa"
+    timeout: 20000
+- tapOn: "9"
+- tapOn: "Próxima"
+- assertVisible: "Pergunta 2 de 5"
+- tapOn: "4"
+- tapOn: "Próxima"
+- assertVisible: "Pergunta 3 de 5"
+- tapOn: "4 de 5"
+- tapOn: "Próxima"
+# Com NPS 9 a condicional (motivo) não se aplica e o total passa a 5: a múltipla escolha é a 4 de 5.
+- assertVisible: "Pergunta 4 de 5"
+- tapOn: "Próxima"
+- assertVisible: "Pergunta 5 de 5"
+- tapOn: "Enviar"
+- extendedWaitUntil:
+    visible:
+      id: "cenario-03-disparar"
+    timeout: 10000
+- tapOn:
+    id: "tab-depuracao"
+# A sequência completa passa de uma tela: rola até o fim.
+- scrollUntilVisible:
+    element: ".*survey_completed.*"
+    direction: DOWN
+    timeout: 15000
+- assertNotVisible: ".*survey_dismissed.*"

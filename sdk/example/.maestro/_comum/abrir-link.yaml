@@ -1,0 +1,66 @@
+# Subfluxo comum: abre o exemplo no Expo Go direto numa rota do Expo Router e só termina quando a
+# tela dela está visível (`tela-${ROTA}`).
+#
+# - Endereço do Metro por plataforma: no iOS (simulador), 127.0.0.1, que é o próprio Mac; no
+#   Android (emulador), 10.0.2.2, que é o Mac visto pelo emulador. O 127.0.0.1 no Android depende do
+#   `adb reverse tcp:8081 tcp:8081` que o `expo start --android` cria; no emulador desta fase o
+#   túnel existia mas não respondia (conexão sem bytes), e o 10.0.2.2 funciona sem túnel.
+# - Menu de desenvolvedor do Expo Go: a apresentação ("Continue") e o menu aberto por cima do app
+#   são fechados aqui, porque escondem a tela do app.
+# - Expo Go aquecido antes do link (Android): com o Expo Go frio, logo depois de fechado, o
+#   `LauncherActivity` às vezes recebe o link e fecha a própria tarefa sem abrir o app (no logcat, o
+#   START do link, "Displayed LauncherActivity" e uma transição CLOSE, sem o START do
+#   `ExperienceActivity`); fica a tela inicial do sistema, e o link atrasado ainda mandava o app para
+#   o fundo depois. Abrindo antes a tela inicial do próprio Expo Go e esperando por ela, o link pega.
+# - Nova tentativa só da abertura, como rede de segurança. O `retry` cobre só a abertura, nunca o
+#   cenário.
+#
+# Uso: runFlow: { file: abrir-link.yaml, env: { ROTA: 01-sheet } }
+appId: host.exp.Exponent
+---
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            platform: iOS
+          commands:
+            - openLink: exp://127.0.0.1:8081/--/cenarios/${ROTA}
+      - runFlow:
+          when:
+            platform: Android
+          commands:
+            - launchApp:
+                appId: host.exp.exponent
+                stopApp: false
+            - extendedWaitUntil:
+                visible: "Expo Go"
+                timeout: 30000
+            - openLink: exp://10.0.2.2:8081/--/cenarios/${ROTA}
+      # Primeira abertura do Expo Go: a apresentação do menu de desenvolvedor.
+      - runFlow:
+          when:
+            visible: "Continue"
+          commands:
+            - tapOn: "Continue"
+      # O menu de desenvolvedor aberto por cima do app (primeira execução ou gesto acidental).
+      - runFlow:
+          when:
+            visible: "Go home"
+            platform: iOS
+          commands:
+            # O X do menu, no canto do cartão (posição usada pela 5a no iPhone 16).
+            - tapOn:
+                point: "91%,47%"
+      - runFlow:
+          when:
+            visible: "Go home"
+            platform: Android
+          commands:
+            # No Android o menu é uma folha embaixo, e o voltar do sistema a fecha sem depender da
+            # posição do X (que muda com a altura da folha).
+            - back
+      - extendedWaitUntil:
+          visible:
+            id: "tela-${ROTA}"
+          timeout: 30000

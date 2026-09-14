@@ -51,6 +51,11 @@ public class RetentionStoreJpa implements RetentionStore {
   }
 
   @Override
+  public int deleteInteractionEvents(ApplicationId applicationId, Instant before, int limit) {
+    return repository.deleteInteractionEvents(applicationId.value(), before, limit);
+  }
+
+  @Override
   public long countAnswersBefore(ApplicationId applicationId, Instant before) {
     return repository.countAnswersBefore(applicationId.value(), before);
   }

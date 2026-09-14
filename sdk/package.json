@@ -1,0 +1,128 @@
+{
+  "name": "@pitaco/react-native",
+  "version": "1.0.0",
+  "description": "SDK React Native do Pitaco: pesquisas curtas dentro do app, sem módulo nativo.",
+  "license": "UNLICENSED",
+  "private": true,
+  "source": "./src/index.ts",
+  "main": "./lib/commonjs/index.js",
+  "module": "./lib/module/index.js",
+  "types": "./lib/typescript/commonjs/src/index.d.ts",
+  "react-native": "./src/index.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "import": {
+        "types": "./lib/typescript/module/src/index.d.ts",
+        "default": "./lib/module/index.js"
+      },
+      "require": {
+        "types": "./lib/typescript/commonjs/src/index.d.ts",
+        "default": "./lib/commonjs/index.js"
+      }
+    },
+    "./storage/async-storage": {
+      "source": "./src/storage/async-storage.ts",
+      "import": {
+        "types": "./lib/typescript/module/src/storage/async-storage.d.ts",
+        "default": "./lib/module/storage/async-storage.js"
+      },
+      "require": {
+        "types": "./lib/typescript/commonjs/src/storage/async-storage.d.ts",
+        "default": "./lib/commonjs/storage/async-storage.js"
+      }
+    },
+    "./storage/mmkv": {
+      "source": "./src/storage/mmkv.ts",
+      "import": {
+        "types": "./lib/typescript/module/src/storage/mmkv.d.ts",
+        "default": "./lib/module/storage/mmkv.js"
+      },
+      "require": {
+        "types": "./lib/typescript/commonjs/src/storage/mmkv.d.ts",
+        "default": "./lib/commonjs/storage/mmkv.js"
+      }
+    },
+    "./preview": {
+      "source": "./src/preview/index.ts",
+      "import": {
+        "types": "./lib/typescript/module/src/preview/index.d.ts",
+        "default": "./lib/module/preview/index.js"
+      },
+      "require": {
+        "types": "./lib/typescript/commonjs/src/preview/index.d.ts",
+        "default": "./lib/commonjs/preview/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "lib",
+    "!**/__tests__",
+    "!**/__fixtures__",
+    "!**/__mocks__"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "build": "bob build",
+    "gen:api": "node scripts/gen-api.mjs",
+    "example:typecheck": "npm run typecheck --prefix example",
+    "example:lint": "npm run lint --prefix example",
+    "verify": "npm run lint && npm run typecheck && npm run test -- --ci && npm run build && npm run example:typecheck && npm run example:lint"
+  },
+  "peerDependencies": {
+    "react": ">=18.2.0",
+    "react-native": ">=0.74.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@react-native/babel-preset": "0.87.1",
+    "@react-native/jest-preset": "0.87.1",
+    "@testing-library/react-native": "^14.0.1",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^26.5.1",
+    "@types/react": "~19.2.0",
+    "babel-jest": "^29.7.0",
+    "eslint": "^10.10.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "jest": "^29.7.0",
+    "openapi-typescript": "^7.13.0",
+    "react": "~19.2.3",
+    "react-native": "0.87.1",
+    "react-native-builder-bob": "^0.43.1",
+    "test-renderer": "^1.2.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.70.0"
+  },
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      [
+        "module",
+        {
+          "esm": true
+        }
+      ],
+      [
+        "commonjs",
+        {
+          "esm": true
+        }
+      ],
+      [
+        "typescript",
+        {
+          "project": "tsconfig.build.json"
+        }
+      ]
+    ]
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

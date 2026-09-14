@@ -17,6 +17,10 @@ public interface RetentionStore {
   // Apaga o texto e mantém a resposta: ela continua contando como dada. Devolve quantas mudou.
   int clearTexts(ApplicationId applicationId, Instant before, int limit);
 
+  // Os eventos de interação vencem com as respostas: carregam valor escolhido e tempo de cada
+  // pergunta. Em ordem de recebimento, no máximo `limit`; devolve quantos apagou.
+  int deleteInteractionEvents(ApplicationId applicationId, Instant before, int limit);
+
   long countAnswersBefore(ApplicationId applicationId, Instant before);
 
   long countTextsBefore(ApplicationId applicationId, Instant before);

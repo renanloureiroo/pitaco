@@ -1,0 +1,118 @@
+{
+  "triggerEvent": "pitaco.example.trigger",
+  "surveyId": "d50db159-a181-43df-8140-0dccd47a6c5f",
+  "schema": {
+    "surveyId": "d50db159-a181-43df-8140-0dccd47a6c5f",
+    "versionId": "aa0bfed8-7cee-47e3-a9c4-60d5608939e8",
+    "versionNumber": 1,
+    "questions": [
+      {
+        "key": "39e85794-103e-4a64-8858-a97bebdadafe",
+        "position": 1,
+        "statement": "De 0 a 10, o quanto você recomendaria este app a um amigo ou colega?",
+        "type": "NPS",
+        "required": true,
+        "options": [],
+        "range": {
+          "min": 0,
+          "max": 10,
+          "minLabel": "Nada provável",
+          "maxLabel": "Extremamente provável"
+        }
+      },
+      {
+        "key": "24080e6d-bab8-4b9c-8105-73fbce529a80",
+        "position": 2,
+        "statement": "O quanto você está satisfeito com o app no geral?",
+        "type": "SCALE",
+        "required": false,
+        "options": [],
+        "range": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "Nada satisfeito",
+          "maxLabel": "Muito satisfeito"
+        }
+      },
+      {
+        "key": "c15f0f16-9368-48b1-bb62-dd5d6ef87a18",
+        "position": 3,
+        "statement": "Como você avalia o suporte ao cliente?",
+        "type": "RATING",
+        "required": true,
+        "options": [],
+        "range": {
+          "min": 1,
+          "max": 5
+        }
+      },
+      {
+        "key": "7bfe21ad-0875-42ae-a1c4-626535af4955",
+        "position": 4,
+        "statement": "O que mais pesou na sua nota?",
+        "type": "SINGLE_CHOICE",
+        "required": false,
+        "options": [
+          {
+            "label": "Preço",
+            "value": "preco",
+            "position": 1
+          },
+          {
+            "label": "Atendimento",
+            "value": "atendimento",
+            "position": 2
+          },
+          {
+            "label": "Estabilidade",
+            "value": "estabilidade",
+            "position": 3
+          }
+        ],
+        "condition": {
+          "sourceKey": "39e85794-103e-4a64-8858-a97bebdadafe",
+          "operator": "between",
+          "values": [],
+          "min": 0,
+          "max": 6
+        }
+      },
+      {
+        "key": "e71715cd-6978-40b9-9beb-87022eebf367",
+        "position": 5,
+        "statement": "Quais recursos você mais usa?",
+        "type": "MULTIPLE_CHOICE",
+        "required": false,
+        "options": [
+          {
+            "label": "Busca",
+            "value": "busca",
+            "position": 1
+          },
+          {
+            "label": "Notificações",
+            "value": "notificacoes",
+            "position": 2
+          },
+          {
+            "label": "Relatórios",
+            "value": "relatorios",
+            "position": 3
+          }
+        ]
+      },
+      {
+        "key": "ab9ace08-941d-48fd-818b-7674b6bce42d",
+        "position": 6,
+        "statement": "Tem algum comentário ou sugestão para nós?",
+        "type": "FREE_TEXT",
+        "required": false,
+        "options": []
+      }
+    ],
+    "freeTextNotice": {
+      "enabled": true,
+      "text": "Evite escrever dados pessoais, como nome, telefone ou e-mail."
+    }
+  }
+}

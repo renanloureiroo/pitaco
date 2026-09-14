@@ -2,14 +2,17 @@ package com.renanloureiroo.pitaco.modules.results.infra.http.controllers;
 
 import com.renanloureiroo.pitaco.infra.http.dtos.PageResponseDTO;
 import com.renanloureiroo.pitaco.modules.results.application.usecases.ExportSurveyResultsUseCase;
+import com.renanloureiroo.pitaco.modules.results.application.usecases.GetSurveyBehaviorUseCase;
 import com.renanloureiroo.pitaco.modules.results.application.usecases.GetSurveyResultsUseCase;
 import com.renanloureiroo.pitaco.modules.results.application.usecases.ListOpenAnswersUseCase;
 import com.renanloureiroo.pitaco.modules.results.infra.http.dtos.OpenAnswerResponseDTO;
 import com.renanloureiroo.pitaco.modules.results.infra.http.dtos.OpenAnswersQueryDTO;
 import com.renanloureiroo.pitaco.modules.results.infra.http.dtos.ResultsQueryDTO;
+import com.renanloureiroo.pitaco.modules.results.infra.http.dtos.SurveyBehaviorResponseDTO;
 import com.renanloureiroo.pitaco.modules.results.infra.http.dtos.SurveyResultsResponseDTO;
 import com.renanloureiroo.pitaco.modules.results.infra.http.export.CsvExportWriter;
 import com.renanloureiroo.pitaco.modules.results.infra.http.presenters.OpenAnswerPresenter;
+import com.renanloureiroo.pitaco.modules.results.infra.http.presenters.SurveyBehaviorPresenter;
 import com.renanloureiroo.pitaco.modules.results.infra.http.presenters.SurveyResultsPresenter;
 import jakarta.validation.Valid;
 import java.nio.charset.StandardCharsets;
@@ -38,14 +41,17 @@ public class SurveyResultsController implements SurveyResultsSwagger {
   private final GetSurveyResultsUseCase getSurveyResultsUseCase;
   private final ListOpenAnswersUseCase listOpenAnswersUseCase;
   private final ExportSurveyResultsUseCase exportSurveyResultsUseCase;
+  private final GetSurveyBehaviorUseCase getSurveyBehaviorUseCase;
 
   SurveyResultsController(
       GetSurveyResultsUseCase getSurveyResultsUseCase,
       ListOpenAnswersUseCase listOpenAnswersUseCase,
-      ExportSurveyResultsUseCase exportSurveyResultsUseCase) {
+      ExportSurveyResultsUseCase exportSurveyResultsUseCase,
+      GetSurveyBehaviorUseCase getSurveyBehaviorUseCase) {
     this.getSurveyResultsUseCase = getSurveyResultsUseCase;
     this.listOpenAnswersUseCase = listOpenAnswersUseCase;
     this.exportSurveyResultsUseCase = exportSurveyResultsUseCase;
+    this.getSurveyBehaviorUseCase = getSurveyBehaviorUseCase;
   }
 
   @Override
@@ -68,6 +74,17 @@ public class SurveyResultsController implements SurveyResultsSwagger {
     var output = listOpenAnswersUseCase.execute(query.toInput(applicationId, surveyId));
 
     return ResponseEntity.ok(OpenAnswerPresenter.present(output));
+  }
+
+  @Override
+  @GetMapping(value = "/behavior", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<SurveyBehaviorResponseDTO> behavior(
+      @PathVariable String applicationId,
+      @PathVariable String surveyId,
+      @Valid @ModelAttribute ResultsQueryDTO query) {
+    var output = getSurveyBehaviorUseCase.execute(query.toBehaviorInput(applicationId, surveyId));
+
+    return ResponseEntity.ok(SurveyBehaviorPresenter.present(output));
   }
 
   // O escopo é resolvido antes de a resposta começar — 404 ainda sai como problem+json — e as

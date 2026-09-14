@@ -7,6 +7,7 @@ import com.renanloureiroo.pitaco.modules.collect.application.gateways.SurveyQuot
 import com.renanloureiroo.pitaco.modules.collect.application.gateways.SurveyScopeGateway;
 import com.renanloureiroo.pitaco.core.transaction.Transactor;
 import com.renanloureiroo.pitaco.modules.collect.application.repositories.AnswerRepository;
+import com.renanloureiroo.pitaco.modules.collect.application.repositories.InteractionEventRepository;
 import com.renanloureiroo.pitaco.modules.collect.application.repositories.ObservedAttributeRepository;
 import com.renanloureiroo.pitaco.modules.collect.application.repositories.ObservedEventRepository;
 import com.renanloureiroo.pitaco.modules.collect.application.repositories.RespondentRepository;
@@ -21,6 +22,7 @@ import com.renanloureiroo.pitaco.modules.collect.application.usecases.GetSurveyH
 import com.renanloureiroo.pitaco.modules.collect.application.usecases.ListSdkErrorsUseCase;
 import com.renanloureiroo.pitaco.modules.collect.application.usecases.ListSdkVersionsUseCase;
 import com.renanloureiroo.pitaco.modules.collect.application.usecases.PurgeHealthDataUseCase;
+import com.renanloureiroo.pitaco.modules.collect.application.usecases.RecordInteractionEventsUseCase;
 import com.renanloureiroo.pitaco.modules.collect.application.usecases.RecordSuppressionUseCase;
 import com.renanloureiroo.pitaco.modules.collect.application.usecases.ReportSdkErrorUseCase;
 import com.renanloureiroo.pitaco.modules.collect.application.usecases.ListObservedAttributesUseCase;
@@ -79,6 +81,22 @@ public class UseCasesConfiguration {
       AnswerRepository answers,
       SurveyQuotaGateway quotas) {
     return new SubmitSurveyDisplayUseCase(applications, catalog, displays, answers, quotas);
+  }
+
+  @Bean
+  RecordInteractionEventsUseCase recordInteractionEventsUseCase(
+      ApplicationScopeGateway applications,
+      PublishedSurveyCatalog catalog,
+      SurveyDisplayRepository displays,
+      InteractionEventRepository events,
+      InteractionEventsProperties properties) {
+    return new RecordInteractionEventsUseCase(
+        applications,
+        catalog,
+        displays,
+        events,
+        properties.maxPerDisplay(),
+        properties.acceptanceWindow());
   }
 
   @Bean

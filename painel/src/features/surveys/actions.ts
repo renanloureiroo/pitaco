@@ -26,7 +26,7 @@ import { addSegmentationRule, defineTrigger, removeSegmentationRule } from "./ap
 import { discardDraftVersion, openDraftVersion } from "./api/versions";
 import { exposureFormSchema } from "./schemas/exposure";
 import { freeTextNoticeFormSchema } from "./schemas/notice";
-import { questionFormSchema } from "./schemas/question";
+import { questionFormSchema, readQuestionInput } from "./schemas/question";
 import {
   duplicateSurveyFormSchema,
   surveyCreateFormSchema,
@@ -299,25 +299,7 @@ export async function reorderQuestionsAction(
   return { status: "success", data: undefined };
 }
 
-/** As opções chegam como campos repetidos; `getAll` preserva a ordem em que foram digitadas. */
-function readQuestionInput(formData: FormData) {
-  return {
-    statement: formData.get("statement"),
-    type: formData.get("type"),
-    required: formData.get("required"),
-    optionLabels: formData.getAll("optionLabels").map(String),
-    optionValues: formData.getAll("optionValues").map(String),
-    rangeMin: formData.get("rangeMin"),
-    rangeMax: formData.get("rangeMax"),
-    rangeMinLabel: formData.get("rangeMinLabel"),
-    rangeMaxLabel: formData.get("rangeMaxLabel"),
-    conditionSourceKey: formData.get("conditionSourceKey"),
-    conditionOperator: formData.get("conditionOperator"),
-    conditionValues: formData.getAll("conditionValues").map(String),
-    conditionMin: formData.get("conditionMin"),
-    conditionMax: formData.get("conditionMax"),
-  };
-}
+
 
 export async function defineTriggerAction(
   applicationId: string,

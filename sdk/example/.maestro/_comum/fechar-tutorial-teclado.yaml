@@ -1,0 +1,16 @@
+# Subfluxo comum: fecha o tutorial de caneta do Gboard, se ele aparecer.
+#
+# No emulador Android, ao abrir o teclado num campo de texto, o Gboard às vezes mostra "Try out your
+# stylus" por cima da tela inteira. Não é do app nem do SDK: é o tutorial do teclado. Sem fechar, o
+# fluxo não enxerga mais a tela, e o que sobra dele atrapalha a abertura do fluxo seguinte. Desligar
+# a escrita à mão do sistema (`settings put secure stylus_handwriting_enabled 0`) não bastou.
+#
+# Uso: logo depois de tocar num campo de texto, antes do inputText.
+appId: host.exp.Exponent
+---
+- runFlow:
+    when:
+      platform: Android
+      visible: "Try out your stylus"
+    commands:
+      - tapOn: "Cancel"

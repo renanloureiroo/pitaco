@@ -6,6 +6,7 @@ import com.renanloureiroo.pitaco.infra.http.error.ApiValidationErrorResponse;
 import com.renanloureiroo.pitaco.modules.results.infra.http.dtos.OpenAnswerResponseDTO;
 import com.renanloureiroo.pitaco.modules.results.infra.http.dtos.OpenAnswersQueryDTO;
 import com.renanloureiroo.pitaco.modules.results.infra.http.dtos.ResultsQueryDTO;
+import com.renanloureiroo.pitaco.modules.results.infra.http.dtos.SurveyBehaviorResponseDTO;
 import com.renanloureiroo.pitaco.modules.results.infra.http.dtos.SurveyResultsResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -99,6 +100,47 @@ public interface SurveyResultsSwagger {
       @Parameter(description = "Identificador da aplicação dona") String applicationId,
       @Parameter(description = "Identificador da pesquisa") String surveyId,
       @ParameterObject OpenAnswersQueryDTO query);
+
+  @Operation(
+      summary = "Comportamento dentro da pesquisa, lido dos eventos de interação do SDK",
+      description =
+          "Sob o mesmo recorte dos agregados: período de abertura, atributo e versão. Por "
+              + "pergunta, o funil (vista, respondida, pulada, abandonada nela), a mediana e o p90 "
+              + "do tempo ativo somando as visitas de cada exibição, a taxa de volta, a taxa de "
+              + "troca de resposta e os bloqueios de validação; na pesquisa, a distribuição da "
+              + "via de dispensa. A base é a exibição instrumentada, com ao menos um evento "
+              + "aceito. Cada métrica vem definida em `definitions`. Pesquisa que nunca publicou "
+              + "responde 200 vazio com `everPublished: false`.")
+  @ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Comportamento sob o recorte"),
+    @ApiResponse(
+        responseCode = "400",
+        description = "Recorte inválido, como nos agregados",
+        content =
+            @Content(
+                mediaType = PROBLEM_JSON,
+                schema = @Schema(implementation = ApiValidationErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "403",
+        description = "Chave de aplicação apresentada na superfície administrativa",
+        content =
+            @Content(
+                mediaType = PROBLEM_JSON,
+                schema = @Schema(implementation = ApiErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "404",
+        description =
+            "Pesquisa não encontrada. Mesma resposta para identificador malformado, pesquisa "
+                + "inexistente e pesquisa de outra aplicação",
+        content =
+            @Content(
+                mediaType = PROBLEM_JSON,
+                schema = @Schema(implementation = ApiErrorResponse.class)))
+  })
+  ResponseEntity<SurveyBehaviorResponseDTO> behavior(
+      @Parameter(description = "Identificador da aplicação dona") String applicationId,
+      @Parameter(description = "Identificador da pesquisa") String surveyId,
+      @ParameterObject ResultsQueryDTO query);
 
   @Operation(
       summary = "Exporta as exibições em CSV",

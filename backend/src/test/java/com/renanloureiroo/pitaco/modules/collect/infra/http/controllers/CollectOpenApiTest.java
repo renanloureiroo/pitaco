@@ -26,6 +26,7 @@ class CollectOpenApiTest {
           "/collect/displays.post", List.of("200", "201", "400", "401", "404", "409", "422"),
           "/collect/displays/{displayId}/submission.post",
               List.of("204", "400", "401", "404", "409", "422"),
+          "/collect/displays/{displayId}/events.post", List.of("202", "400", "401", "429"),
           "/collect/suppressions.post", List.of("202", "400", "401", "429"),
           "/collect/sdk-errors.post", List.of("202", "400", "401", "429"));
 
@@ -124,5 +125,32 @@ class CollectOpenApiTest {
     assertThat(schemas.has("EligibilityRequestDTO")).isTrue();
     assertThat(schemas.has("OpenDisplayRequestDTO")).isTrue();
     assertThat(schemas.has("SubmissionRequestDTO")).isTrue();
+  }
+
+  @Test
+  @DisplayName("O catálogo de eventos é publicado a partir do core, e o lote aponta para ele")
+  void publica_o_catalogo_de_eventos() {
+    var schemas = document().get("components").get("schemas");
+
+    var types = new ArrayList<String>();
+    schemas.get("InteractionEventType").get("enum").forEach(value -> types.add(value.asText()));
+    assertThat(types)
+        .containsExactlyElementsOf(
+            java.util.Arrays.stream(com.renanloureiroo.pitaco.core.catalog.InteractionEventType.values())
+                .map(com.renanloureiroo.pitaco.core.catalog.InteractionEventType::wire)
+                .toList());
+    assertThat(schemas.get("InteractionEventType").get("type").asText()).isEqualTo("string");
+    assertThat(schemas.get("InteractionEventType").get("x-pitaco-catalog-version").asInt()).isEqualTo(1);
+
+    assertThat(schemas.get("InteractionEvent").get("oneOf")).hasSize(18);
+    assertThat(schemas.get("InteractionEvent").get("discriminator").get("propertyName").asText())
+        .isEqualTo("type");
+    assertThat(schemas.get("TextEditedData").get("properties").has("length")).isTrue();
+    assertThat(schemas.get("TextEditedData").get("properties").size()).isOne();
+
+    var events = schemas.get("InteractionEventsRequestDTO").get("properties").get("events");
+    assertThat(events.get("items").get("$ref").asText()).isEqualTo("#/components/schemas/InteractionEvent");
+    assertThat(events.get("maxItems").asInt()).isEqualTo(100);
+    assertThat(schemas.has("InteractionEventsReceiptDTO")).isTrue();
   }
 }

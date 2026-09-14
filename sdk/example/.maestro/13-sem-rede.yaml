@@ -1,0 +1,77 @@
+# Cenário 13 — Sem rede: responder sem rede, fechar o app, reabrir com rede e ver a resposta chegar
+# uma vez só. O interruptor "Simular sem rede" fica só em memória, então o app reaberto volta com
+# rede; a fila e o registro da execução ficam no AsyncStorage.
+appId: host.exp.Exponent
+name: "13 · Sem rede"
+---
+- runFlow:
+    file: _comum/abrir-cenario.yaml
+    env:
+      ROTA: 13-sem-rede
+
+# Registro de uma execução anterior: esquece antes de começar.
+- runFlow:
+    when:
+      visible:
+        id: "cenario-13-esquecer"
+    commands:
+      - tapOn:
+          id: "cenario-13-esquecer"
+
+# Busca a pesquisa com rede e corta a rede antes de ela abrir.
+- tapOn:
+    id: "cenario-13-disparar-sem-rede"
+- extendedWaitUntil:
+    visible: "Pergunta 1 de 6"
+    timeout: 20000
+- tapOn: "9"
+# Fecha pelo fundo: o rótulo "Fechar pesquisa" também está na alça da folha, e o Maestro tocaria nela.
+- tapOn:
+    point: "50%,15%"
+- extendedWaitUntil:
+    visible:
+      id: "cenario-13-display-id"
+    timeout: 10000
+- assertVisible:
+    id: "cenario-13-rede"
+    text: "Sem rede.*"
+- assertVisible:
+    id: "cenario-13-fila"
+    text: "Fila local: [1-9].*"
+
+# Fecha o app sem sair da tela: a fila e o registro já estão gravados.
+- runFlow:
+    file: _comum/fechar-app.yaml
+- runFlow:
+    file: _comum/abrir-link.yaml
+    env:
+      ROTA: 13-sem-rede
+- extendedWaitUntil:
+    visible:
+      id: "tela-13-sem-rede"
+    timeout: 60000
+
+# Com rede de novo, a fila entrega sozinha: uma resposta, uma vez.
+- extendedWaitUntil:
+    visible:
+      id: "cenario-13-entrega"
+      text: "Entregue.*"
+    timeout: 20000
+- assertVisible:
+    id: "cenario-13-envios"
+    text: "Envios da resposta nesta abertura: 1.*"
+- assertVisible:
+    id: "cenario-13-fila"
+    text: "Fila local: 0.*"
+
+# No backend, uma linha só para esta exibição.
+- tapOn:
+    id: "cenario-13-conferir-backend"
+- extendedWaitUntil:
+    visible:
+      id: "cenario-13-backend"
+      text: "Backend: 1 registro\\(s\\) para esta exibição, desfecho (COMPLETED|DISMISSED)\\."
+    timeout: 10000
+
+- tapOn:
+    id: "cenario-13-esquecer"

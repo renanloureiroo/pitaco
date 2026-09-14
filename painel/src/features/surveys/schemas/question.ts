@@ -102,6 +102,25 @@ const LABEL_MESSAGE = "O rótulo pode ter no máximo 60 caracteres.";
  * Entrada do formulário de pergunta. As opções chegam como listas paralelas de rótulo e valor,
  * que é o que um `FormData` com campos repetidos produz; os valores da condição, idem.
  */
+export function readQuestionInput(formData: FormData) {
+  return {
+    statement: formData.get("statement"),
+    type: formData.get("type"),
+    required: formData.get("required"),
+    optionLabels: formData.getAll("optionLabels").map(String),
+    optionValues: formData.getAll("optionValues").map(String),
+    rangeMin: formData.get("rangeMin"),
+    rangeMax: formData.get("rangeMax"),
+    rangeMinLabel: formData.get("rangeMinLabel"),
+    rangeMaxLabel: formData.get("rangeMaxLabel"),
+    conditionSourceKey: formData.get("conditionSourceKey"),
+    conditionOperator: formData.get("conditionOperator"),
+    conditionValues: formData.getAll("conditionValues").map(String),
+    conditionMin: formData.get("conditionMin"),
+    conditionMax: formData.get("conditionMax"),
+  };
+}
+
 export const questionFormSchema = z
   .object({
     statement: z.preprocess(

@@ -59,6 +59,25 @@ public interface RetentionJpaRepository extends JpaRepository<RetentionRunJpaEnt
       @Param("before") Instant before,
       @Param("limit") int limit);
 
+  @Modifying
+  @Query(
+      value =
+          """
+          delete from survey_display_events
+           where id in (select e.id
+                          from survey_display_events e
+                          join survey_displays d on d.id = e.display_id
+                         where d.application_id = :applicationId
+                           and e.received_at < :before
+                         order by e.received_at, e.id
+                         limit :limit)
+          """,
+      nativeQuery = true)
+  int deleteInteractionEvents(
+      @Param("applicationId") String applicationId,
+      @Param("before") Instant before,
+      @Param("limit") int limit);
+
   @Query(
       value =
           """

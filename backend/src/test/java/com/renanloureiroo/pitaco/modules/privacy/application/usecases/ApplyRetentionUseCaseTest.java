@@ -157,4 +157,32 @@ class ApplyRetentionUseCaseTest {
 
     assertThat(store.findAll()).singleElement().satisfies(stored -> assertThat(stored.applicationId()).isEqualTo(keeping));
   }
+
+  @Test
+  @DisplayName("Os eventos de interação vencem com as respostas, em lotes, e os recentes ficam")
+  void apaga_eventos_vencidos() {
+    var applicationId = applications.anApplicationRetaining(30, null);
+    for (var index = 0; index < 3; index++) {
+      store.withInteractionEvent(applicationId, daysAgo(40).plusSeconds(index));
+    }
+    var recent = store.withInteractionEvent(applicationId, daysAgo(1));
+
+    useCase.execute();
+
+    assertThat(store.interactionEvents()).containsExactly(recent);
+    assertThat(runs.findAll()).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Prazo só de texto e aplicação sem política não levam evento nenhum")
+  void eventos_sem_prazo_de_resposta() {
+    var textOnly = applications.anApplicationRetaining(null, 7);
+    var noPolicy = applications.anApplication();
+    store.withInteractionEvent(textOnly, daysAgo(40));
+    store.withInteractionEvent(noPolicy, daysAgo(400));
+
+    useCase.execute();
+
+    assertThat(store.interactionEvents()).hasSize(2);
+  }
 }

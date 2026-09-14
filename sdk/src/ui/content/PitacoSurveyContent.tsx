@@ -7,7 +7,7 @@
 // para dentro; ele nunca decide como é mostrado.
 
 import { useContext, useEffect, useMemo, useRef, type ComponentRef, type ReactNode } from 'react';
-import { AccessibilityInfo, findNodeHandle, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, findNodeHandle, Platform, StyleSheet, Text, View } from 'react-native';
 import type { DismissVia } from '../../catalog/events';
 import { PitacoContext } from '../../react/context';
 import { usePitacoSurvey } from '../../react/usePitacoSurvey';
@@ -111,6 +111,16 @@ export function PitacoSurveyContent(props: PitacoSurveyContentProps): ReactNode 
   // Foco de acessibilidade movido para o título da pergunta nova a cada navegação.
   useEffect(() => {
     if (questionKey === null) return;
+    
+    if (Platform.OS === 'web') {
+      const el = titleRef.current as any;
+      // No web, o foco nativo resolve a acessibilidade
+      if (el && typeof el.focus === 'function') {
+        el.focus({ preventScroll: true });
+      }
+      return;
+    }
+
     const handle = findNodeHandle(titleRef.current);
     moveAccessibilityFocus(typeof handle === 'number' ? handle : null, (focusHandle) =>
       AccessibilityInfo.setAccessibilityFocus(focusHandle),

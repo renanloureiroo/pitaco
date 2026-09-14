@@ -28,11 +28,12 @@ export function RemoveQuestionButton({
         trigger={
           <Button
             variant="ghost"
-            size="icon"
+            size="sm"
             data-testid="remove-question-button"
             aria-label={`Remover pergunta "${statement}"`}
           >
-            <Trash2Icon aria-hidden />
+            <Trash2Icon aria-hidden className="mr-2 h-4 w-4" />
+            Remover
           </Button>
         }
         title="Remover esta pergunta?"

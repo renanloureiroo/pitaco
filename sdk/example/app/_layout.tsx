@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { installNetworkLogger } from '../src/debug/networkLog';
 import { ExampleProvider } from '../src/pitaco/ExampleContext';
 import { PitacoRoot } from '../src/pitaco/PitacoRoot';
+import { FloatingResetButton } from '../src/ui/FloatingResetButton';
 
 // O `BottomSheetModalProvider` do gorhom (cenários 2 e 4) fica aqui, acima das abas e dentro do
 // `PitacoRoot`: o portal dele desenha o sheet por cima da barra de abas (dentro da tela, a barra
@@ -36,6 +37,7 @@ export default function RootLayout() {
             <BottomSheetModalProvider>
               <StatusBar style="auto" />
               <Stack screenOptions={{ headerShown: false }} />
+              <FloatingResetButton />
             </BottomSheetModalProvider>
           </PitacoRoot>
         </ExampleProvider>

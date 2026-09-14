@@ -229,6 +229,27 @@ async function ensureApiKey(
   return { secret: issued.secret, reused: false };
 }
 
+async function configureTriggerAndPublish(client: Client, applicationId: string, surveyId: string, eventName: string, publish: boolean) {
+  const base = `/applications/${applicationId}/surveys/${surveyId}`;
+  await client.patch(base, { freeTextNoticeEnabled: true, ignoresQuietPeriod: true });
+
+  const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().replace(/\\.\\d+Z$/, 'Z');
+  await client.put(`${base}/trigger`, {
+    eventName,
+    windowStart,
+    samplingRate: 1.0,
+  });
+
+  if (publish) {
+    const impediments = await client.get<{ impediments: readonly unknown[] }>(`${base}/publication-impediments`);
+    if (impediments.impediments.length > 0) {
+      throw new Error(`Pesquisa com impedimentos de publicação: ${JSON.stringify(impediments.impediments)}`);
+    }
+    await client.post(`${base}/publication`, {});
+    console.log(`Pesquisa publicada com evento de disparo: ${eventName}.`);
+  }
+}
+
 async function ensureSurvey(
   client: Client,
   applicationId: string,
@@ -250,9 +271,14 @@ async function ensureSurvey(
 
   let detail = await client.get<SurveyDetail>(`/applications/${applicationId}/surveys/${survey.id}`);
   const isFreshDraft = detail.content === null || (detail.content.source === 'draft' && detail.content.questions.length === 0);
+  const isTemplateDraft = detail.content?.source === 'draft' && !!options.template && !options.seedQuestions;
 
   if (isFreshDraft && options.seedQuestions) {
-    await seedQuestionsTriggerAndPublish(client, applicationId, survey.id, options.publish, options.eventName);
+    await seedQuestions(client, applicationId, survey.id);
+    await configureTriggerAndPublish(client, applicationId, survey.id, options.eventName ?? TRIGGER_EVENT, options.publish ?? false);
+    detail = await client.get<SurveyDetail>(`/applications/${applicationId}/surveys/${survey.id}`);
+  } else if (isTemplateDraft && options.publish) {
+    await configureTriggerAndPublish(client, applicationId, survey.id, options.eventName ?? TRIGGER_EVENT, options.publish);
     detail = await client.get<SurveyDetail>(`/applications/${applicationId}/surveys/${survey.id}`);
   } else if (!isFreshDraft) {
     console.log('Pesquisa já tinha conteúdo — pergunta, condição, disparo e publicação não repetidos.');
@@ -264,7 +290,7 @@ async function ensureSurvey(
   return detail;
 }
 
-async function seedQuestionsTriggerAndPublish(client: Client, applicationId: string, surveyId: string, publish = true, eventName = TRIGGER_EVENT): Promise<void> {
+async function seedQuestions(client: Client, applicationId: string, surveyId: string): Promise<void> {
   const base = `/applications/${applicationId}/surveys/${surveyId}`;
 
   const nps = await client.post<{ key: string }>(`${base}/questions`, {
@@ -318,27 +344,6 @@ async function seedQuestionsTriggerAndPublish(client: Client, applicationId: str
     type: 'free_text',
     required: false,
   });
-
-  // Aviso de texto livre (ligado por padrão, mas explícito aqui) e sem descanso desta pesquisa
-  // em particular — o máximo de reexibição que o servidor permite configurar.
-  await client.patch(base, { freeTextNoticeEnabled: true, ignoresQuietPeriod: true });
-
-  const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().replace(/\.\d+Z$/, 'Z');
-  await client.put(`${base}/trigger`, {
-    eventName,
-    windowStart,
-    // Sem windowEnd: janela indeterminada. samplingRate 1.0: amostragem de 100%.
-    samplingRate: 1.0,
-  });
-
-  if (publish) {
-    const impediments = await client.get<{ impediments: readonly unknown[] }>(`${base}/publication-impediments`);
-    if (impediments.impediments.length > 0) {
-      throw new Error(`Pesquisa com impedimentos de publicação: ${JSON.stringify(impediments.impediments)}`);
-    }
-    await client.post(`${base}/publication`, {});
-    console.log('Pesquisa publicada (versão 1): seis tipos de pergunta, uma condição, disparo e amostragem de 100%.');
-  }
 }
 
 async function fetchDeliverableSchema(
@@ -403,42 +408,27 @@ async function main(): Promise<void> {
   const envHasKey = /^EXPO_PUBLIC_PITACO_API_KEY=.+$/m.test(envBefore);
   const { secret, reused } = await ensureApiKey(client, application.id, state, envHasKey);
 
-  // 1. A pesquisa principal, completa, publicada (usada pelo app de exemplo para o preview principal)
-  const surveyDetail = await ensureSurvey(client, application.id, {
-    name: SURVEY_NAME,
-    seedQuestions: true,
-    publish: true,
-    eventName: TRIGGER_EVENT
-  });
-  const triggerEvent = surveyDetail.content?.trigger?.eventName ?? TRIGGER_EVENT;
+  const surveysToSeed = [
+    { name: SURVEY_NAME, eventName: TRIGGER_EVENT, seedQuestions: true, template: undefined },
+    { name: 'Avaliação NPS', eventName: 'pitaco.example.nps', seedQuestions: false, template: 'nps' },
+    { name: 'Satisfação de Atendimento (CSAT)', eventName: 'pitaco.example.csat', seedQuestions: false, template: 'csat' },
+    { name: 'Facilidade de Uso (CES)', eventName: 'pitaco.example.ces', seedQuestions: false, template: 'ces' },
+    { name: 'Avaliação de Nova Funcionalidade', eventName: 'pitaco.example.feature', seedQuestions: false, template: 'csat' },
+    { name: 'Priorização de Próxima Feature', eventName: 'pitaco.example.roadmap', seedQuestions: false, template: 'ces' },
+  ];
 
-  // 2. Pesquisa NPS
-  await ensureSurvey(client, application.id, {
-    name: 'Avaliação NPS',
-    template: 'nps',
-    seedQuestions: false,
-    publish: false,
-  });
+  const surveyDetails = [];
+  for (const s of surveysToSeed) {
+    const detail = await ensureSurvey(client, application.id, {
+      name: s.name,
+      template: s.template,
+      seedQuestions: s.seedQuestions,
+      publish: true,
+      eventName: s.eventName
+    });
+    surveyDetails.push({ name: s.name, eventName: detail.content?.trigger?.eventName ?? s.eventName, surveyId: detail.id });
+  }
 
-  // 3. Pesquisa CSAT (Rascunho)
-  await ensureSurvey(client, application.id, {
-    name: 'Satisfação de Atendimento (CSAT)',
-    template: 'csat',
-    seedQuestions: false,
-    publish: false,
-  });
-
-  // 4. Pesquisa CES
-  await ensureSurvey(client, application.id, {
-    name: 'Facilidade de Uso (CES)',
-    template: 'ces',
-    seedQuestions: false,
-    publish: false,
-  });
-
-  // Precisamos do segredo para consultar a elegibilidade e gerar o schema do preview. Se a chave
-  // foi reaproveitada (segredo não devolvido de novo por natureza), lemos o valor que já está no
-  // `.env` — é exatamente o mesmo segredo que a chave ativa rastreada representa.
   let apiKeySecret = secret;
   if (apiKeySecret === null) {
     const match = /^EXPO_PUBLIC_PITACO_API_KEY=(.+)$/m.exec(envBefore);
@@ -448,7 +438,11 @@ async function main(): Promise<void> {
     throw new Error('Sem segredo de API disponível (nem emitido agora, nem no .env) — apague .seed-state.json e rode de novo.');
   }
 
-  const { surveyId, schema } = await fetchDeliverableSchema(args.baseUrl, apiKeySecret, triggerEvent);
+  const seededSurveys = [];
+  for (const s of surveyDetails) {
+    const { surveyId, schema } = await fetchDeliverableSchema(args.baseUrl, apiKeySecret, s.eventName);
+    seededSurveys.push({ title: s.name, triggerEvent: s.eventName, surveyId, schema });
+  }
 
   const host = targetHost(args);
   const directBaseUrl = `http://${host}:8080/api`;
@@ -464,28 +458,24 @@ async function main(): Promise<void> {
   upsertEnvFile(ENV_PATH, envUpdates);
 
   mkdirSync(dirname(SEED_SURVEY_PATH), { recursive: true });
-  writeFileSync(SEED_SURVEY_PATH, `${JSON.stringify({ triggerEvent, surveyId, schema }, null, 2)}\n`);
+  writeFileSync(SEED_SURVEY_PATH, `${JSON.stringify(seededSurveys, null, 2)}\n`);
 
   let apiKeyId = state.apiKeyId;
   let apiKeyPrefix = state.apiKeyPrefix;
   if (secret !== null) {
-    // Recupera o id da chave recém-emitida (a última ativa com o rótulo) para rastrear na
-    // próxima execução.
     const activeKeys = await findAllPages<ApiKeySummary>(client, `/applications/${application.id}/api-keys?status=active`);
     const issuedKey = activeKeys.find((key) => key.label === API_KEY_LABEL);
     apiKeyId = issuedKey?.id;
     apiKeyPrefix = issuedKey?.prefix;
   }
-  writeState({ applicationId: application.id, apiKeyId, apiKeyPrefix, surveyId });
+  writeState({ applicationId: application.id, apiKeyId, apiKeyPrefix, surveyId: surveyDetails[0].surveyId });
 
   console.log('');
   console.log('Resumo:');
   console.log(`  Aplicação: ${application.name} (${application.id})`);
-  console.log(`  Pesquisa Principal: ${SURVEY_NAME} (${surveyId})`);
-  console.log(`  + 3 Pesquisas extras criadas para simulação.`);
-  console.log(`  Disparo: ${triggerEvent}`);
+  console.log(`  Pesquisas Semeadas: ${seededSurveys.length}`);
   console.log(`  .env atualizado em ${ENV_PATH}`);
-  console.log(`  Schema do preview em ${SEED_SURVEY_PATH}`);
+  console.log(`  Schemas gravados em ${SEED_SURVEY_PATH}`);
   console.log('');
   console.log('Reexibição: amostragem de 100%, sem descanso, sem cota de respostas, janela aberta.');
   console.log('O que o servidor ainda impõe (não configurável pela API administrativa):');

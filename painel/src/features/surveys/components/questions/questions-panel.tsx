@@ -1,6 +1,6 @@
 "use client";
 
-import { PencilIcon, PlusIcon } from "lucide-react";
+import { EyeIcon, PencilIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ export function QuestionsPanel({
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string>();
   const [liveDraft, setLiveDraft] = useState<Question>();
+  const [previewOnlyId, setPreviewOnlyId] = useState<string>();
 
   const ordered = [...questions].sort((a, b) => a.position - b.position);
   const questionIds = ordered.map((question) => question.id);
@@ -43,10 +44,10 @@ export function QuestionsPanel({
 
   // Compute preview questions applying the live draft
   const previewQuestions = liveDraft
-    ? adding
-      ? [...ordered, liveDraft]
-      : ordered.map((q) => (q.id === liveDraft.id ? liveDraft : q))
-    : ordered;
+    ? [liveDraft]
+    : previewOnlyId
+      ? ordered.filter((q) => q.id === previewOnlyId)
+      : ordered;
 
   if (ordered.length === 0 && !adding) {
     return (
@@ -60,7 +61,7 @@ export function QuestionsPanel({
         action={
           readOnly ? undefined : (
             <Button data-testid="add-question-button" onClick={() => setAdding(true)}>
-              <PlusIcon aria-hidden />
+              <PlusIcon aria-hidden className="mr-2 h-4 w-4" />
               Adicionar pergunta
             </Button>
           )
@@ -79,15 +80,27 @@ export function QuestionsPanel({
       />
       <Button
         variant="ghost"
-        size="icon"
+        size="sm"
+        aria-label={`Visualizar pergunta "${question.statement}"`}
+        onClick={() => setPreviewOnlyId(previewOnlyId === question.id ? undefined : question.id)}
+        className={previewOnlyId === question.id ? "bg-accent" : ""}
+      >
+        <EyeIcon aria-hidden className="mr-2 h-4 w-4" />
+        Visualizar
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
         data-testid="edit-question-button"
         aria-label={`Editar pergunta "${question.statement}"`}
         onClick={() => {
           setAdding(false);
           setEditingId(question.id);
+          setPreviewOnlyId(undefined);
         }}
       >
-        <PencilIcon aria-hidden />
+        <PencilIcon aria-hidden className="mr-2 h-4 w-4" />
+        Editar
       </Button>
       <RemoveQuestionButton
         applicationId={applicationId}
@@ -145,9 +158,14 @@ export function QuestionsPanel({
             />
             <div>
               <Button data-testid="add-question-button" onClick={() => setAdding(true)}>
-                <PlusIcon aria-hidden />
+                <PlusIcon aria-hidden className="mr-2 h-4 w-4" />
                 Adicionar pergunta
               </Button>
+              {previewOnlyId !== undefined && (
+                <Button variant="ghost" className="ml-2" onClick={() => setPreviewOnlyId(undefined)}>
+                  Ver todas no preview
+                </Button>
+              )}
             </div>
           </>
         )}

@@ -6,7 +6,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { usePublishEvent } from '../../../src/debug/eventLog';
-import { seedSurvey } from '../../../src/pitaco/seed';
+import { seedSurveys } from '../../../src/pitaco/seed';
 import { useScenario } from '../../../src/pitaco/useScenario';
 import { COMPARE_THEMES, frameColors, parseThemeChoice } from '../../../src/scenarios/04-comparar/themes';
 import { useLeavingRef } from '../../../src/scenarios/shared/useLeavingRef';
@@ -14,11 +14,14 @@ import { useLeavingRef } from '../../../src/scenarios/shared/useLeavingRef';
 export default function CompareScreenForm() {
   useScenario('04-comparar');
   const router = useRouter();
-  const { tema } = useLocalSearchParams<{ tema?: string }>();
+  const { tema, surveyIndex } = useLocalSearchParams<{ tema?: string; surveyIndex?: string }>();
   const choice = parseThemeChoice(tema);
   const leavingRef = useLeavingRef();
   const publish = usePublishEvent('04-comparar');
   const onEvent = useCallback((event: InteractionEvent) => publish(event, { form: 'tela' }), [publish]);
+
+  const idx = surveyIndex ? parseInt(surveyIndex, 10) : 0;
+  const selectedSurvey = seedSurveys.length > idx ? seedSurveys[idx] : null;
 
   return (
     <ScrollView
@@ -29,11 +32,11 @@ export default function CompareScreenForm() {
       automaticallyAdjustKeyboardInsets
     >
       <Stack.Screen options={{ title: 'Comparar — Tela' }} />
-      {seedSurvey !== null && (
+      {selectedSurvey !== null && (
         <PitacoPreview
-          schema={seedSurvey.schema}
+          schema={selectedSurvey.schema}
           presentation="inline"
-          triggerEvent={seedSurvey.triggerEvent}
+          triggerEvent={selectedSurvey.triggerEvent}
           theme={COMPARE_THEMES[choice]}
           onEvent={onEvent}
           onFinish={() => {

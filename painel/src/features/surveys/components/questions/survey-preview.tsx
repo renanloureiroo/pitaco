@@ -26,8 +26,11 @@ function mapToDeliverable(q: Question) {
   };
 }
 
+import { useTheme } from "next-themes";
+
 export function SurveyPreview({ questions }: { questions: Question[] }) {
   const [events, setEvents] = useState<InteractionEvent[]>([]);
+  const { resolvedTheme } = useTheme();
 
   const deliverableQuestions = questions.map(mapToDeliverable);
 
@@ -51,6 +54,7 @@ export function SurveyPreview({ questions }: { questions: Question[] }) {
           <div className="border rounded-md overflow-hidden bg-background h-[500px] relative">
             <PitacoPreview
               schema={schema}
+              theme={{ colorScheme: resolvedTheme === "dark" ? "dark" : "light" }}
               onEvent={(e) => setEvents((prev) => [...prev, e])}
               resetKey={JSON.stringify(deliverableQuestions)}
             />

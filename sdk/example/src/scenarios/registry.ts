@@ -32,7 +32,7 @@ export const SCENARIOS: readonly ScenarioMeta[] = [
   { id: '01-sheet', title: '1. Sheet do SDK', description: 'Provider e um botão que chama track(), com o bottom sheet próprio do SDK.' },
   { id: '02-gorhom', title: '2. Com gorhom', description: 'A pesquisa dentro de um BottomSheetModal do @gorhom/bottom-sheet.' },
   { id: '03-tela', title: '3. Como tela', description: 'A pesquisa como uma rota do Expo Router, empilhada na navegação.' },
-  { id: '04-comparar', title: '4. Comparar apresentações', description: 'A mesma pesquisa do seed nas formas Sheet, Gorhom e Tela.' },
+  { id: '04-comparar', title: 'Testar Pesquisas', description: 'Testar os diversos cenários gerados de pesquisas.' },
   { id: '05-tema', title: '5. Tema', description: 'Claro, escuro e um tema com valores inválidos que degrada para o padrão.' },
   { id: '06-textos', title: '6. Textos', description: 'Rótulos substituídos em outro idioma.' },
   { id: '07-renderizador', title: '7. Renderizador substituído', description: 'Um NPS desenhado pelo app e um renderizador que lança erro de propósito.' },

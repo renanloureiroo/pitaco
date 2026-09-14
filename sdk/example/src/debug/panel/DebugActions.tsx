@@ -3,7 +3,6 @@ import { usePitaco } from '@pitaco/react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useExampleActions } from '../../pitaco/ExampleContext';
 import { ActionButton } from '../../ui/ActionButton';
 import { toJson } from '../../ui/JsonBlock';
 import { eventLog } from '../eventLog';
@@ -11,7 +10,6 @@ import { networkLog } from '../networkLog';
 
 export function DebugActions() {
   const { simulateAppReopen, diagnostics } = usePitaco();
-  const { requestFreshInstall } = useExampleActions();
   const [copied, setCopied] = useState(false);
 
   const copyLog = async () => {
@@ -23,7 +21,6 @@ export function DebugActions() {
 
   return (
     <View style={styles.grid}>
-      <ActionButton testID="debug-limpar-storage" variant="danger" label="Limpar storage e identidade" onPress={() => void requestFreshInstall()} />
       <ActionButton testID="debug-simular-reabertura" variant="secondary" label="Simular app reaberto" onPress={simulateAppReopen} />
       <View style={styles.row}>
         <View style={styles.cell}>

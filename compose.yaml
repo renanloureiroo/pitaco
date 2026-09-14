@@ -65,7 +65,8 @@ services:
 
   painel:
     build:
-      context: ./painel
+      context: .
+      dockerfile: painel/Dockerfile
     restart: unless-stopped
     environment:
       # O painel só fala com a api por dentro da rede internal, pelo nome do

@@ -23,7 +23,7 @@ const ENV_PATH = join(EXAMPLE_ROOT, '.env');
 const STATE_PATH = join(HERE, '.seed-state.json');
 const SEED_SURVEY_PATH = join(EXAMPLE_ROOT, 'src', 'generated', 'seed-survey.json');
 
-const APPLICATION_NAME = 'Pitaco Example App';
+const APPLICATION_NAME = 'demo';
 const SURVEY_NAME = 'Pesquisa de exemplo';
 const API_KEY_LABEL = 'sdk-example';
 const TRIGGER_EVENT = 'pitaco.example.trigger';

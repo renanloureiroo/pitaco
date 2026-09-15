@@ -1,81 +1,75 @@
-import type { InteractionEvent } from "@pitaco/react-native";
-import {
-  PitacoPreview,
-  PitacoPreviewProvider,
-} from "@pitaco/react-native/preview";
+// Cenário 4 — Testar pesquisas. Escolhe uma pesquisa do seed, a forma e o tema, e dispara o evento
+// dela pelo `<PitacoProvider>` da raiz: elegibilidade, exibição e respostas vão para o backend e
+// aparecem nos resultados do painel.
+//
+// - Sheet do SDK: `presentation="bottom-sheet"`, o SDK abre o sheet dele.
+// - Gorhom: `presentation="inline"`, o app abre o `BottomSheetModal` quando a pesquisa chega.
+// - Tela: `presentation="inline"`, o app empilha `04-comparar-tela` quando a pesquisa chega.
+//
+// A forma é escolhida antes do disparo: trocar `presentation` recria o runtime, e um `track` no
+// mesmo toque cairia no runtime antigo.
+import { usePitaco } from "@pitaco/react-native";
 import { useRouter } from "expo-router";
-import { type ReactNode, useCallback, useState } from "react";
-import { Pressable, Text, View, ScrollView } from "react-native";
-import { usePublishEvent } from "../../../src/debug/eventLog";
+import { useEffect, useRef, useState } from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { seedSurveys } from "../../../src/pitaco/seed";
 import { useScenario } from "../../../src/pitaco/useScenario";
 import { GorhomSurveySheet } from "../../../src/scenarios/02-gorhom/GorhomSurveySheet";
 import {
-  COMPARE_THEMES,
+  type CompareForm,
+  compareConfig,
+  FORM_OPTIONS,
+} from "../../../src/scenarios/04-comparar/configs";
+import {
   frameColors,
   THEME_OPTIONS,
   type ThemeChoice,
 } from "../../../src/scenarios/04-comparar/themes";
+import { ResetHint } from "../../../src/scenarios/shared/TriggerButton";
+import { useSurveyArrival } from "../../../src/scenarios/shared/useSurveyArrival";
 import { ActionButton } from "../../../src/ui/ActionButton";
 import { Hint, Paragraph, Screen } from "../../../src/ui/Screen";
 import { Segmented } from "../../../src/ui/Segmented";
 import { usePalette } from "../../../src/ui/palette";
 
-type OverlayForm = "sheet" | "gorhom";
-
 export default function CompareScenario() {
-  useScenario("04-comparar");
+  const [form, setForm] = useState<CompareForm>("sheet");
+  const [choice, setChoice] = useState<ThemeChoice>("claro");
+  const [selectedSurveyIndex, setSelectedSurveyIndex] = useState(0);
+  // A forma que disparou a exibição em curso: trocar o seletor depois não reinterpreta a chegada.
+  const [launchedForm, setLaunchedForm] = useState<CompareForm | null>(null);
+  useScenario("04-comparar", compareConfig(form, choice));
   const router = useRouter();
   const palette = usePalette();
-  const publish = usePublishEvent("04-comparar");
-  const [choice, setChoice] = useState<ThemeChoice>("claro");
-  const [open, setOpen] = useState<OverlayForm | null>(null);
-  const [run, setRun] = useState(0);
-  const [selectedSurveyIndex, setSelectedSurveyIndex] = useState(0);
+  const { track, simulateAppReopen } = usePitaco();
+  const { active, finish, arrivedId } = useSurveyArrival();
+  const pushedRef = useRef<string | null>(null);
 
-  const theme = COMPARE_THEMES[choice];
+  const selectedSurvey = seedSurveys[selectedSurveyIndex] ?? null;
   const colors = frameColors(choice);
+  const gorhomOpen = launchedForm === "gorhom" && active;
 
-  const selectedSurvey = seedSurveys.length > 0 ? (seedSurveys[selectedSurveyIndex] ?? null) : null;
+  useEffect(() => {
+    if (launchedForm !== "tela" || arrivedId === null || arrivedId === pushedRef.current) return;
+    pushedRef.current = arrivedId;
+    router.push({ pathname: "/cenarios/04-comparar-tela", params: { tema: choice } });
+  }, [launchedForm, arrivedId, choice, router]);
 
-  const onSheetEvent = useCallback(
-    (event: InteractionEvent) => publish(event, { form: "sheet" }),
-    [publish],
-  );
-  const onGorhomEvent = useCallback(
-    (event: InteractionEvent) => publish(event, { form: "gorhom" }),
-    [publish],
-  );
-  const close = useCallback(() => setOpen(null), []);
-
-  // O corpo do sheet do gorhom mora no portal dele: o preview entra por dentro do sheet.
-  const wrapGorhom = useCallback(
-    (body: ReactNode) =>
-      selectedSurvey === null ? null : (
-        <PitacoPreviewProvider
-          schema={selectedSurvey.schema}
-          presentation="inline"
-          triggerEvent={selectedSurvey.triggerEvent}
-          theme={theme}
-          onEvent={onGorhomEvent}
-        >
-          {body}
-        </PitacoPreviewProvider>
-      ),
-    [theme, onGorhomEvent, selectedSurvey],
-  );
-
-  const openOverlay = (form: OverlayForm) => {
-    setRun((value) => value + 1);
-    setOpen(form);
+  const openSurvey = () => {
+    if (selectedSurvey === null) return;
+    finish();
+    setLaunchedForm(form);
+    // Uma pesquisa por sessão de app: sem isto, só a primeira abertura consultaria o servidor.
+    simulateAppReopen();
+    void track(selectedSurvey.triggerEvent);
   };
 
   return (
     <>
       <Screen testID="tela-04-comparar">
         <Paragraph>
-          A mesma pesquisa do seed nas três formas. Abra uma, percorra, feche e
-          abra outra.
+          Escolha a pesquisa, a forma e o tema. A abertura passa pelo backend:
+          a exibição e as respostas aparecem nos resultados do painel.
         </Paragraph>
         {seedSurveys.length === 0 ? (
           <Hint>
@@ -136,62 +130,37 @@ export default function CompareScenario() {
               </ScrollView>
             </View>
             <Segmented
+              testIDPrefix="cenario-04-forma"
+              options={FORM_OPTIONS}
+              value={form}
+              onChange={setForm}
+            />
+            <Segmented
               testIDPrefix="cenario-04-tema"
               options={THEME_OPTIONS}
               value={choice}
               onChange={setChoice}
             />
             <ActionButton
-              testID="cenario-04-sheet"
-              label="Sheet do SDK"
-              disabled={open !== null}
-              onPress={() => openOverlay("sheet")}
+              testID="cenario-04-abrir"
+              label="Abrir pesquisa"
+              disabled={gorhomOpen}
+              onPress={openSurvey}
             />
-            <ActionButton
-              testID="cenario-04-gorhom"
-              label="Gorhom"
-              disabled={open !== null}
-              onPress={() => openOverlay("gorhom")}
-            />
-            <ActionButton
-              testID="cenario-04-tela"
-              label="Tela"
-              disabled={open !== null}
-              onPress={() => {
-                router.push({
-                  pathname: "/cenarios/04-comparar-tela",
-                  params: { tema: choice, surveyIndex: selectedSurveyIndex },
-                });
-              }}
-            />
+            {selectedSurvey !== null && (
+              <Hint>Dispara {selectedSurvey.triggerEvent}.</Hint>
+            )}
+            <ResetHint />
           </>
         )}
-        <Hint>
-          Preview local: nada vai para o backend e dá para repetir à vontade. No
-          painel, agrupe por &quot;Cenário/forma&quot;: 04-comparar · sheet, ·
-          gorhom e · tela. A sequência é a mesma; muda só o presentation do
-          survey_presented.
-        </Hint>
       </Screen>
-      {open === "sheet" && selectedSurvey !== null && (
-        <PitacoPreview
-          key={run}
-          schema={selectedSurvey?.schema}
-          presentation="bottom-sheet"
-          triggerEvent={selectedSurvey?.triggerEvent}
-          theme={theme}
-          onEvent={onSheetEvent}
-          onFinish={close}
-        />
-      )}
-      {/* Um BottomSheetModal novo por abertura (ver o cenário 2): a mesma instância não reabria. */}
+      {/* Um BottomSheetModal novo por exibição (ver o cenário 2): a mesma instância não reabria. */}
       <GorhomSurveySheet
-        key={`gorhom-${run}`}
-        open={open === "gorhom"}
-        onClosed={close}
+        key={`gorhom-${arrivedId ?? "nenhuma"}`}
+        open={gorhomOpen}
+        onClosed={finish}
         backgroundColor={colors.background}
         handleColor={colors.handle}
-        wrap={wrapGorhom}
       />
     </>
   );

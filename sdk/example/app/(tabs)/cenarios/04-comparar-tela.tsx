@@ -1,28 +1,25 @@
-// A forma "Tela" do cenário 4: a mesma rota empilhada do cenário 3, com o preview do seed no
-// lugar da pesquisa real. Sair pela navegação com a pesquisa aberta vira `via: "navigation"`.
-import type { InteractionEvent } from '@pitaco/react-native';
-import { PitacoPreview } from '@pitaco/react-native/preview';
+// A forma "Tela" do cenário 4: `<PitacoSurveyContent />` em tela cheia, sem contêiner do SDK, com a
+// pesquisa real que a tela de baixo disparou. Sair pela navegação com a pesquisa aberta vira
+// `via: "navigation"`; o `onFinish` que vem junto não volta de novo (`useLeavingRef`).
+//
+// Chama `useScenario` com a mesma configuração da tela de baixo (o mesmo objeto): o runtime não é
+// recriado e a pesquisa continua a mesma.
+import { PitacoSurveyContent, usePitacoSurvey } from '@pitaco/react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
-import { usePublishEvent } from '../../../src/debug/eventLog';
-import { seedSurveys } from '../../../src/pitaco/seed';
 import { useScenario } from '../../../src/pitaco/useScenario';
-import { COMPARE_THEMES, frameColors, parseThemeChoice } from '../../../src/scenarios/04-comparar/themes';
+import { compareConfig } from '../../../src/scenarios/04-comparar/configs';
+import { frameColors, parseThemeChoice } from '../../../src/scenarios/04-comparar/themes';
 import { useLeavingRef } from '../../../src/scenarios/shared/useLeavingRef';
+import { Hint } from '../../../src/ui/Screen';
 
 export default function CompareScreenForm() {
-  useScenario('04-comparar');
+  const params = useLocalSearchParams<{ tema?: string }>();
+  const choice = parseThemeChoice(params.tema);
+  useScenario('04-comparar', compareConfig('tela', choice));
   const router = useRouter();
-  const params = useLocalSearchParams<{ tema?: string; surveyIndex?: string }>();
-  const tema = params.tema;
-  const choice = parseThemeChoice(tema);
   const leavingRef = useLeavingRef();
-  const publish = usePublishEvent('04-comparar');
-  const onEvent = useCallback((event: InteractionEvent) => publish(event, { form: 'tela' }), [publish]);
-
-  const selectedSurveyIndex = typeof params.surveyIndex === 'string' ? parseInt(params.surveyIndex, 10) : 0;
-  const selectedSurvey = seedSurveys.length > 0 ? (seedSurveys[selectedSurveyIndex] ?? null) : null;
+  const survey = usePitacoSurvey();
 
   return (
     <ScrollView
@@ -32,19 +29,13 @@ export default function CompareScreenForm() {
       keyboardShouldPersistTaps="handled"
       automaticallyAdjustKeyboardInsets
     >
-      <Stack.Screen options={{ title: 'Comparar — Tela' }} />
-      {selectedSurvey !== null && (
-        <PitacoPreview
-          schema={selectedSurvey.schema}
-          presentation="inline"
-          triggerEvent={selectedSurvey.triggerEvent}
-          theme={COMPARE_THEMES[choice]}
-          onEvent={onEvent}
-          onFinish={() => {
-            if (!leavingRef.current) router.back();
-          }}
-        />
-      )}
+      <Stack.Screen options={{ title: 'Pesquisa' }} />
+      <PitacoSurveyContent
+        onFinish={() => {
+          if (!leavingRef.current) router.back();
+        }}
+      />
+      {survey.status === 'idle' && <Hint>Nenhuma pesquisa em andamento. Volte e abra pela tela anterior.</Hint>}
     </ScrollView>
   );
 }

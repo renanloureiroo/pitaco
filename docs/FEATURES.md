@@ -2,7 +2,7 @@
 
 O que o Pitaco faz hoje, de ponta a ponta: o backend (API administrativa e superfície de coleta),
 o painel e o SDK React Native. Cada item aponta onde mora no código e em que tela do painel
-aparece. Para ver tudo funcionando com dados, rode o seed [`demo-completo`](../seed/README.md).
+aparece. Para ver tudo funcionando com dados, carregue a demo com [`seed/carregar-demo.sh`](../seed/README.md).
 
 ![Visão geral do painel com o seed demo-completo](painel-visao-geral.png)
 
@@ -145,4 +145,4 @@ Seis rotas públicas sob `/collect`, autenticadas por `X-Pitaco-Key`. Contrato c
 | Observabilidade (traces, logs, métricas OTLP → Grafana LGTM) | `compose.yaml`, `OpenTelemetryLogbackConfig` |
 | Backup e teste de restauração | `ops/backup`, `ops/RUNBOOK.md` |
 | CI por projeto | `.github/workflows/{backend,painel,sdk,compose}.yml` |
-| Seed de demonstração | [`seed/demo-completo.ts`](../seed/README.md) |
+| Demo completa | [`seed/carregar-demo.sh`](../seed/README.md) |

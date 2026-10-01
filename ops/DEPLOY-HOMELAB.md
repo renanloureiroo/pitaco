@@ -173,31 +173,18 @@ No `~/apps/infra`, o cloudflared precisa ter as rotas para `http://pitaco-api:80
 
 ## Popular com dados de demonstração (opcional)
 
-O seed [`demo-completo`](../seed/README.md) cria as aplicações `demo-completo*` com milhares de
-respostas fictícias. Ele roda num container Node na rede do compose, então não precisa de Node
-nem de porta aberta no host:
+A demo completa vem pronta em [`seed/`](../seed/README.md): um dump só de dados das aplicações
+`demo-completo*`, carregado direto no Postgres numa transação. Leva segundos e não passa pela
+API, então não pesa no servidor.
 
 ```bash
 cd ~/apps/pitaco
-
-# 1. Gera os dados pela API (alguns minutos; --scale 0.3 para uma versão rápida)
-docker run --rm --network pitaco_internal -v "$PWD/seed:/seed" -w /seed node:24-alpine \
-  node demo-completo.ts --base-url http://api:8080/api
-
-# 2. Espalha as datas pelos últimos 90 dias
-docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1' \
-  < seed/out/demo-completo-datas.sql
+seed/carregar-demo.sh              # primeira vez
+seed/carregar-demo.sh --substituir # recarregar do zero
+seed/carregar-demo.sh --datas      # renovar as datas (os gráficos de 7/30 dias voltam a encher)
 ```
 
-Para recriar a demo do zero: gere o SQL de limpeza, aplique e rode os dois passos de novo.
-
-```bash
-docker run --rm -v "$PWD/seed:/seed" -w /seed node:24-alpine node demo-completo.ts --reset
-docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1' \
-  < seed/out/demo-completo-reset.sql
-```
-
-O seed só mexe nas aplicações com slug `demo-completo*`; as aplicações reais não são tocadas.
+A `api` precisa ter subido ao menos uma vez antes, para as migrations criarem o schema.
 
 ## Checklist rápido
 
@@ -208,3 +195,4 @@ O seed só mexe nas aplicações com slug `demo-completo*`; as aplicações reai
 - [ ] `docker compose ps` sem reinício em laço
 - [ ] Health da API `UP` e painel `200`
 - [ ] Visão geral abre pelo domínio público
+- [ ] (opcional) `seed/carregar-demo.sh` para a demo

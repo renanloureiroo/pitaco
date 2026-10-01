@@ -54,8 +54,8 @@ espalha as origens pelo cabeçalho `CF-Connecting-IP`, que o backend só aceita 
 vem de um proxy confiável (localhost incluso). Contra um backend remoto, o limite de 120
 requisições por minuto por origem vale e o seed fica mais lento — use `--scale` menor.
 
-Em produção (`compose.yaml` da raiz), o Postgres não publica porta; aplique o SQL pelo container:
+`--reset` sem `--database-url` não apaga nada: só gera `seed/out/demo-completo-reset.sql` para
+aplicar à mão.
 
-```bash
-docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" < seed/out/demo-completo-datas.sql
-```
+No homelab (Postgres e API sem porta publicada), o seed roda num container Node na rede do
+compose — o passo a passo está em [`ops/DEPLOY-HOMELAB.md`](../ops/DEPLOY-HOMELAB.md#popular-com-dados-de-demonstração-opcional).

@@ -1,7 +1,11 @@
 # Runbook do Pitaco
 
 O que fazer em produção, na VPS, com o `compose.yaml` da raiz. Comandos rodam na raiz do
-repositório.
+repositório. Para publicar uma versão nova no homelab, veja [`DEPLOY-HOMELAB.md`](DEPLOY-HOMELAB.md).
+
+> O serviço `backup` saiu do `compose.yaml` (commit `25fb247`). Até ele voltar, os comandos
+> `docker compose run --rm backup …` abaixo não funcionam; use o backup manual descrito no
+> `DEPLOY-HOMELAB.md`.
 
 ## Subir
 

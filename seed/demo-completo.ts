@@ -17,6 +17,7 @@
 //   node seed/demo-completo.ts --database-url postgres://myuser:secret@localhost:5432/mydatabase
 //   node seed/demo-completo.ts --scale 0.3                        # versão rápida (~30% do volume)
 //   node seed/demo-completo.ts --reset --database-url …           # apaga a demo anterior antes
+//   node seed/demo-completo.ts --reset                            # só gera seed/out/demo-completo-reset.sql
 //
 // Requer Node 22.18+ (remove os tipos sozinho) e, para as datas, o `psql` no PATH.
 
@@ -70,7 +71,6 @@ function parseArgs(argv: readonly string[]): Args {
     } else throw new Error(`Argumento desconhecido: ${arg}`);
   }
   if (!(args.scale > 0 && args.scale <= 5)) throw new Error('--scale deve estar entre 0 e 5');
-  if (args.reset && args.databaseUrl === null) throw new Error('--reset exige --database-url');
   return args;
 }
 
@@ -1027,7 +1027,15 @@ async function main(): Promise<void> {
   const now = Date.now();
   console.log(`Seed demo-completo em ${args.baseUrl} (escala ${args.scale}).`);
 
-  if (args.reset) resetDemo(args.databaseUrl!);
+  if (args.reset) {
+    if (args.databaseUrl === null) {
+      // Sem acesso direto ao banco (ex.: rodando num container sem psql): só gera o SQL e para.
+      const file = writeResetSql();
+      console.log(`SQL de reset salvo em ${file}. Aplique e rode o seed de novo, sem --reset.`);
+      return;
+    }
+    resetDemo(args.databaseUrl);
+  }
 
   // Aplicações: a principal, uma secundária pequena e uma inativa.
   const app = await ensureApplication(api, 'Loja Aurora', 'demo-completo', { quietPeriodDays: 14, retentionDays: 365, openTextRetentionDays: 180 });
@@ -1293,6 +1301,11 @@ function runPsql(databaseUrl: string, file: string): void {
 }
 
 function resetDemo(databaseUrl: string): void {
+  runPsql(databaseUrl, writeResetSql());
+  console.log('Demo anterior removida.');
+}
+
+function writeResetSql(): string {
   // Apaga as três aplicações da demo e tudo que pende delas, na ordem das chaves estrangeiras.
   const apps = `(select id from applications where slug like 'demo-completo%')`;
   const surveys = `(select id from surveys where application_id in ${apps})`;
@@ -1317,8 +1330,7 @@ commit;
   mkdirSync(OUT_DIR, { recursive: true });
   const file = join(OUT_DIR, 'demo-completo-reset.sql');
   writeFileSync(file, sql);
-  runPsql(databaseUrl, file);
-  console.log('Demo anterior removida.');
+  return file;
 }
 
 main().catch((error: unknown) => {

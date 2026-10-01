@@ -109,10 +109,12 @@ function normal(mean: number, sd: number): number {
 // --- HTTP ------------------------------------------------------------------------------------
 
 class ApiError extends Error {
+  readonly path: string;
   readonly status: number;
   readonly body: unknown;
   constructor(method: string, path: string, status: number, body: unknown) {
     super(`${method} ${path} -> ${status}: ${JSON.stringify(body)}`);
+    this.path = path;
     this.status = status;
     this.body = body;
   }
@@ -659,12 +661,33 @@ interface Collector {
   baseUrl: string;
 }
 
+/** Falhas 5xx da coleta que sobraram depois das novas tentativas, por rota. */
+const serverFailures = new Map<string, number>();
+
+// As rotas de coleta são idempotentes (displayId, seq), então repetir depois de um 5xx é seguro.
 async function collect<T>(c: Collector, persona: Persona, path: string, body: unknown): Promise<T> {
-  return http<T>(c.baseUrl, 'POST', path, body, {
-    'X-Pitaco-Key': c.key,
-    'X-Pitaco-Sdk-Version': persona.sdkVersion,
-    'CF-Connecting-IP': persona.ip,
-  });
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await http<T>(c.baseUrl, 'POST', path, body, {
+        'X-Pitaco-Key': c.key,
+        'X-Pitaco-Sdk-Version': persona.sdkVersion,
+        'CF-Connecting-IP': persona.ip,
+      });
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status < 500 || attempt >= 3) throw error;
+      await sleep(1000 * 2 ** attempt);
+    }
+  }
+}
+
+function recordServerFailure(path: string, error: ApiError): void {
+  const route = path.replace(/[0-9a-f-]{36}/g, '{id}');
+  const count = (serverFailures.get(route) ?? 0) + 1;
+  serverFailures.set(route, count);
+  if (count <= 3) {
+    const traceId = (error.body as { traceId?: string } | null)?.traceId ?? '-';
+    console.warn(`    ${error.status} em ${route} (traceId ${traceId}) — exibição pulada, o seed segue.`);
+  }
 }
 
 interface Event {
@@ -878,8 +901,15 @@ async function runDisplay(
   }
   // Um SDK antigo (1.0.0) às vezes não manda eventos: a base "instrumentada" fica menor que a exibida.
   if (!(persona.sdkVersion === '1.0.0' && chance(0.35))) {
-    for (let k = 0; k < events.length; k += 100) {
-      await collect(c, persona, `/collect/displays/${displayId}/events`, { events: events.slice(k, k + 100) });
+    const eventsPath = `/collect/displays/${displayId}/events`;
+    try {
+      for (let k = 0; k < events.length; k += 100) {
+        await collect(c, persona, eventsPath, { events: events.slice(k, k + 100) });
+      }
+    } catch (error) {
+      // Sem os eventos a exibição ainda vale para os resultados; só fica fora do comportamento.
+      if (!(error instanceof ApiError) || error.status < 500) throw error;
+      recordServerFailure(eventsPath, error);
     }
   }
 
@@ -1094,6 +1124,10 @@ async function main(): Promise<void> {
           if (plan.outcome === 'completed') completedSoFar += 1;
         }
       } catch (error) {
+        if (error instanceof ApiError && error.status >= 500) {
+          recordServerFailure(error.path, error);
+          return;
+        }
         if (error instanceof ApiError && (error.status === 409 || error.status === 422 || error.status === 404)) {
           rejected += 1;
           if (rejected <= 3) console.warn(`    envio recusado: ${error.message.slice(0, 400)}`);
@@ -1214,6 +1248,12 @@ async function main(): Promise<void> {
   console.log(`  Pesquisas: ${surveys.length + 1} — publicadas, pausada, encerrada, encerrada por cota e rascunho`);
   console.log(`  Exibições: ${plans.length} (${counts.completed} concluídas, ${counts.dismissed} dispensadas, ${counts.abandoned} abandonadas)`);
   console.log(`  Painel: /aplicacoes/${app.id}`);
+  if (serverFailures.size > 0) {
+    console.log('');
+    console.log('Erros 5xx do backend que persistiram depois de 4 tentativas (o seed seguiu sem eles):');
+    for (const [route, count] of serverFailures) console.log(`  ${route}: ${count}`);
+    console.log('Veja o motivo no log da API: docker compose logs api | grep -A30 ERROR');
+  }
 }
 
 function sqlString(value: string): string {

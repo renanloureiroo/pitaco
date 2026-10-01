@@ -14,7 +14,7 @@ export function VersionDetail({ version }: { version: SurveyVersionDetail }) {
         <CardHeader>
           <CardTitle className="flex flex-wrap items-center gap-3">
             Versão {version.number}
-            <Badge variant={version.status === "published" ? "default" : "secondary"}>
+            <Badge variant={version.status === "published" ? "success" : "secondary"}>
               {version.status === "published" ? "Publicada" : "Rascunho"}
             </Badge>
           </CardTitle>

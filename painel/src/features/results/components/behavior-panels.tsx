@@ -269,18 +269,18 @@ export function BehaviorSummary({ behavior, href }: { behavior: SurveyBehavior; 
         </Button>
       }
     >
-      <dl className="grid gap-3 sm:grid-cols-3">
-        <div className="flex flex-col gap-1 rounded-lg bg-surface-raised px-3 py-2.5">
+      <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="flex min-w-0 flex-col gap-1 rounded-lg bg-surface-raised px-3 py-2.5">
           <dt className="text-xs text-ink-muted">Onde mais desistem</dt>
           <dd className="truncate text-sm font-medium" title={worst?.statement}>
             {worst === undefined || worst.abandoned === 0 ? "—" : `${worst.position}. ${worst.statement}`}
           </dd>
         </div>
-        <div className="flex flex-col gap-1 rounded-lg bg-surface-raised px-3 py-2.5">
+        <div className="flex min-w-0 flex-col gap-1 rounded-lg bg-surface-raised px-3 py-2.5">
           <dt className="text-xs text-ink-muted">Tempo ativo (soma das medianas)</dt>
           <dd className="text-lg font-semibold tabular-nums">{formatDuration(medianTotal > 0 ? medianTotal : undefined)}</dd>
         </div>
-        <div className="flex flex-col gap-1 rounded-lg bg-surface-raised px-3 py-2.5">
+        <div className="flex min-w-0 flex-col gap-1 rounded-lg bg-surface-raised px-3 py-2.5">
           <dt className="text-xs text-ink-muted">Taxa de troca de resposta (média)</dt>
           <dd className="text-lg font-semibold tabular-nums">{formatRate(changeRate)}</dd>
         </div>

@@ -58,7 +58,7 @@ export function VersionsTable({
               )}
             </TableCell>
             <TableCell>
-              <Badge variant={version.status === "published" ? "default" : "secondary"}>
+              <Badge variant={version.status === "published" ? "success" : "secondary"}>
                 {version.status === "published" ? "Publicada" : "Rascunho"}
               </Badge>
             </TableCell>

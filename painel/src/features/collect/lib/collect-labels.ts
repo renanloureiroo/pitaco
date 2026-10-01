@@ -10,14 +10,15 @@ export const DISPLAY_OUTCOME_LABELS: Record<DisplayOutcome, string> = {
 
 export function displayOutcomeVariant(
   outcome: DisplayOutcome,
-): "default" | "secondary" | "outline" | "destructive" {
+): "success" | "info" | "outline" {
+  // Mesma semântica dos gráficos: concluída é positivo, dispensada é informação, aberta é neutra.
   switch (outcome) {
     case "COMPLETED":
-      return "default";
+      return "success";
     case "STARTED":
       return "outline";
     case "DISMISSED":
-      return "secondary";
+      return "info";
   }
 }
 

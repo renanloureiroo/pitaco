@@ -91,7 +91,7 @@ function ApplicationSwitcher({
           <span className="grid size-6 shrink-0 place-items-center rounded-sm bg-surface-sunken text-[11px] font-semibold uppercase">
             {(current?.name ?? "?").slice(0, 1)}
           </span>
-          <span className="min-w-0 flex-1 truncate">{current?.name ?? "Escolha uma aplicação"}</span>
+          <span className="min-w-0 flex-1 truncate">{current?.name ?? "Todas as aplicações"}</span>
           <ChevronsUpDownIcon aria-hidden className="size-4 text-ink-muted" />
         </button>
       </DropdownMenuTrigger>

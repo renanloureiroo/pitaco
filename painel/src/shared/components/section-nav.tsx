@@ -17,9 +17,12 @@ export function SectionNav({ items }: { items: SectionNavItem[] }) {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Seções" className="flex gap-1 border-b">
-      {items.map((item) => {
-        const active = pathname === item.href;
+    <nav aria-label="Seções" className="flex gap-1 overflow-x-auto shadow-[inset_0_-1px_0_var(--border)] [scrollbar-width:none]">
+      {items.map((item, index) => {
+        // O primeiro item é a raiz do recurso: só ativo nela mesma. Os demais seguem ativos nas
+        // subpáginas (Versões continua marcada em /versoes/1).
+        const active =
+          pathname === item.href || (index > 0 && pathname.startsWith(`${item.href}/`));
 
         return (
           <Link
@@ -27,7 +30,7 @@ export function SectionNav({ items }: { items: SectionNavItem[] }) {
             href={item.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "-mb-px border-b-2 px-3 py-2 text-sm transition-colors",
+              "shrink-0 border-b-2 px-3 py-2 text-sm whitespace-nowrap transition-colors",
               active
                 ? "border-primary font-medium text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground",

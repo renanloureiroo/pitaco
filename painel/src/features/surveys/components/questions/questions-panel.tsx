@@ -112,8 +112,8 @@ export function QuestionsPanel({
   );
 
   return (
-    <div className="grid lg:grid-cols-2 gap-8 items-start">
-      <div className="flex flex-col gap-4">
+    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2 lg:gap-8">
+      <div className="flex min-w-0 flex-col gap-4">
         {readOnly ? (
           <QuestionsList questions={ordered} />
         ) : editing !== undefined ? (
@@ -171,7 +171,7 @@ export function QuestionsPanel({
         )}
       </div>
 
-      <div className="sticky top-4">
+      <div className="min-w-0 lg:sticky lg:top-4">
         <SurveyPreview questions={previewQuestions} />
       </div>
     </div>

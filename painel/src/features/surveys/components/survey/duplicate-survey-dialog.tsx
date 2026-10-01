@@ -70,7 +70,7 @@ export function DuplicateSurveyDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" data-testid="duplicate-survey-button">
+        <Button variant="outline" size="sm" data-testid="duplicate-survey-button">
           <CopyIcon aria-hidden />
           Duplicar
         </Button>

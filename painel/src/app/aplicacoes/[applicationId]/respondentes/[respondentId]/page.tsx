@@ -10,6 +10,7 @@ import {
   listRespondentDisplays,
   parseDisplayFilters,
 } from "@/features/collect";
+import { listSurveys } from "@/features/surveys";
 import { ApiUnavailableError, parsePaginationParams } from "@/shared/api";
 import { EmptyState, Pagination } from "@/shared/components";
 import { TIMEZONE_NOTE } from "@/shared/lib";
@@ -25,11 +26,14 @@ export default async function RespondentHistoryPage({
   const { page, size } = parsePaginationParams(query);
   const { versionNumber: _versionIgnored, ...filters } = parseDisplayFilters(query);
 
-  const result = await listRespondentDisplays(applicationId, respondentId, {
-    page,
-    size,
-    ...filters,
-  });
+  const [result, surveysResult] = await Promise.all([
+    listRespondentDisplays(applicationId, respondentId, { page, size, ...filters }),
+    // Só para dar nome à pesquisa de cada linha; se falhar, a linha cai no identificador.
+    listSurveys(applicationId, { page: 0, size: 100 }),
+  ]);
+  const surveyNames = surveysResult.ok
+    ? Object.fromEntries(surveysResult.data.items.map((survey) => [survey.id, survey.name]))
+    : undefined;
 
   if (!result.ok) {
     if (result.kind === "not_found") {
@@ -78,6 +82,7 @@ export default async function RespondentHistoryPage({
               applicationId={applicationId}
               displays={displays.items}
               showSurvey
+              {...(surveyNames !== undefined ? { surveyNames } : {})}
             />
             <Pagination pathname={listHref} searchParams={query} page={displays} />
           </>

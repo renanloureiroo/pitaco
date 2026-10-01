@@ -48,7 +48,7 @@ export function RenameSurvey({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" data-testid="rename-survey-button">
+        <Button variant="outline" size="sm" data-testid="rename-survey-button">
           <PencilIcon aria-hidden />
           Renomear
         </Button>

@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge";
 import { listApplications } from "@/features/applications";
-import { orNotConfigured } from "@/shared/lib";
 
 import { getTransitions } from "../../api/lifecycle";
 import { getSurvey } from "../../api/surveys";
@@ -52,7 +51,14 @@ export async function SurveyHeader({
             <Badge data-testid="survey-state" variant={surveyStateVariant(survey.state)}>
               {SURVEY_STATE_LABELS[survey.state]}
             </Badge>
-            <span>versão publicada: {orNotConfigured(survey.publishedVersionNumber)}</span>
+            <span>
+              {survey.publishedVersionNumber === undefined
+                ? "nunca publicada"
+                : `versão ${survey.publishedVersionNumber} publicada`}
+              {survey.draftVersionNumber !== undefined && survey.publishedVersionNumber !== undefined
+                ? ` · rascunho da versão ${survey.draftVersionNumber} aberto`
+                : ""}
+            </span>
           </div>
         </div>
 

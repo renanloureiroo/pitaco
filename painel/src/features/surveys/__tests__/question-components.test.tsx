@@ -52,7 +52,7 @@ beforeEach(() => {
 
 describe("QuestionForm", () => {
   it("mostra opções só nos tipos de escolha e faixa só em rating/scale", async () => {
-    render(<QuestionForm applicationId="app-1" surveyId="srv-1" />);
+    render(<QuestionForm applicationId="app-1" surveyId="srv-1" questions={[]} />);
 
     // free_text: nenhum dos dois
     expect(screen.queryByTestId("question-options")).not.toBeInTheDocument();
@@ -72,7 +72,7 @@ describe("QuestionForm", () => {
   });
 
   it("acrescenta e remove linhas de opção", async () => {
-    render(<QuestionForm applicationId="app-1" surveyId="srv-1" question={choice} />);
+    render(<QuestionForm applicationId="app-1" surveyId="srv-1" questions={[choice]} question={choice} />);
 
     const options = screen.getByTestId("question-options");
     expect(within(options).getAllByLabelText(/^Rótulo da opção/)).toHaveLength(1);
@@ -85,7 +85,7 @@ describe("QuestionForm", () => {
   });
 
   it("não deixa remover a última opção — um tipo de escolha precisa de pelo menos uma", () => {
-    render(<QuestionForm applicationId="app-1" surveyId="srv-1" question={choice} />);
+    render(<QuestionForm applicationId="app-1" surveyId="srv-1" questions={[choice]} question={choice} />);
 
     expect(screen.getByLabelText("Remover opção 1")).toBeDisabled();
   });
@@ -99,7 +99,7 @@ describe("QuestionForm", () => {
       values: { statement: "Qual sua preferida?", type: "single_choice" },
     } satisfies FormState);
 
-    render(<QuestionForm applicationId="app-1" surveyId="srv-1" />);
+    render(<QuestionForm applicationId="app-1" surveyId="srv-1" questions={[]} />);
 
     await userEvent.type(screen.getByLabelText("Enunciado"), "Qual sua preferida?");
     await userEvent.click(screen.getByTestId("question-type-select"));
@@ -120,7 +120,7 @@ describe("QuestionForm", () => {
       values: { statement: "Qual sua preferida?", type: "single_choice" },
     } satisfies FormState);
 
-    render(<QuestionForm applicationId="app-1" surveyId="srv-1" />);
+    render(<QuestionForm applicationId="app-1" surveyId="srv-1" questions={[]} />);
 
     await userEvent.click(screen.getByTestId("question-type-select"));
     await userEvent.click(await screen.findByRole("option", { name: "Escolha única" }));
@@ -134,7 +134,7 @@ describe("QuestionForm", () => {
   it("bloqueia o envio enquanto a action está pendente", async () => {
     actions.addQuestionAction.mockImplementation(() => new Promise(() => {}));
 
-    render(<QuestionForm applicationId="app-1" surveyId="srv-1" />);
+    render(<QuestionForm applicationId="app-1" surveyId="srv-1" questions={[]} />);
     await userEvent.type(screen.getByLabelText("Enunciado"), "Como foi?");
     await userEvent.click(screen.getByTestId("submit-button"));
 

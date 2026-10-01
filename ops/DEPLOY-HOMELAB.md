@@ -53,6 +53,15 @@ O `--build` reconstrói `api` e `painel`; o Docker reaproveita as camadas que n�
 cache do Maven fica num volume de build, então a segunda vez é bem mais rápida que a primeira. O
 `postgres` não é recriado e os dados ficam no volume `pitaco_pg_data`.
 
+Se o build cair por falta de memória (o Maven da `api` e o Next do `painel` constroem em
+paralelo), construa um de cada vez e só então suba:
+
+```bash
+docker compose build api
+docker compose build painel
+docker compose up -d
+```
+
 Para reconstruir **só um serviço** (ex.: mudou apenas o painel):
 
 ```bash
@@ -82,6 +91,13 @@ docker run --rm --network pitaco_internal curlimages/curl -fsS -o /dev/null -w '
 
 Depois, pelo domínio público do túnel, abra o painel e confira a **Visão geral** de uma
 aplicação.
+
+Se o **build** falhou:
+
+- `exit code 139` (segfault) ou `137` (morto por memória) no `npm ci` ou no `mvn`: construa um
+  serviço por vez, como acima. Persistindo, limpe o cache de build: `docker builder prune`.
+- Erro de TypeScript no `next build`: o painel não compila; rode `npm run typecheck` em `painel/`
+  na sua máquina antes de publicar.
 
 Se algo não subiu:
 

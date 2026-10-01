@@ -99,6 +99,17 @@ Se o **build** falhou:
 - Erro de TypeScript no `next build`: o painel não compila; rode `npm run typecheck` em `painel/`
   na sua máquina antes de publicar.
 
+Disco cheio de repente? Veja se não são core dumps de quedas do Postgres dentro do volume
+(`core.NNNN`, ~150 MB cada). O compose desliga os core dumps (`ulimits.core: 0`), mas um volume
+antigo pode ainda tê-los. São seguros de apagar (não fazem parte do banco):
+
+```bash
+sudo find /var/lib/docker/volumes/pitaco_pg_data/_data -maxdepth 1 -name 'core.*' -delete
+```
+
+Quedas repetidas de processos diferentes (Postgres, npm) apontam para hardware, em geral RAM:
+`sudo journalctl -k | grep -i -E "segfault|mce|edac"`.
+
 Se algo não subiu:
 
 ```bash

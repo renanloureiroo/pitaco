@@ -13,6 +13,10 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    # Sem core dump: cada queda do Postgres gravava ~150 MB na pasta de dados, e com o restart
+    # automático mais de mil quedas encheram o disco do homelab (172 GB) e derrubaram tudo.
+    ulimits:
+      core: 0
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}

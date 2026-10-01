@@ -10,7 +10,7 @@ async function publicar(page: Page, applicationId: string, surveyId: string) {
 
   await page.goto(base);
   await page.getByTestId("add-question-button").click();
-  await page.getByLabel("Enunciado").fill("Qual sua nota?");
+  await page.getByRole("textbox", { name: "Enunciado" }).fill("Qual sua nota?");
   await page.getByTestId("question-type-select").click();
   await page.getByRole("option", { name: "NPS", exact: true }).click();
   await page.getByTestId("submit-button").click();

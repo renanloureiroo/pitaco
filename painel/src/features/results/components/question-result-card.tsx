@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 import {
   MULTIPLE_CHOICE_SHARE_NOTE,
@@ -60,11 +61,12 @@ function Aggregate({ question, aggregate }: { question: QuestionResult; aggregat
       return (
         <div className="flex flex-col gap-2">
           <Bars
-            rows={(aggregate.options ?? []).map((option) => ({
+            rows={(aggregate.options ?? []).map((option, index) => ({
               key: option.value,
               label: option.label,
               count: option.count,
               share: option.share,
+              color: CHOICE_COLORS[index] ?? "bg-neutral-fill",
             }))}
           />
           {question.type === "multiple_choice" ? (
@@ -74,26 +76,30 @@ function Aggregate({ question, aggregate }: { question: QuestionResult; aggregat
       );
     case "numeric":
       return (
-        <div className="flex flex-col gap-3">
-          <p className="text-sm">
-            Média{" "}
-            <span data-testid="question-average" className="font-medium">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-baseline gap-2">
+            <span data-testid="question-average" className="text-3xl font-semibold tracking-tight tabular-nums">
               {formatAverage(aggregate.average ?? 0)}
             </span>
-          </p>
-          <Bars rows={valueRows(aggregate.distribution ?? [])} />
+            <span className="text-sm text-ink-muted">de média</span>
+          </div>
+          <Histogram distribution={aggregate.distribution ?? []} colorOf={() => "bg-chart-1"} />
         </div>
       );
     case "nps":
       return (
-        <div className="flex flex-col gap-3">
-          <dl className="grid gap-4 sm:grid-cols-4">
-            <Group label="NPS" value={formatScore(aggregate.score ?? 0)} testId="nps-score" />
-            <Group label="Promotores (9–10)" value={formatCount(aggregate.promoters ?? 0)} testId="nps-promoters" />
-            <Group label="Neutros (7–8)" value={formatCount(aggregate.passives ?? 0)} testId="nps-passives" />
-            <Group label="Detratores (0–6)" value={formatCount(aggregate.detractors ?? 0)} testId="nps-detractors" />
+        <div className="flex flex-col gap-4">
+          <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <Group label="NPS" value={formatSignedScore(aggregate.score ?? 0)} testId="nps-score" emphasis />
+            <Group label="Promotores (9–10)" value={formatCount(aggregate.promoters ?? 0)} testId="nps-promoters" dot="bg-success-fill" />
+            <Group label="Neutros (7–8)" value={formatCount(aggregate.passives ?? 0)} testId="nps-passives" dot="bg-neutral-fill" />
+            <Group label="Detratores (0–6)" value={formatCount(aggregate.detractors ?? 0)} testId="nps-detractors" dot="bg-danger-fill" />
           </dl>
-          <Bars rows={valueRows(aggregate.distribution ?? [])} />
+          <Histogram
+            distribution={aggregate.distribution ?? []}
+            fill={{ min: 0, max: 10 }}
+            colorOf={(value) => (value >= 9 ? "bg-success-fill" : value >= 7 ? "bg-neutral-fill" : "bg-danger-fill")}
+          />
         </div>
       );
     case "text":
@@ -103,6 +109,69 @@ function Aggregate({ question, aggregate }: { question: QuestionResult; aggregat
         </p>
       );
   }
+}
+
+/** Cor por posição da opção: a mesma opção tem a mesma cor em todo recorte. */
+const CHOICE_COLORS = [
+  "bg-chart-1",
+  "bg-chart-2",
+  "bg-chart-3",
+  "bg-chart-4",
+  "bg-chart-5",
+  "bg-chart-6",
+  "bg-chart-7",
+  "bg-chart-8",
+] as const;
+
+function formatSignedScore(score: number): string {
+  return score > 0 ? `+${formatScore(score)}` : formatScore(score);
+}
+
+/**
+ * Distribuição de notas em colunas, com a contagem em cima e o valor embaixo. Com `fill`, os
+ * valores sem resposta da faixa aparecem como coluna vazia — zero é dado, não buraco.
+ */
+function Histogram({
+  distribution,
+  colorOf,
+  fill,
+}: {
+  distribution: ValueShare[];
+  colorOf: (value: number) => string;
+  fill?: { min: number; max: number };
+}) {
+  const byValue = new Map(distribution.map((entry) => [entry.value, entry]));
+  const values =
+    fill !== undefined
+      ? Array.from({ length: fill.max - fill.min + 1 }, (_, index) => fill.min + index)
+      : distribution.map((entry) => entry.value);
+  const peak = Math.max(...distribution.map((entry) => entry.share), 0.0001);
+
+  return (
+    <ol className="flex h-40 items-end gap-1.5" aria-label="Distribuição das respostas">
+      {values.map((value) => {
+        const entry = byValue.get(value) ?? { value, count: 0, share: 0 };
+        return (
+          <li
+            key={value}
+            data-testid="aggregate-row"
+            className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
+            title={`${value}: ${formatCount(entry.count)} · ${formatShare(entry.share)}`}
+          >
+            <span data-testid="aggregate-count" className="text-[11px] text-ink-muted tabular-nums">
+              {formatCount(entry.count)}
+              <span className="sr-only"> · {formatShare(entry.share)}</span>
+            </span>
+            <span
+              className={cn("w-full max-w-12 rounded-t-sm transition-opacity group-hover:opacity-80", colorOf(value))}
+              style={{ height: `${Math.max((entry.share / peak) * 100, entry.count > 0 ? 3 : 0)}%` }}
+            />
+            <span className="border-t border-border-strong pt-1 text-xs font-medium tabular-nums">{value}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
 }
 
 /**
@@ -123,51 +192,60 @@ function ComparabilityNote({ question }: { question: QuestionResult }) {
     <p
       data-testid="comparability-warning"
       role="note"
-      className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
+      className="rounded-md bg-danger-soft p-3 text-sm text-danger"
     >
       {incomparableMessage(comparability.versions)}
     </p>
   );
 }
 
-function valueRows(distribution: ValueShare[]) {
-  return distribution.map((entry) => ({
-    key: String(entry.value),
-    label: String(entry.value),
-    count: entry.count,
-    share: entry.share,
-  }));
-}
-
-function Group({ label, value, testId }: { label: string; value: string; testId: string }) {
+function Group({
+  label,
+  value,
+  testId,
+  dot,
+  emphasis,
+}: {
+  label: string;
+  value: string;
+  testId: string;
+  dot?: string;
+  emphasis?: boolean;
+}) {
   return (
     <div className="flex flex-col gap-1">
-      <dt className="text-xs tracking-wide text-muted-foreground uppercase">{label}</dt>
-      <dd data-testid={testId} className="text-lg font-medium">
+      <dt className="flex items-center gap-1.5 text-[11px] font-medium tracking-[0.06em] text-ink-muted uppercase">
+        {dot ? <span className={cn("size-2 rounded-[2px]", dot)} aria-hidden /> : null}
+        {label}
+      </dt>
+      <dd data-testid={testId} className={cn("font-semibold tabular-nums", emphasis ? "text-3xl tracking-tight" : "text-lg")}>
         {value}
       </dd>
     </div>
   );
 }
 
-type BarRow = Pick<OptionShare, "count" | "share"> & { key: string; label: string };
+type BarRow = Pick<OptionShare, "count" | "share"> & { key: string; label: string; color: string };
 
 function Bars({ rows }: { rows: BarRow[] }) {
   return (
-    <ol className="flex flex-col gap-1.5">
+    <ol className="flex flex-col gap-2.5">
       {rows.map((row) => (
-        <li key={row.key} data-testid="aggregate-row" className="flex items-center gap-3 text-sm">
-          <span className="w-40 shrink-0 truncate" title={row.label}>
-            {row.label}
+        <li key={row.key} data-testid="aggregate-row" className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:gap-3">
+          <span className="flex items-center gap-2 sm:w-48 sm:shrink-0" title={row.label}>
+            <span className={cn("size-2.5 shrink-0 rounded-[2px]", row.color)} aria-hidden />
+            <span className="truncate">{row.label}</span>
           </span>
-          <span className="relative h-3 flex-1 overflow-hidden rounded bg-muted">
-            <span
-              className="absolute inset-y-0 left-0 bg-primary"
-              style={{ width: `${Math.min(row.share, 1) * 100}%` }}
-            />
-          </span>
-          <span data-testid="aggregate-count" className="w-32 shrink-0 text-right text-muted-foreground">
-            {formatCount(row.count)} · {formatShare(row.share)}
+          <span className="flex flex-1 items-center gap-3">
+            <span className="relative h-2.5 flex-1 overflow-hidden rounded-sm bg-surface-sunken">
+              <span
+                className={cn("absolute inset-y-0 left-0 rounded-sm", row.color)}
+                style={{ width: `${Math.min(row.share, 1) * 100}%` }}
+              />
+            </span>
+            <span data-testid="aggregate-count" className="w-28 shrink-0 text-right text-ink-muted tabular-nums">
+              {formatCount(row.count)} · {formatShare(row.share)}
+            </span>
           </span>
         </li>
       ))}

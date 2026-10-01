@@ -29,6 +29,7 @@ export default async function SurveyLayout({
           { href: `${base}/versoes`, label: "Versões" },
           { href: `${base}/exibicoes`, label: "Exibições" },
           { href: `${base}/resultados`, label: "Resultados" },
+          { href: `${base}/comportamento`, label: "Comportamento" },
         ]}
       />
 

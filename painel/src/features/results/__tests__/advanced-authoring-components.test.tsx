@@ -66,7 +66,7 @@ describe("NpsSummaryCard", () => {
       />,
     );
 
-    expect(screen.getByTestId("nps-summary-score")).toHaveTextContent("33,3");
+    expect(screen.getByTestId("nps-summary-score")).toHaveTextContent("+33");
     expect(screen.getByTestId("nps-summary")).toHaveTextContent("Calculado sobre 3 respostas");
   });
 

@@ -17,7 +17,7 @@ async function selecionarTipo(page: Page, rotulo: string) {
 
 async function adicionarPergunta(page: Page, enunciado: string, tipo: string, opcoes: string[] = []) {
   await page.getByTestId("add-question-button").click();
-  await page.getByLabel("Enunciado").fill(enunciado);
+  await page.getByRole("textbox", { name: "Enunciado" }).fill(enunciado);
   await selecionarTipo(page, tipo);
 
   for (const [index, opcao] of opcoes.entries()) {
@@ -70,7 +70,7 @@ test.describe("Autoria avançada", () => {
     await adicionarPergunta(page, "Gostou?", "Escolha única", ["Sim", "Não"]);
 
     await page.getByTestId("add-question-button").click();
-    await page.getByLabel("Enunciado").fill("O que faltou?");
+    await page.getByRole("textbox", { name: "Enunciado" }).fill("O que faltou?");
     await page.getByTestId("condition-toggle").click();
     await page.getByTestId("condition-value-select").click();
     await page.getByRole("option", { name: "Não", exact: true }).click();
@@ -90,7 +90,7 @@ test.describe("Autoria avançada", () => {
     await adicionarPergunta(page, "Qual sua nota?", "NPS");
 
     await page.getByTestId("add-question-button").click();
-    await page.getByLabel("Enunciado").fill("Por quê?");
+    await page.getByRole("textbox", { name: "Enunciado" }).fill("Por quê?");
     await page.getByTestId("condition-toggle").click();
     await page.getByTestId("condition-operator-select").click();
     await page.getByRole("option", { name: "estiver na faixa" }).click();

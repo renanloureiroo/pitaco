@@ -33,9 +33,10 @@ export {
   type ResponseRate,
   type Retention,
   type SurveyResults,
+  type TimelinePoint,
 } from "./schemas/results";
 
-export { type SurveyBehavior, type MetricDefinition } from "./schemas/behavior";
+export { changeRateOf, type MetricDefinition, type QuestionBehavior, type SurveyBehavior } from "./schemas/behavior";
 
 export {
   EXPORT_NOTICE,
@@ -46,7 +47,9 @@ export {
   NO_MATCHES_DESCRIPTION,
   NO_MATCHES_TITLE,
   OPEN_ANSWERS_NOTICE,
+  formatCount,
   formatRate,
+  formatScore,
   formatShare,
   resultsEmptyVariant,
   retentionNoteText,
@@ -63,4 +66,11 @@ export { OpenAnswersSearch } from "./components/open-answers-search";
 export { RefreshControl } from "./components/refresh-control";
 export { ExportButton } from "./components/export-button";
 export { RetentionNote } from "./components/retention-note";
-export { BehaviorCard } from "./components/behavior-card";
+export {
+  BehaviorDefinitions,
+  BehaviorSummary,
+  DismissalChart,
+  FrictionTable,
+  QuestionFunnel,
+  QuestionTimeChart,
+} from "./components/behavior-panels";

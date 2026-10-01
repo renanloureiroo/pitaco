@@ -13,7 +13,7 @@ async function montarPesquisaCompleta(page: Page, applicationId: string, surveyI
 
   await page.goto(base);
   await page.getByTestId("add-question-button").click();
-  await page.getByLabel("Enunciado").fill("Qual sua nota?");
+  await page.getByRole("textbox", { name: "Enunciado" }).fill("Qual sua nota?");
   await page.getByTestId("question-type-select").click();
   await page.getByRole("option", { name: "NPS", exact: true }).click();
   await page.getByTestId("submit-button").click();
@@ -128,7 +128,7 @@ test.describe("US5 — publicar e acompanhar versões", () => {
 
     await page.goto(base);
     await page.getByTestId("add-question-button").click();
-    await page.getByLabel("Enunciado").fill("O que faltou?");
+    await page.getByRole("textbox", { name: "Enunciado" }).fill("O que faltou?");
     await page.getByTestId("submit-button").click();
     await expect(page.getByTestId("question-item")).toHaveCount(2);
 

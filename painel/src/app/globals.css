@@ -4,48 +4,26 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Design System Pitaco v2. A fonte dos valores é o artifact "Pitaco" (tokens.json); este
+ * arquivo é a tradução para Tailwind 4. Escuro é o tema padrão (next-themes, classe `.dark`);
+ * o claro tem os próprios passos, não uma inversão.
+ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-heading: var(--font-sans);
-  --color-primary: var(--primary);
-  --color-primary-active: var(--primary-active);
-  --color-primary-disabled: var(--primary-disabled);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-accent-turquoise: var(--accent-turquoise);
-  
-  --color-canvas-dark: #0b0e11;
-  --color-surface-card-dark: #1e2329;
-  --color-surface-elevated-dark: #2b3139;
-  
-  --color-canvas-light: #ffffff;
-  --color-surface-soft-light: #fafafa;
-  --color-surface-strong-light: #f5f5f5;
-  
-  --color-hairline-light: #eaecef;
-  --color-hairline-dark: #2b3139;
-  --color-border-strong: #cdd1d6;
-  
-  --color-ink: #181a20;
-  --color-body-dark: #eaecef;
-  --color-body-light: #181a20;
-  --color-text-muted: #707a8a;
-  --color-muted-strong: #929aa5;
-  --color-on-primary: #181a20;
-  --color-on-dark: #ffffff;
-  
-  --color-trading-up: #0ecb81;
-  --color-trading-down: #f6465d;
-  --color-info: #3b82f6;
 
-  --color-border: var(--border);
-  --color-ring: var(--ring);
+  /* Nomes do shadcn — os primitivos em components/ui leem estes. */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-active: var(--primary-hover);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -54,7 +32,47 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
   --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Nomes do Design System Pitaco. */
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-sidebar: var(--sidebar);
+  --color-border-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-primary-ink: var(--primary-ink);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent-turquoise: var(--accent-turquoise);
+  --color-success: var(--success);
+  --color-success-fill: var(--success-fill);
+  --color-success-soft: var(--success-soft);
+  --color-danger: var(--danger);
+  --color-danger-fill: var(--danger-fill);
+  --color-danger-soft: var(--danger-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-neutral-fill: var(--neutral-fill);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+  --color-chart-grid: var(--chart-grid);
+
+  /* Compatibilidade com classes já usadas no painel. */
+  --color-trading-up: var(--success);
+  --color-trading-down: var(--danger);
+  --color-text-muted: var(--ink-muted);
 
   --radius-xs: 2px;
   --radius-sm: 4px;
@@ -65,47 +83,100 @@
 }
 
 :root {
-  --background: var(--color-canvas-light);
-  --foreground: var(--color-body-light);
-  --primary: #FCD535;
-  --primary-active: #f0b90b;
-  --primary-disabled: #3a3a1f;
+  --background: #f5f6f8;
+  --surface: #ffffff;
+  --surface-raised: #fafafa;
+  --surface-sunken: #f0f1f3;
+  --sidebar: #ffffff;
+  --border: #e6e8ea;
+  --border-strong: #cdd1d6;
+  --ink: #181a20;
+  --ink-secondary: #474d57;
+  --ink-muted: #5e6673;
+
+  --primary: #fcd535;
+  --primary-hover: #f0b90b;
   --primary-foreground: #181a20;
+  --primary-ink: #8a6100;
+  --primary-soft: #fff7d1;
   --accent-turquoise: #2dbdb6;
-  --border: var(--color-hairline-light);
-  --ring: var(--color-info);
-  
-  --card: var(--color-canvas-light);
-  --card-foreground: var(--color-body-light);
-  --popover: var(--color-canvas-light);
-  --popover-foreground: var(--color-body-light);
-  --secondary: var(--color-surface-soft-light);
-  --secondary-foreground: var(--color-ink);
-  --muted: var(--color-surface-strong-light);
-  --muted-foreground: var(--color-text-muted);
-  --accent: var(--color-surface-strong-light);
-  --accent-foreground: var(--color-ink);
-  --destructive: var(--color-trading-down);
+
+  --success: #037a50;
+  --success-fill: #0ecb81;
+  --success-soft: #e3f8ef;
+  --danger: #c62a43;
+  --danger-fill: #f6465d;
+  --danger-soft: #fde8eb;
+  --warning: #9a6b00;
+  --warning-soft: #fff4d6;
+  --info: #2563eb;
+  --info-soft: #e8f0fe;
+  --neutral-fill: #b7bdc6;
+
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-6: #008300;
+  --chart-7: #4a3aa7;
+  --chart-8: #e34948;
+  --chart-grid: #eef0f2;
+
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --secondary: var(--surface-sunken);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface-sunken);
+  --muted-foreground: var(--ink-muted);
+  --accent: var(--surface-sunken);
+  --accent-foreground: var(--ink);
+  --destructive: var(--danger-fill);
   --destructive-foreground: #ffffff;
-  --input: var(--color-hairline-light);
+  --input: var(--border-strong);
+  --ring: var(--info);
 }
 
 .dark {
-  --background: var(--color-canvas-dark);
-  --foreground: var(--color-body-dark);
-  --border: var(--color-hairline-dark);
-  --input: var(--color-hairline-dark);
-  
-  --card: var(--color-surface-card-dark);
-  --card-foreground: var(--color-on-dark);
-  --popover: var(--color-surface-elevated-dark);
-  --popover-foreground: var(--color-on-dark);
-  --secondary: var(--color-surface-elevated-dark);
-  --secondary-foreground: var(--color-on-dark);
-  --muted: var(--color-surface-elevated-dark);
-  --muted-foreground: var(--color-text-muted);
-  --accent: var(--color-surface-elevated-dark);
-  --accent-foreground: var(--color-on-dark);
+  --background: #0b0e11;
+  --surface: #161a1e;
+  --surface-raised: #1e2329;
+  --surface-sunken: #2b3139;
+  --sidebar: #11151a;
+  --border: #2b3139;
+  --border-strong: #3c444f;
+  --ink: #eaecef;
+  --ink-secondary: #b7bdc6;
+  --ink-muted: #848e9c;
+
+  --primary-ink: #fcd535;
+  --primary-soft: #2e2a14;
+
+  --success: #0ecb81;
+  --success-soft: #0f2a20;
+  --danger: #f6465d;
+  --danger-soft: #2f1519;
+  --warning: #f0b90b;
+  --warning-soft: #2b2410;
+  --info: #60a5fa;
+  --info-soft: #14213a;
+  --neutral-fill: #5e6673;
+
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-6: #008300;
+  --chart-7: #9085e9;
+  --chart-8: #e66767;
+  --chart-grid: #252a31;
+
+  --popover: var(--surface-raised);
+  --accent: var(--surface-raised);
 }
 
 @layer base {
@@ -117,5 +188,9 @@
   }
   html {
     @apply font-sans;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
   }
 }

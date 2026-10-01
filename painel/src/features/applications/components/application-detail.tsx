@@ -37,7 +37,7 @@ export function ApplicationDetail({ application }: { application: Application })
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-3">
           {application.name}
-          <Badge variant={application.status === "active" ? "default" : "secondary"}>
+          <Badge variant={application.status === "active" ? "success" : "secondary"}>
             {APPLICATION_STATUS_LABELS[application.status]}
           </Badge>
         </CardTitle>

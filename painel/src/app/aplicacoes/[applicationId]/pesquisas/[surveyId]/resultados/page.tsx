@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   ActiveFilters,
-  BehaviorCard,
+  BehaviorSummary,
   ExportButton,
   NEVER_PUBLISHED_DESCRIPTION,
   NEVER_PUBLISHED_TITLE,
@@ -142,7 +142,7 @@ export default async function SurveyResultsPage({
         <>
           {results.nps !== undefined ? <NpsSummaryCard nps={results.nps} /> : null}
           <ResponseRateCard responseRate={results.responseRate} smallSample={results.smallSample} />
-          <BehaviorCard behavior={behaviorResult.data} />
+          <BehaviorSummary behavior={behaviorResult.data} href={`${base}/comportamento`} />
           {results.retention !== undefined ? <RetentionNote retention={results.retention} /> : null}
 
           <div data-testid="question-results" className="flex flex-col gap-4">

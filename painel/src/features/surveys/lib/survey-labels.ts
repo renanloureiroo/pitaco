@@ -31,15 +31,17 @@ export const RULE_OPERATION_LABELS: Record<RuleOperation, string> = {
 /** Variante visual do badge por estado — a cor acompanha o significado operacional. */
 export function surveyStateVariant(
   state: SurveyState,
-): "default" | "secondary" | "outline" | "destructive" {
+): "success" | "info" | "warning" | "destructive" | "secondary" {
+  // Semântica do Design System: no ar é positivo, pausada pede atenção, encerrada é fim.
   switch (state) {
     case "active":
-      return "default";
+      return "success";
     case "scheduled":
-      return "outline";
+      return "info";
     case "paused":
-      return "destructive";
+      return "warning";
     case "ended":
+      return "destructive";
     case "draft":
       return "secondary";
   }

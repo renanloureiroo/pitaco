@@ -9,5 +9,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 <!-- END:nextjs-agent-rules -->
 
 # Design System
-This project follows a custom implementation of the Binance Design System. 
-Before creating new components, pages or applying styles, please read the rules and principles located in `DESIGN.md`.
+This project follows the Pitaco Design System (v2). Before creating new components, pages or applying styles, read the rules and principles in `DESIGN.md`; token values live in `src/app/globals.css`.

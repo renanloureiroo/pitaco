@@ -41,7 +41,7 @@ export function ApiKeysTable({
             <TableCell className="font-medium">{apiKey.label}</TableCell>
             <TableCell className="font-mono text-muted-foreground">{apiKey.prefix}</TableCell>
             <TableCell>
-              <Badge variant={apiKey.status === "active" ? "default" : "secondary"}>
+              <Badge variant={apiKey.status === "active" ? "success" : "secondary"}>
                 {API_KEY_STATUS_LABELS[apiKey.status]}
               </Badge>
             </TableCell>

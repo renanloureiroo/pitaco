@@ -41,7 +41,7 @@ export function ApplicationsTable({ applications }: { applications: ApplicationS
             </TableCell>
             <TableCell className="font-mono text-muted-foreground">{application.slug}</TableCell>
             <TableCell>
-              <Badge variant={application.status === "active" ? "default" : "secondary"}>
+              <Badge variant={application.status === "active" ? "success" : "secondary"}>
                 {APPLICATION_STATUS_LABELS[application.status]}
               </Badge>
             </TableCell>

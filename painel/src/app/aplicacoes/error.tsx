@@ -16,7 +16,7 @@ export default function ApplicationsError({
   }, [error]);
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 items-center px-6 py-10">
+    <main className="mx-auto flex w-full max-w-[1280px] flex-1 items-center px-4 py-6 sm:px-8 sm:py-8">
       <ErrorState
         title="Não foi possível listar as aplicações"
         description="A API do Pitaco não respondeu como esperado."

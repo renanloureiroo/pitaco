@@ -14,7 +14,7 @@ async function adicionarPergunta(
   opcoes: string[] = [],
 ) {
   await page.getByTestId("add-question-button").click();
-  await page.getByLabel("Enunciado").fill(enunciado);
+  await page.getByRole("textbox", { name: "Enunciado" }).fill(enunciado);
   await selecionarTipo(page, tipo);
 
   for (const [index, opcao] of opcoes.entries()) {
@@ -47,14 +47,14 @@ test.describe("US3 — criar e montar o rascunho de uma pesquisa", () => {
     await createSurvey(page, application.id);
 
     await page.getByTestId("add-question-button").click();
-    await page.getByLabel("Enunciado").fill("Qual sua preferida?");
+    await page.getByRole("textbox", { name: "Enunciado" }).fill("Qual sua preferida?");
     await selecionarTipo(page, "Escolha única");
     await page.getByTestId("submit-button").click();
 
     await expect(page.getByTestId("field-error-options")).toBeVisible();
     await expect(page.getByTestId("question-item")).toHaveCount(0);
     // O enunciado digitado continua ali.
-    await expect(page.getByLabel("Enunciado")).toHaveValue("Qual sua preferida?");
+    await expect(page.getByRole("textbox", { name: "Enunciado" })).toHaveValue("Qual sua preferida?");
   });
 
   test("monta, edita, remove, reordena e persiste a montagem", async ({ page }) => {
@@ -73,7 +73,7 @@ test.describe("US3 — criar e montar o rascunho de uma pesquisa", () => {
       .filter({ hasText: "Quer comentar?" })
       .getByTestId("edit-question-button")
       .click();
-    await page.getByLabel("Enunciado").fill("Quer deixar um comentário?");
+    await page.getByRole("textbox", { name: "Enunciado" }).fill("Quer deixar um comentário?");
     await page.getByTestId("submit-button").click();
     await expect(
       page.getByTestId("question-item").filter({ hasText: "Quer deixar um comentário?" }),

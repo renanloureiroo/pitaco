@@ -35,8 +35,8 @@ describe("rótulos", () => {
 
 describe("surveyStateVariant", () => {
   it("dá destaque ao que está no ar e alerta ao que está pausado", () => {
-    expect(surveyStateVariant("active")).toBe("default");
-    expect(surveyStateVariant("paused")).toBe("destructive");
+    expect(surveyStateVariant("active")).toBe("success");
+    expect(surveyStateVariant("paused")).toBe("warning");
   });
 
   it("responde para todo estado, sem cair em undefined", () => {

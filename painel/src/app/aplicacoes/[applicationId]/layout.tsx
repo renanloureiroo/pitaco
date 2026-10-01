@@ -11,7 +11,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { SectionNav } from "@/shared/components";
 
 /**
  * O corpo do layout **não** lê dado (R6): `loading.js` embrulha a página, não o layout, então
@@ -30,10 +29,8 @@ export default async function ApplicationLayout({
   params,
 }: LayoutProps<"/aplicacoes/[applicationId]">) {
   const { applicationId } = await params;
-  const base = `/aplicacoes/${applicationId}`;
-
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-10">
+    <div className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-6 px-4 py-6 sm:px-8 sm:py-8">
       <Breadcrumb data-testid="breadcrumb">
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -49,17 +46,6 @@ export default async function ApplicationLayout({
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-
-      <SectionNav
-        items={[
-          { href: base, label: "Detalhe" },
-          { href: `${base}/chaves`, label: "Chaves" },
-          { href: `${base}/pesquisas`, label: "Pesquisas" },
-          { href: `${base}/respondentes`, label: "Respondentes" },
-          { href: `${base}/saude`, label: "Saúde" },
-          { href: `${base}/privacidade`, label: "Privacidade" },
-        ]}
-      />
 
       {children}
     </div>

@@ -1,70 +1,73 @@
-# Binance Design System
+# Design System Pitaco (v2)
 
-## Overview
+A fonte da verdade visual do painel é o Design System **Pitaco**, publicado como artifact
+(tokens, guia de marca e componentes com preview). Este arquivo é o resumo para quem escreve
+código aqui; os valores vivem em `src/app/globals.css`, que traduz os tokens para Tailwind 4.
 
-Binance reads like a financial trading platform that wants to feel both authoritative and energetic. The base atmosphere is **deep near-black canvas** (`{colors.canvas-dark}` — #0b0e11) holding white type and a single, ubiquitous accent: **Binance Yellow** (`{colors.primary}` — #FCD535). That yellow does almost all of the brand's heavy lifting.
+## Princípios
 
-Type runs Binance's custom **BinanceNova** (display + body) and **BinancePlex** (numerical / financial display) stack.
-*Note: Inter and JetBrains Mono are used as substitutes in this project.*
+1. **O dado é o herói.** Cor, peso e tamanho vão para o número; o resto recua. Um card, um número principal.
+2. **Um amarelo, muito pouco.** `primary` (`#FCD535`) marca o CTA principal, o item ativo da navegação e no máximo um destaque por tela. Nunca é série de gráfico. Amarelo como texto usa `primary-ink`.
+3. **Todo número carrega a régua.** Contagem junto da proporção, definição do cálculo ao alcance, recorte ativo visível. "Sem dado" é `—`, nunca zero.
+4. **Escuro primeiro, claro de verdade.** Escuro é o padrão (`next-themes`, classe `.dark`); o claro tem os próprios passos. Os dois passam 4.5:1 em texto.
+5. **Status nunca só na cor.** Seta, ícone ou rótulo junto (▲ ▼, "No ar", "Pausada").
 
-The product is **multi-theme**: marketing surfaces (homepage, smart-money, futures arena) default to dark, while transactional surfaces (buy crypto, deposit, withdraw) flip to a light theme.
+## Tokens (classes Tailwind)
 
-**Key Characteristics:**
-- Single accent color: `{colors.primary}` (#FCD535) does all brand voltage.
-- Custom type stack: `BinanceNova` (Inter) and `BinancePlex` (JetBrains Mono).
-- Multi-theme: marketing pages default dark; transactional pages flip light.
-- Light footer on dark body.
-- Trading semantics: green up / red down for price changes, applied as text color.
-- Card surfaces: Elevated cards on dark, flat color blocks.
-- Border radius is small to medium (6px to 12px, pill for prominent CTAs).
-- Spacing follows a 4-multiple scale.
+| Papel | Classes | Regra |
+| --- | --- | --- |
+| Planos | `bg-background` → `bg-card`/`bg-surface` → `bg-surface-raised` → `bg-surface-sunken`; `bg-sidebar` | Card sempre `bg-card border border-border rounded-xl` |
+| Texto | `text-foreground`/`text-ink`, `text-ink-secondary`, `text-ink-muted` | `ink-muted` é o mínimo para qualquer texto |
+| Marca | `bg-primary text-primary-foreground`, `text-primary-ink`, `bg-primary-soft` | Fundo amarelo sempre com `primary-foreground` |
+| Status | `text-success` / `bg-success-fill` / `bg-success-soft` (idem `danger`, `warning`, `info`) | Sem sufixo = texto/ícone; `-fill` = marca; `-soft` = fundo de badge/alerta |
+| Gráfico | `bg-chart-1`…`bg-chart-8`, `var(--chart-n)`, `stroke-chart-grid`, `bg-neutral-fill` | Ordem fixa, cor segue a entidade; validada para daltonismo nos dois temas |
+| Bordas | `border-border`, `border-border-strong` | Hairline para cards; `strong` para inputs e eixo |
 
-## Colors
+**NPS** usa semântica, não série: promotores `success-fill`, neutros `neutral-fill`,
+detratores `danger-fill`, sempre com a legenda das faixas.
 
-### Brand & Accent
-- **Binance Yellow**: `#FCD535`
-- **Binance Yellow Active**: `#f0b90b`
-- **Binance Yellow Disabled**: `#3a3a1f`
-- **Accent Turquoise**: `#2dbdb6`
+**Desfechos** de exibição: concluídas `chart-3`, dispensadas `chart-1`, abandonadas `chart-2`,
+em andamento `neutral-fill`.
 
-### Surface
-**Dark mode:**
-- **Canvas Dark**: `#0b0e11`
-- **Surface Card Dark**: `#1e2329`
-- **Surface Elevated Dark**: `#2b3139`
+## Tipografia
 
-**Light mode:**
-- **Canvas Light**: `#ffffff`
-- **Surface Soft Light**: `#fafafa`
-- **Surface Strong Light**: `#f5f5f5`
+Inter (`font-sans`) para tudo; JetBrains Mono (`font-mono`) para identificadores (prefixo de
+chave, id, versão de SDK). Números em coluna com `tabular-nums`.
 
-### Hairlines & Borders
-- **Hairline on Light**: `#eaecef`
-- **Hairline on Dark**: `#2b3139`
-- **Border Strong**: `#cdd1d6`
+| Estilo | Uso | Classes |
+| --- | --- | --- |
+| kpi-xl | Número-herói (NPS, taxa) | `text-4xl font-semibold tracking-tight` |
+| kpi | Valor de KPI | `text-[28px] leading-8 font-semibold tabular-nums` |
+| h1 / h2 / h3 | Página / seção / card | `text-2xl` / `text-lg` / `text-[15px]`, `font-semibold` |
+| label | Rótulo de KPI, cabeçalho | `text-[11px] font-medium tracking-[0.06em] uppercase text-ink-muted` |
 
-### Text
-- **Ink**: `#181a20`
-- **Body on Dark**: `#eaecef`
-- **Body on Light**: `#181a20`
-- **Muted**: `#707a8a`
-- **Muted Strong**: `#929aa5`
-- **On Primary**: `#181a20`
-- **On Dark**: `#ffffff`
+## Espaço e forma
 
-### Trading Semantics & Info
-- **Trading Up**: `#0ecb81`
-- **Trading Down**: `#f6465d`
-- **Info**: `#3b82f6`
+Escala de 4px. Card com `p-5`, grade de dashboard com `gap-4`. Raios: `rounded-sm` (badge,
+ponta de barra), `rounded-md` (botão, input), `rounded-xl` (card). Profundidade por camada de
+superfície e hairline, não por sombra.
 
-## Shapes (Border Radius)
-- **xs**: 2px
-- **sm**: 4px
-- **md**: 6px
-- **lg**: 8px
-- **xl**: 12px
-- **pill**: 9999px
+## Layout
 
-## Spacing System
-- **Base unit:** 4px.
-- **Tokens:** `{spacing.xxs}` 4px · `{spacing.xs}` 8px · `{spacing.sm}` 12px · `{spacing.md}` 16px · `{spacing.lg}` 24px · `{spacing.xl}` 32px · `{spacing.xxl}` 48px · `{spacing.section}` 80px.
+- **Shell** (`app/aplicacoes/layout.tsx`): `AppSidebar` de 240px com marca, troca de tema,
+  seletor de aplicação e as seções (Análise: Visão geral, Pesquisas, Respondentes; Operação:
+  Chaves, Saúde, Privacidade). Abaixo de `lg` vira gaveta.
+- **Página**: conteúdo até 1280px, `px-4 sm:px-8`. Trilha → título + ações → filtros → KPIs (4
+  colunas) → gráficos (2–3 colunas) → tabelas.
+- **Pesquisa**: abas `SectionNav` Montagem · Disparo · Publicação · Versões · Exibições ·
+  Resultados · Comportamento.
+
+## Componentes de dashboard
+
+Em `src/shared/components/dashboard` (agnósticos de domínio): `KpiCard`, `ChartCard`,
+`TrendChart` (Recharts via `components/ui/chart.tsx`), `OutcomeBreakdown`, `NpsBreakdown`.
+Peças específicas ficam nas features: `features/analytics` (visão geral, segmentos, desempenho
+por pesquisa, SDK) e `features/results` (resultados por pergunta, comportamento).
+
+## Gráficos
+
+- A forma segue a tarefa: tempo → área/linha; partes de um todo → barra 100%; ranking de
+  opções → barras horizontais; conversão por etapa → funil; um número → `KpiCard`.
+- Linha de 2px, área em degradê, ponta de barra `rounded-sm`, 2px de vão entre segmentos.
+- Tooltip com valor absoluto e proporção; legenda sempre que há 2+ séries.
+- Nunca dois eixos Y. Grade recessiva (`chart-grid`), eixos `ink-muted` 11px.

@@ -77,7 +77,7 @@ export function Pagination<T>({
               Anterior
             </Link>
           ) : (
-            <span>
+            <span className="inline-flex items-center gap-1.5">
               <ChevronLeftIcon aria-hidden />
               Anterior
             </span>
@@ -98,7 +98,7 @@ export function Pagination<T>({
               <ChevronRightIcon aria-hidden />
             </Link>
           ) : (
-            <span>
+            <span className="inline-flex items-center gap-1.5">
               Próxima
               <ChevronRightIcon aria-hidden />
             </span>

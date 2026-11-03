@@ -1,0 +1,32 @@
+# Override para rodar a stack de produção inteira na sua máquina, sem túnel:
+#
+#   cp .env.example .env              # preencha POSTGRES_PASSWORD
+#   docker compose -f compose.yaml -f compose.local.yaml up -d --build
+#   seed/carregar-demo.sh             # opcional: dados fictícios para o painel
+#
+# Painel em http://localhost:3001, API em http://localhost:8080/api e Grafana em
+# http://localhost:3000. A rede "edge" deixa de ser externa e o Grafana LGTM sobe junto, no lugar
+# da stack de observabilidade que em produção mora fora deste compose.
+services:
+  api:
+    ports:
+      - "8080:8080"
+    environment:
+      PITACO_API_DOCS_ENABLED: "true"
+
+  painel:
+    ports:
+      - "3001:3001"
+
+  lgtm:
+    image: grafana/otel-lgtm:0.11.10
+    restart: unless-stopped
+    environment:
+      TZ: UTC
+    ports:
+      - "3000:3000"
+    networks: [edge]
+
+networks:
+  edge:
+    external: false

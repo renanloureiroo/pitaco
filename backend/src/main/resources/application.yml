@@ -1,0 +1,173 @@
+server:
+  servlet:
+    # Prefixo de tudo que a aplicação expõe — API, Swagger UI e Actuator.
+    context-path: /api
+  # O túnel termina o TLS e fala HTTP com o container: sem isto a aplicação se
+  # enxerga em http e monta URL errada em tudo que deriva da requisição — o
+  # `servers` do OpenAPI e o header `Location` do 201. `framework` (o
+  # ForwardedHeaderFilter) em vez de `native` porque nenhuma porta é publicada
+  # no host: o único caminho de entrada é o túnel reverso, então não há de onde
+  # chegar um X-Forwarded-Proto forjado, e não se depende do IP do proxy cair
+  # na faixa que o RemoteIpValve considera interna.
+  forward-headers-strategy: framework
+  tomcat:
+    accesslog:
+      # Uma linha por requisição, incluindo as que morrem antes do controller
+      # (404, 405, payload malformado). O log da aplicação começa no use case;
+      # esta é a única camada que enxerga o que nunca chegou lá.
+      enabled: true
+      # Vai para o stdout do processo, junto do resto do log — nada de arquivo
+      # em disco para rotacionar ou esquecer no container.
+      directory: /dev
+      prefix: stdout
+      suffix: ""
+      rotate: false
+      buffered: false
+      # %r = método, URI e protocolo; %s = status; %b = bytes no corpo;
+      # %{ms}T = duração com a unidade explícita (%D varia entre Tomcat e httpd).
+      pattern: '%t "%r" %s %b %{ms}Tms'
+
+spring:
+  application:
+    name: pitaco
+  jackson:
+    default-property-inclusion: non_null
+  threads:
+    virtual:
+      enabled: true
+  docker:
+    compose:
+      # Este arquivo é o padrão de produção, onde não existe compose ao lado do
+      # jar. O profile local religa.
+      enabled: false
+  datasource:
+    hikari:
+      # Servidor modesto: pool pequeno é mais saudável que pool grande e ocioso.
+      maximum-pool-size: 10
+  jpa:
+    hibernate:
+      # O schema nasce da migration: aqui o Hibernate apenas confere se as
+      # entidades e as tabelas concordam, e falha no start quando divergem.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          # Grava e lê todo timestamp em UTC, independente do fuso da JVM: o
+          # mesmo instante precisa dar a mesma linha em qualquer máquina.
+          time_zone: UTC
+
+pitaco:
+  collect:
+    # Prazo após o qual a exibição sem desfecho é considerada abandonada. Trinta minutos cobre
+    # quem trocou de tela e voltou; abandono nunca é gravado, é derivado na leitura.
+    display-timeout: 30m
+    # Abandonos no mesmo grupo de comparabilidade antes de parar de entregar a pesquisa.
+    max-attempts: 3
+    # Eventos de interação do SDK (POST /collect/displays/{id}/events).
+    interaction-events:
+      # Teto de eventos aceitos por exibição. Uma pesquisa de cinco perguntas bem percorrida fica
+      # abaixo de cem; o teto existe para uma chave extraída do bundle não encher a tabela.
+      max-per-display: 500
+      # Por quanto tempo depois da abertura da exibição o servidor ainda aceita eventos dela. Cobre
+      # a fila local do SDK reenviando depois de dias sem rede; passou disso, o lote é descartado.
+      acceptance-window: 7d
+    # Janela fixa em memória na superfície pública, contada por chave e por origem. Estouro
+    # responde 429 com Retry-After. A chave atende um app inteiro e por isso aguenta mais que
+    # uma origem, que é um endereço só.
+    rate-limit:
+      per-key:
+        capacity: 1200
+        window: 1m
+      per-origin:
+        capacity: 120
+        window: 1m
+      # Balde próprio por chave para os relatórios de erro do SDK, fora do per-key: uma
+      # tempestade de falhas não consome a cota das consultas de elegibilidade.
+      sdk-errors:
+        capacity: 30
+        window: 1m
+      # De onde sai a origem contada no limite por origem. Só vale o que um proxy confiável
+      # escreveu: quem conecta direto é a própria origem; atrás de proxy confiável, vale o
+      # cabeçalho abaixo e, sem ele, o X-Forwarded-For lido do fim, pulando os confiáveis. Em
+      # produção o par imediato é o cloudflared, na rede privada do Docker, e a Cloudflare põe o
+      # IP do cliente em CF-Connecting-IP. Deixe o cabeçalho vazio para desligá-lo.
+      origin:
+        client-ip-header: CF-Connecting-IP
+        trusted-proxies:
+          - 127.0.0.0/8
+          - ::1/128
+          - 10.0.0.0/8
+          - 172.16.0.0/12
+          - 192.168.0.0/16
+          - fc00::/7
+  health:
+    sdk-usage:
+      # O uso de cada versão do SDK acumula em memória e desce ao banco neste intervalo. O que
+      # não desceu se perde num reinício: a contagem é aproximada por natureza.
+      flush-interval: 1m
+      # Janela da proporção de tráfego e do aviso de compatibilidade antes de publicar.
+      recent-window: 14d
+      # Versão sem consulta há mais que isto aparece como "sumiu do tráfego".
+      stale-after: 14d
+      # O total por dia só serve à janela recente; o acumulado por versão fica.
+      daily-retention: 90d
+    suppressions:
+      # A mesma supressão do mesmo respondente na mesma versão conta uma vez nesta janela.
+      dedup-window: 24h
+      # Período da leitura de saúde quando o painel não informa um.
+      default-window: 30d
+      # Avisar a partir desta proporção de supressões sobre o alcance, e deste total.
+      relevant-share: 0.05
+      relevant-minimum: 5
+    sdk-errors:
+      retention: 90d
+      # Todo dia às 03:17 UTC, fora de qualquer pico.
+      purge-cron: "0 17 3 * * *"
+  privacy:
+    retention:
+      # Descarte automático das respostas vencidas pela política de cada aplicação. Sem prazo
+      # configurado na aplicação, nada é apagado: o padrão é não apagar.
+      enabled: true
+      # Todo dia às 03:47 UTC, depois do expurgo de saúde e fora de qualquer pico.
+      cron: "0 47 3 * * *"
+      # Respostas por transação: o agregado do lote é congelado e o lote sai junto.
+      batch-size: 1000
+  results:
+    # Abaixo disto, a proporção é exibida com aviso de amostra pequena: "80%" de quatro
+    # pessoas não é o mesmo número que "80%" de quatrocentas.
+    small-sample-threshold: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # Só o necessário para saber se o processo está de pé. Cada endpoint a
+        # mais aqui é superfície exposta atrás de um túnel público.
+        include: health,info
+  tracing:
+    sampling:
+      # 100%. Amostrar num servidor pequeno é contraproducente: com dezenas de
+      # requisições por dia, 10% significa quase nenhum trace registrado.
+      # Reduzir só quando houver volume que justifique.
+      probability: 1.0
+
+springdoc:
+  # Desligado por padrão. /api/collect precisa ficar público para o SDK, e ligado
+  # aqui o mapa inteiro da API ficaria público junto. PITACO_API_DOCS_ENABLED=true
+  # liga os dois; o perfil local já liga.
+  api-docs:
+    enabled: ${PITACO_API_DOCS_ENABLED:false}
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: ${PITACO_API_DOCS_ENABLED:false}
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+    doc-expansion: none
+  show-actuator: false
+
+logging:
+  level:
+    com.renanloureiroo.pitaco: INFO
+    org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver: error
+    org.springdoc.core.utils.SpringDocUtils: error

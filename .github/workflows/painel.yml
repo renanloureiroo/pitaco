@@ -1,0 +1,73 @@
+name: painel
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "painel/**"
+      - "sdk/src/**"
+      - "sdk/package.json"
+      - "sdk/package-lock.json"
+      - ".github/workflows/painel.yml"
+  pull_request:
+    paths:
+      - "painel/**"
+      - "sdk/src/**"
+      - "sdk/package.json"
+      - "sdk/package-lock.json"
+      - ".github/workflows/painel.yml"
+
+concurrency:
+  group: painel-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: npm run verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: painel
+    env:
+      # Com CI definido, o Playwright faz build de produção, não reaproveita servidor, roda com um
+      # worker e tenta de novo duas vezes. O E2E fala com o simulador de API, sem backend.
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: painel/.nvmrc
+          cache: npm
+          cache-dependency-path: |
+            painel/package-lock.json
+            sdk/package-lock.json
+
+      # A pré-visualização usa o SDK (file:../sdk) pelo react-native-web. O pacote precisa estar
+      # compilado, e --install-links copia em vez de criar symlink: o Turbopack recusa módulo fora
+      # da raiz do projeto. É o mesmo caminho do painel/Dockerfile.
+      - name: Build do SDK
+        working-directory: sdk
+        run: |
+          npm ci
+          npm run build
+
+      - run: npm ci --install-links
+
+      - name: Navegador do Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Lint, tipos, Vitest e Playwright
+        run: npm run verify
+
+      - name: Rastros do Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: painel/test-results
+          retention-days: 7

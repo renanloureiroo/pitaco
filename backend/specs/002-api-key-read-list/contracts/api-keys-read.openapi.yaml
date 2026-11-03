@@ -1,0 +1,238 @@
+# Contrato HTTP da feature 002-api-key-read-list.
+#
+# Fonte de verdade em runtime é o OpenAPI gerado pelo springdoc a partir das interfaces
+# *Swagger. Este arquivo é o alvo: o que as anotações devem produzir.
+#
+# Caminhos SEM o prefixo /api, que vem do context-path do contêiner (Princípio IV).
+# Acrescenta duas operações de leitura aos mesmos caminhos de
+# 001-api-key-management/contracts/api-keys.openapi.yaml, sem alterar as existentes.
+openapi: 3.1.0
+info:
+  title: Pitaco — Chaves de API (leitura)
+  version: 0.1.0
+
+paths:
+  /applications/{applicationId}/api-keys:
+    get:
+      tags: [Chaves de API]
+      operationId: listApiKeys
+      summary: Lista as chaves de API de uma aplicação
+      description: >
+        Devolve, paginadas, as chaves da aplicação informada — válidas e revogadas, salvo
+        filtro em contrário. Nenhum segredo aparece aqui: o texto claro existe apenas na
+        resposta da emissão. Funciona também para aplicação inativa: inatividade impede
+        emitir, não impede enxergar.
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+        - $ref: '#/components/parameters/Status'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: >
+            Página de chaves. Lista vazia quando a aplicação existe e nenhuma chave atende
+            ao filtro, ou quando a página pedida está além do fim do conjunto.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiKeyPageResponse' }
+        '400':
+          description: >
+            Parâmetro de paginação fora dos limites (página negativa, tamanho fora de 1..100)
+            ou estado diferente de active/revoked
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+        '404':
+          description: >
+            Aplicação não encontrada, ou identificador de aplicação em formato inválido —
+            indistinguíveis por decisão de projeto
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /applications/{applicationId}/api-keys/{apiKeyId}:
+    get:
+      tags: [Chaves de API]
+      operationId: getApiKey
+      summary: Consulta uma chave de API
+      description: >
+        Devolve os dados de uma única chave, no contexto da aplicação que a emitiu. Encontra
+        também chaves revogadas, apresentadas com o instante da revogação. Nenhum segredo é
+        devolvido.
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+        - $ref: '#/components/parameters/ApiKeyId'
+      responses:
+        '200':
+          description: Chave encontrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApiKeyResponse' }
+        '404':
+          description: >
+            Aplicação não encontrada (application.not_found), ou chave não encontrada,
+            pertencente a outra aplicação, ou com identificador em formato inválido
+            (api_key.not_found) — os três últimos indistinguíveis por decisão de projeto
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+components:
+  parameters:
+    ApplicationId:
+      name: applicationId
+      in: path
+      required: true
+      description: Identificador da aplicação dona da chave
+      schema: { type: string }
+
+    ApiKeyId:
+      name: apiKeyId
+      in: path
+      required: true
+      description: Identificador da chave, devolvido na emissão
+      schema: { type: string }
+
+    Status:
+      name: status
+      in: query
+      required: false
+      description: >
+        Restringe o resultado a um estado. Ausente devolve todas as chaves, válidas e
+        revogadas.
+      schema:
+        type: string
+        enum: [active, revoked]
+      example: active
+
+    Page:
+      name: page
+      in: query
+      required: false
+      description: Página desejada, começando em 0
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+    Size:
+      name: size
+      in: query
+      required: false
+      description: Quantidade de chaves por página
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    ApiKeyStatus:
+      type: string
+      description: Estado da chave, derivado da presença do instante de revogação
+      enum: [active, revoked]
+
+    ApiKeyResponse:
+      type: object
+      description: >
+        Dados públicos de uma chave. Não existe campo para o segredo nem para sua
+        representação irreversível — a ausência é estrutural.
+      required: [id, applicationId, label, prefix, status, createdAt]
+      properties:
+        id:
+          type: string
+          description: Identificador da chave
+          example: 8c1f0f4e-2a77-4a6d-9b31-6f0c2d9a4e15
+        applicationId:
+          type: string
+          description: Aplicação dona da chave
+          example: 3f9a1c72-5d84-4a1e-9b0f-2c6e8d5a7b31
+        label:
+          type: string
+          description: Rótulo informado na emissão
+          example: app iOS
+        prefix:
+          type: string
+          description: Prefixo público, não sensível — identifica a chave em log e conversa
+          example: pit_9f2a7c4b
+        status:
+          $ref: '#/components/schemas/ApiKeyStatus'
+        createdAt:
+          type: string
+          format: date-time
+          description: Instante da emissão, em UTC
+          example: '2026-09-08T14:32:10Z'
+        revokedAt:
+          type: [string, 'null']
+          format: date-time
+          description: Instante da revogação, em UTC. Ausente enquanto a chave está válida
+          example: '2026-09-09T09:15:00Z'
+
+    ApiKeyPageResponse:
+      type: object
+      description: Uma página de chaves, com o total do conjunto que atende ao filtro
+      required: [items, page, size, total, totalPages]
+      properties:
+        items:
+          type: array
+          description: >
+            Chaves da página, da mais recente para a mais antiga, com desempate estável
+            por identificador
+          items: { $ref: '#/components/schemas/ApiKeyResponse' }
+        page:
+          type: integer
+          description: Página devolvida, base 0
+          example: 0
+        size:
+          type: integer
+          description: Tamanho de página aplicado
+          example: 20
+        total:
+          type: integer
+          format: int64
+          description: Total de chaves que atendem ao filtro, não apenas as desta página
+          example: 42
+        totalPages:
+          type: integer
+          description: Quantidade de páginas; 0 quando não há nenhuma chave
+          example: 3
+
+    Error:
+      type: object
+      description: Erro no formato RFC 9457, gerado exclusivamente pelo ApiExceptionHandler
+      required: [type, title, status, detail, code]
+      properties:
+        type: { type: string, format: uri, example: about:blank }
+        title: { type: string, example: Not Found }
+        status: { type: integer, example: 404 }
+        detail: { type: string, example: Aplicação não encontrada }
+        instance: { type: string, format: uri }
+        code:
+          type: string
+          description: Identificador estável do erro — é o que o cliente trata
+          enum: [application.not_found, api_key.not_found]
+        traceId:
+          type: string
+          description: Presente quando o tracing está ligado
+
+    ValidationError:
+      type: object
+      description: Falha de Bean Validation nos parâmetros de query
+      required: [type, title, status, detail, code, errors]
+      properties:
+        type: { type: string, format: uri, example: about:blank }
+        title: { type: string, example: Bad Request }
+        status: { type: integer, example: 400 }
+        detail: { type: string, example: Requisição inválida }
+        instance: { type: string, format: uri }
+        code:
+          type: string
+          enum: [request.invalid]
+        errors:
+          type: object
+          description: Campo → motivo. O valor rejeitado nunca aparece
+          additionalProperties: { type: string }
+          example:
+            size: Tamanho de página deve estar entre 1 e 100
+        traceId:
+          type: string

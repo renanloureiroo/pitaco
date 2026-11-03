@@ -1,0 +1,20 @@
+name: Sugestão de funcionalidade
+description: Um problema que o Pitaco poderia resolver
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: Qual é o problema?
+      description: Descreva o problema antes da solução. Quem sente, quando e com que frequência.
+    validations:
+      required: true
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Proposta
+      description: Como você imagina a solução. Funcionalidade nova vira spec (Spec Kit) antes de virar código.
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: Alternativas consideradas

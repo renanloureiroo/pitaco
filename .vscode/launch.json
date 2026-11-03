@@ -1,0 +1,24 @@
+{
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Spring Boot-PitacoApplication<pitaco>",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "mainClass": "com.renanloureiroo.pitaco.PitacoApplication",
+      "projectName": "pitaco",
+      "args": "",
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "type": "java",
+      "name": "Spring Boot-PitacoApplication<pitaco>",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "mainClass": "com.renanloureiroo.pitaco.infra.PitacoApplication",
+      "projectName": "pitaco",
+      "args": "",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}

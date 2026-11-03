@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Spring Boot-PitacoApplication<pitaco>",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "mainClass": "com.renanloureiroo.pitaco.infra.PitacoApplication",
+      "projectName": "pitaco",
+      "args": "",
+      "vmArgs": "-Dspring.profiles.active=local"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+target/
+.git
+.specify/
+specs/
+docs/
+.vscode/
+.claude/
+*.md
+
+# Config de desenvolvimento nunca entra na imagem (tem senha de dev dentro)
+**/application-local.yml
+**/application-local.yaml
+**/application-local.properties

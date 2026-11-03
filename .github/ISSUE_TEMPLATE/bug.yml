@@ -1,0 +1,33 @@
+name: Bug
+description: Algo não funciona como deveria
+labels: [bug]
+body:
+  - type: dropdown
+    id: parte
+    attributes:
+      label: Parte afetada
+      options: [backend, painel, sdk, app de exemplo, seed, ops]
+    validations:
+      required: true
+  - type: textarea
+    id: o-que-aconteceu
+    attributes:
+      label: O que aconteceu e o que você esperava
+    validations:
+      required: true
+  - type: textarea
+    id: reproduzir
+    attributes:
+      label: Como reproduzir
+      description: Passos, requisição ou trecho de código. Se houver resposta de erro da API, inclua o `code` e o `traceId`.
+    validations:
+      required: true
+  - type: input
+    id: versao
+    attributes:
+      label: Versão ou commit
+  - type: input
+    id: ambiente
+    attributes:
+      label: Ambiente
+      description: "SDK: plataforma (iOS/Android), versão do React Native ou do Expo. Painel: navegador."

@@ -1,0 +1,32 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "paths": {
+      "@pitaco/react-native": [
+        "../src/index.ts"
+      ],
+      "@pitaco/react-native/preview": [
+        "../src/preview/index.ts"
+      ],
+      "@pitaco/react-native/storage/async-storage": [
+        "../src/storage/async-storage.ts"
+      ],
+      "@pitaco/react-native/storage/mmkv": [
+        "../src/storage/mmkv.ts"
+      ],
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
